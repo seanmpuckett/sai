@@ -1,0 +1,12 @@
+// a simple object to prove construction and instantiation
+
+object Simple
+
+set fields
+  a true
+
+Instantiate task
+  return @a
+  
+  
+  

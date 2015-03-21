@@ -1,0 +1,28 @@
+{
+  "name": "sai",
+  "version": "0.1.0",
+  "description": "Javascript with less spaghetti and more meat.",
+  "main": "sai.js",
+  "scripts": {
+    "test": "cd test && node index.js && cd .."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanmpuckett/sai.git"
+  },
+  "keywords": [
+    "javascript",
+    "sai"
+  ],
+  "author": "Sean M Puckett <seanmpuckett@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/seanmpuckett/sai/issues"
+  },
+  "homepage": "https://github.com/seanmpuckett/sai",
+  "dependencies": {
+    "js-beautify": "^1.5.5",
+    "lodash": "^3.5.0",
+    "pegjs": "^0.8.0"
+  }
+}

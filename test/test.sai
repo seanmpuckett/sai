@@ -1,0 +1,290 @@
+
+object Test
+
+set fields
+  pass empty
+  fail empty
+
+
+Instantiate task
+
+  debug 'Test coverage is really minimal right now. So is the documentation.'
+
+  @RValues
+  @Conditionals
+  @Functions
+
+  if @fail.length
+    debug 'FAILED'
+    each @fail
+      debug 'FAIL: {it}'
+    ~process.exit 1
+  else
+    debug 'SUCCESS'
+    ~process.exit 0
+
+
+Test task as description, function
+  set description to '{@section}: {self}'
+  
+  set success to false
+  try 
+    set success from function
+  catch as e
+    debug e
+    @fail.push e
+    
+  if success
+    @pass.push description
+  else
+    @fail.push description
+
+
+
+
+
+
+
+RValues task
+
+  set @section to 'RValues'
+
+  @Test 'self = 2', task
+    set b to 1
+    set b to self + 1
+    return b eq 2
+
+  @Test 'it = 1', task
+    ply list 1
+      return it eq 1
+
+  @Test 'trial = 1', task
+    if 1
+      return trial eq 1
+
+  @Test 'it = 1 (ply)', task
+    ply list 1
+      return it eq 1
+
+  @Test 'it = 1 (each)', task
+    each list 1
+      return it eq 1
+
+  @Test 'key === 0 (ply)', task
+    ply list a
+      return key is 0
+
+  @Test 'key = a (each)', task
+    each traits a b
+      return key eq 'a'
+
+  @Test 'key = 1 (count up)', task
+    count 1 to 2
+      return key eq 1
+
+  @Test 'key = 1 (count down)', task
+    count from 2 
+      return key eq 1
+
+  @Test 'b=1', task
+    set local b to 1
+    return b eq 1
+
+  @Test '@b=1', task
+    set @b to 1
+    return @b eq 1
+
+  @Test '.b=1 (ply)', task
+    ply list traits b 1 
+      return .b eq 1
+
+  @Test '.b=1 (each)', task
+    each list traits b 1 
+      return .b eq 1
+
+  @Test '$b=1', task
+    set local f to task expects $b
+      return $b eq 1
+    return from f: b 1
+  
+  @Test '?1.c.d exception', task
+    set b to 1
+    try
+      set b to b.c.d
+    catch as e
+      return true
+
+  @Test '?1.c.d', task
+    set b to 1
+    if exists ?b.c.d
+      return false
+    return true
+
+  @Test 'b.cow = 1', task
+    set local b to traits cow 1
+    return b.cow eq 1
+
+  @Test 'b|a = 1', task
+    set local b to traits cow 1
+    set a to 'cow'
+    return b|a eq 1
+
+  @Test 'b[a] = 1', task
+    set local b to traits cow 1
+    set a to 'cow'
+    return b[a] eq 1
+
+
+
+Conditionals task
+
+  set @section to 'Conditionals'
+
+  @Test 'if true', task
+    if true
+      return true
+    
+  @Test 'unless false', task
+    unless false
+      return true
+    
+  @Test '1 eq 1', task
+    return 1 eq 1
+
+  @Test '0 ne 1', task
+    return 0 ne 1
+
+
+
+
+  @Test '0 lt 1', task
+    return 0 lt 1
+
+  @Test '1 gt 0', task
+    return 1 gt 0
+
+
+
+Functions task
+
+  set @section to 'Functions'
+  
+  @Test 'from', task
+    set t to task
+      return true
+    return from t
+    
+  @Test '()', task
+    set t to task
+      return true
+    return t()
+    
+  @Test 'from $', task
+    set t to task
+      return $
+    return from t true
+    
+  @Test '(true)', task
+    set t to task
+      return $
+    return t(true)
+    
+  @Test 'from (true)', task
+    set t to task
+      return $
+    return from t t(true)
+    
+  @Test '((true))', task
+    set t to task
+      return $
+    return t(t(true))
+    
+  @Test '(from true)', task
+    set t to task
+      return $
+    return t(from t true)
+    
+  @Test 'as a', task
+    set t to task as a
+      return a
+    return from t true
+    
+  @Test '1,2,3', task
+    set t to task as a,b,c
+      return a+b+c
+    return 6 eq t(1,2,3)
+
+  @Test 'a 1, b 2, c 3', task
+    set t to task expects $a,$b,$c
+      return $a+$b+$c
+    return 6 eq t(:a 1, b 2, c 3)
+
+  @Test 'expects a', task
+    set t to task expects $a
+      return false
+    try
+      return from t 
+    catch as e
+      return true
+        
+  @Test 'expects type Simple', task
+    set t to task expects $a 'Simple'
+      return $a.a
+    set o to create 'Simple'
+    return from t: a o
+    
+  @Test 'expects type boolean', task
+    set t to task expects $a 'boolean'
+      return $a
+    return from t: a true
+    
+  @Test 'expects type failure', task
+    set t to task expects $a 'number'
+      return $a
+    try
+      return from t: a false
+    catch as e
+      return true
+    
+  @Test 'expects object failure', task
+    set t to task expects $a 'Pork'
+      return $a.a
+    set o to create 'Simple'
+    try
+      return from t: a o
+    catch as e
+      return true
+    
+  @Test 'expects type boolean,number', task
+    set t to task expects $a 'boolean', $b 'number'
+      return $a
+    return from t: a true, b 5
+    
+  @Test 'single type Simple', task
+    set t to task expects 'Simple'
+      return $a
+    return t(create 'Simple')
+    
+  @Test 'single type boolean', task
+    set t to task expects 'boolean'
+      return $
+    return from t true
+    
+  @Test 'single type failure', task
+    set t to task expects 'number'
+      return $
+    try
+      return from t false
+    catch as e
+      return true
+    
+  @Test 'single object failure', task
+    set t to task expects 'Pork'
+      return a
+    set o to create 'Simple'
+    try
+      return from t o
+    catch as e
+      return true
+    
+  
