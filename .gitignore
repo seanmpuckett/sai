@@ -28,4 +28,4 @@ node_modules
 .lock-wscript
 
 # SAI relevant
-.cached
+*.cached
