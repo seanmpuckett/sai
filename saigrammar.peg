@@ -1191,17 +1191,25 @@ SortDirection
 
 Logical
  = l:Comparison _ o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
- / l:Comparison _ VIA _ f:VerbValue { return '('+f[0]+f[1]+')('+l+')' }
- / c:Comparison _ XOR _ l:Logical  { return '($.__xor('+c+','+l+'))' }
- / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+r+'))' }
- / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { return t('((^c)?(^l):(^r))',{c:c,l:l,r:r}); } 
- / c:Comparison _ DEFAULT _ v:Logical  { SafetyFetch=true; return t('((undefined!==($_b=^c))?$_b:^v)',{c:c,v:v}); } 
- / c:Comparison _ INITIALIZED _ v:Logical  { SafetyFetch=true; return t('((undefined!==($_b=^c))?$_b:(^c=^v))',{c:c,v:v}); } 
+ / l:Comparison _ VIA _ f:VerbValue { return '('+f[0]+f[1]+')('+l+')' } // test 'via'
+ / c:Comparison _ XOR _ l:Logical  { return '($.__xor('+c+','+l+'))' } // test 'xor' 
+ / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
+ / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { 
+     return t('((^c)?(^l):(^r))',{c:c,l:l,r:r}); 
+   } 
+ / c:Comparison _ DEFAULT _ v:Logical  {  // test 'default*'
+     SafetyFetch=true; 
+     return t('((undefined!==($_b=^c))?$_b:^v)',{c:c,v:v}); 
+   } 
+ / c:Comparison _ INITIALIZED _ v:Logical  { // test 'initialized*'
+     SafetyFetch=true; 
+     return t('((undefined!==($_b=^c))?$_b:(^c=^v))',{c:c,v:v}); 
+   } 
  / v:Comparison _ { return v }
 
 LogicalOp
- = AND Sep { return '&&' }
- / OR Sep { return '||' }
+ = AND Sep { return '&&' } // test 'and'
+ / OR Sep { return '||' } // test 'or'
  
 Comparison
  = l:Addition _ o:ComparisonOp _ r:Comparison { return '('+l+o+r+')' }
@@ -1209,18 +1217,18 @@ Comparison
  / v:Addition _ { return v }
  
 ComparisonOp
-  = '>=' { return '>=' }
-  / '>' { return '>' }
-  / '=' { return '==' }
-  / ISNT Sep { return '!==' }
-  / IS Sep { return '===' }
-  / '<=' { return '<=' }
-  / '<' { return '<' }
-  / '!=' { return '!=' }
+  = '>=' { return '>=' } // test '>='
+  / '>' { return '>' } // test '>'
+  / '=' { return '==' } // test '='
+  / ISNT Sep { return '!==' } // test 'isnt'
+  / IS Sep { return '===' } // test 'is undef' 'is obj'
+  / '<=' { return '<=' } // test '<='
+  / '<' { return '<' } // test '<'
+  / '!=' { return '!=' } // test '!='
 
 MathOp
- = MAX { return 'Math.max' }
- / MIN { return 'Math.min' }
+ = MAX { return 'Math.max' } // test 'max'
+ / MIN { return 'Math.min' } // test 'min'
 
    
 Addition
@@ -1228,35 +1236,41 @@ Addition
  / v:Multiplication _ { return v }
 
 AdditionOp
- = '+' / '-' / ORB Sep {return '|' } / ANDB Sep {return '&'}/ XORB Sep { return '^'}  
+ = '+' // test '+'
+ / '-' // test '-'
+ / ORB Sep {return '|' } // test 'binary or'
+ / ANDB Sep {return '&'} // test 'binary and'
+ / XORB Sep { return '^'}  // test 'binary xor'
 
 Multiplication 
  = l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
- / l:Value _ '**' _ r:Multiplication { return 'Math.pow('+l+','+r+')' }
- / l:Value _ OVERLAY _ r:Multiplication { 
+ / l:Value _ '**' _ r:Multiplication { return 'Math.pow('+l+','+r+')' } // test '**'
+ / l:Value _ OVERLAY Sep r:Multiplication { // test 'overlay *'
    return '$.__overlay('+l+','+r+')' 
  }
- / l:Value _ SELECT _ r:Multiplication { 
+ / l:Value _ SELECT Sep r:Multiplication { // test 'select *'
    return '$.__select('+l+','+r+')' 
  }
  / v:Value _ { return v }
 
 MultiplicationOp
- = '*' / '/' / '%' 
+ = '*' // test '*'
+ / '/' // test '/'
+ / '%' // test '*'
 
  
 Value
- = '-' _ v:Value _ { return '(0-('+v+'))' }
- / NOTB _ v:Value _ { return '(~('+v+'))' }
- / NOT _ v:Value _ { return '(!('+v+'))' }
- / NUMBER _ v:Value { return '($.__number('+v+'))'; }
- / EXISTS _ v:Value _ { return '(undefined!=='+v+')' }
- / COPY _ v:Value _ { return '$.__clone('+v+')'; }
- / KEYS _ v:Value _ { return '($.__keys('+v+'))' }
- / VALUES _ v:Value _ { return '($.__values('+v+'))' }
- / TASK _ v:TaskClause _ { return v }
- / PROMISE _ v:PromiseClause _ { return v }
- / FROM _ v:VerbSentence _ { return v }
+ = '-' _ v:Value _ { return '(0-('+v+'))' } // test 'unary -'
+ / NOTB Sep v:Value _ { return '(~('+v+'))' } // test 'unary binary not' 
+ / NOT Sep v:Value _ { return '(!('+v+'))' } // test 'unary not'
+ / NUMBER Sep v:Value { return '($.__number('+v+'))'; } // test 'number *'
+ / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
+ / COPY Sep v:Value _ { return '$.__copy('+v+')'; } // test 'copy'
+ / KEYS Sep v:Value _ { return '($.__keys('+v+'))' } // test 'keys*'
+ / VALUES Sep v:Value _ { return '($.__values('+v+'))' } // test 'values*'
+ / TASK Sep v:TaskClause _ { return v }
+ / PROMISE Sep v:PromiseClause _ { return v }
+ / FROM Sep v:VerbSentence _ { return v }
  / '?' v:RValueSafe _ { return v }
  / v:RValue _ { return v }
  / VerbChain 
@@ -1433,7 +1447,8 @@ __
  = Whitespace+
 
 Sep
- = &[^a-zA-Z0-9_]
+ = Whitespace
+ / &[^a-zA-Z0-9_]
  
 _
  = Whitespace*

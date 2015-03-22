@@ -12,7 +12,6 @@ var SAIprototypes={};
 var SAIprotogens={};
 var SAIisa={};
 
-
 // HELPERS
 
 var isObject=function(i) {
@@ -58,9 +57,11 @@ SAI.prototype.__filter = _.filter;
 
 SAI.prototype.__reduce = _.reduce;
 
-SAI.prototype.__copy = _.copy;
+SAI.prototype.__copy = _.clone;
 
-SAI.prototype.__overlay = function(l,r) {
+SAI.prototype.__overlay = function(l,r) { // test 'overlay'
+  if (!isMergable(l)) throw new Error("Attempt to OVERLAY onto something that's not a list or traits.");
+  if (!isMergable(r)) throw new Error("Attempt to OVERLAY wih something that's not a list or traits.");
   var result=l?_.clone(l):{};
   for (var i in r) {
     result[i]=r[i];
@@ -73,13 +74,14 @@ SAI.prototype.__overlay = function(l,r) {
 SAI.prototype.__select = function(src,keys) {
   if (!isMergable(src)) throw new Error("Attempt to SELECT with something that's not a list or traits.");
   var result={};
-  if (!isMergable(keys)) {
+  if (!isMergable(keys)) { // test 'select value'
     result[keys]=src[keys]
-  } if (Array.isArray(keys)) {
+  } if (Array.isArray(keys)) { // test 'select list'
     for (i in keys) result[keys[i]]=src[keys[i]];
-  } else {
+  } else { // test 'select traits'
     for (i in keys) result[i]=src[i];
   }
+  // test 'select undefined'
   return result;
 }
 
@@ -114,37 +116,37 @@ SAI.prototype.__deepFreeze = function(o) {
   }
 }
 
-SAI.prototype.__xor = function(a,b) {
+SAI.prototype.__xor = function(a,b) { // test 'xor'
   return a?(b?false:a):(b?b:false);
 }
 
 SAI.prototype.__keys = function(a) {
   var result=[];
-  if (Array.isArray(a)) {
+  if (Array.isArray(a)) { // test 'keys list'
     var len=a.length;
     for (var i = 0; i<len; result.push(i++));
-  } else if (typeof a === 'object' && a !== null) {
+  } else if (typeof a === 'object' && a !== null) { // test 'keys traits'
     for (var i in a) {
       result.push(i);
     }
-  } else if (a !== undefined) {
-    result.push(0);
-  }
+  } 
+  // test 'keys value' & 'keys undefined'
   return result;
 }
 
 SAI.prototype.__values = function(a) {
   var result=[];
-  if (Array.isArray(a)) {
+  if (Array.isArray(a)) { // test 'values list'
     var len=a.length;
-    for (var i = 0; i<len; result.push(a[i]));
-  } else if (typeof a === 'object' && a !== null) {
+    for (var i = 0; i<len; result.push(a[i++]));
+  } else if (typeof a === 'object' && a !== null) { // test 'values traits'
     for (var i in a) {
       result.push(a[i]);
     }
-  } else if (a !== undefined) {
+  } else if (a !== undefined) { // test 'values value'
     result.push(a);
   }
+  // test 'values undefined'
   return result;
 }
 

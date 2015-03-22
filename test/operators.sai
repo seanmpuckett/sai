@@ -1,0 +1,182 @@
+
+object Operators
+
+inherits list Harness
+
+Execute task
+
+  @Match '+', 5, task
+    return 3 + 2
+
+  @Match '-', 1, task
+    return 4 - 3
+
+  @Match 'binary or', 7, task
+    return 5 orb 3 
+
+  @Match 'binary and', 1, task
+    return 5 andb 3 
+
+  @Match 'binary xor', 6, task
+    return 5 xorb 3 
+
+  @Match '*', 6, task
+    return 2 * 3
+
+  @Match '/', 3, task
+    return 6 / 2
+
+  @Match '%', 1, task
+    return 6 % 5
+
+  @Match '**', 9, task
+    return 3 ** 2
+    
+  @Match 'unary -', 3, task
+    return 1 - -2
+    
+  @Match 'unary binary not', -8, task
+    return notb 7
+
+  @Match 'unary not', false, task
+    return not true
+    
+  @Match 'number valid', 10, task
+    return number '10'
+
+  @Match 'number invalid', 0, task
+    return number 'frog'
+    
+  @Test 'exists', task
+    return exists false
+    
+  @Test 'and', task
+    return 1 and 1
+
+  @Test 'or', task
+    return 0 or 1
+    
+  @Test 'xor', task
+    return not ((1 xor 1) or (0 xor 0)) and (0 xor 1) and (1 xor 0) 
+
+  @Test 'nand', task
+    return (0 nand 0) and (0 nand 1) and (1 nand 0) and not (1 nand 1) 
+
+  @Test '=', task
+    return 7 = 7
+
+  @Test '>=', task
+    return (1 >= 0) and (1 >= 1) 
+
+  @Test '>', task
+    return (1 > 0) and not (1 > 1)
+
+  @Test '<', task
+    return (0 < 1) and not (1 < 1) 
+
+  @Test '<=', task
+    return (0 <= 1) and (1 <= 1)
+
+  @Test '!=', task
+    return (1 != 0) 
+
+  @Match 'min', 2, task
+    return 2 min 3
+
+  @Match 'max', 3, task
+    return 2 max 3
+
+  @Test 'is undef', task
+    return undefined is undefined
+
+  @Test 'is obj', task
+    set a to: d 1, e 2
+    set b to a
+    return (a is b) and (b.d=1) and (b.e=2)
+    
+  @Test 'isnt', task
+    return 0 isnt false
+  
+  @Test 'copy', task
+    set a to: d 1, e 2
+    set b to a
+    set c to copy a
+    return (a is b) and (a isnt c) and (c.d=1) and (c.e=2)
+    
+  @Test 'keys undefined', task
+    set a to keys undefined
+    return ~Array.isArray(a) and (a.length = 0)
+  
+  @Test 'keys value', task 
+    set a to keys 1
+    return ~Array.isArray(a) and (a.length=0)
+  
+  @Test 'keys list', task 
+    set a to keys list 1, 2
+    return ~Array.isArray(a) and (a.length=2) and (a|0=0) and (a|1=1)
+    
+  @Test 'keys traits', task
+    set a to keys traits a 1, b 2
+    return ~Array.isArray(a) and (a.length=2) and (a|0='a') and (a|1='b')
+    
+  @Test 'values undefined', task
+    set a to values undefined
+    return ~Array.isArray(a) and (a.length is 0)
+    
+  @Test 'values value', task
+    set a to values 1
+    return ~Array.isArray(a) and (a|0=1)
+    
+  @Test 'values list', task
+    set a to values list 1, 2
+    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
+    
+  @Test 'values traits', task
+    set a to values traits a 1, b 2
+    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
+    
+  @Test 'overlay', task
+    set a to traits a 1, b 2
+    set b to a overlay traits b 3, c 4
+    return b.a=1 and b.b=3 and b.c=4
+    
+  @Test 'select undefined', task
+    set a to traits a 1, b 2, c 3
+    set b to a select undefined
+    return b.a is undefined and b.b is undefined and b.c is undefined
+
+  @Test 'select value', task
+    set a to traits a 1, b 2, c 3
+    set b to a select 'b'
+    return b.a is undefined and b.b=2 and b.c is undefined
+
+  @Test 'select list', task
+    set a to traits a 1, b 2, c 3
+    set b to a select list a, c
+    return b.a=1 and b.c=3 and b.b is undefined
+
+  @Test 'select traits', task
+    set a to traits a 1, b 2, c 3
+    set b to a select traits a 1, c 2
+    return b.a=1 and b.c=3 and b.b is undefined
+
+  @Match 'via', 3, task
+    return 3.141 via ~Math.floor
+
+  @Test 'default unset', task
+    return undefined default true
+
+  @Test 'default set', task
+    return not (false default true)
+
+  @Test 'initialized unset', task
+    set a to undefined
+    set b to a initialized true
+    return b=true and a=true
+    
+  @Test 'initialized set', task
+    set a to false
+    set b to a initialized true
+    return b=false and a=false
+
+

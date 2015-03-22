@@ -1,0 +1,133 @@
+
+object Functions
+
+inherits list Harness
+
+
+
+Execute task
+
+
+  @Test 'from', task
+    set t to task
+      return true
+    return from t
+    
+  @Test '()', task
+    set t to task
+      return true
+    return t()
+    
+  @Test 'from $', task
+    set t to task
+      return $
+    return from t true
+    
+  @Test '(true)', task
+    set t to task
+      return $
+    return t(true)
+    
+  @Test 'from (true)', task
+    set t to task
+      return $
+    return from t t(true)
+    
+  @Test '((true))', task
+    set t to task
+      return $
+    return t(t(true))
+    
+  @Test '(from true)', task
+    set t to task
+      return $
+    return t(from t true)
+    
+  @Test 'as a', task
+    set t to task as a
+      return a
+    return from t true
+    
+  @Test '1,2,3', task
+    set t to task as a,b,c
+      return a+b+c
+    return 6 = t(1,2,3)
+
+  @Test 'a 1, b 2, c 3', task
+    set t to task expects $a,$b,$c
+      return $a+$b+$c
+    return 6 = t(:a 1, b 2, c 3)
+
+  @Test 'expects a', task
+    set t to task expects $a
+      return false
+    try
+      return from t 
+    catch as e
+      return true
+        
+  @Test 'expects type Simple', task
+    set t to task expects $a 'Simple'
+      return $a.a
+    set o to create 'Simple'
+    return from t: a o
+    
+  @Test 'expects type boolean', task
+    set t to task expects $a 'boolean'
+      return $a
+    return from t: a true
+    
+  @Test 'expects type failure', task
+    set t to task expects $a 'number'
+      return $a
+    try
+      return from t: a false
+    catch as e
+      return true
+    
+  @Test 'expects object failure', task
+    set t to task expects $a 'Pork'
+      return $a.a
+    set o to create 'Simple'
+    try
+      return from t: a o
+    catch as e
+      return true
+    
+  @Test 'expects type boolean,number', task
+    set t to task expects $a 'boolean', $b 'number'
+      return $a
+    return from t: a true, b 5
+    
+  @Test 'single type Simple', task
+    set t to task expects 'Simple'
+      return $a
+    return t(create 'Simple')
+    
+  @Test 'single type boolean', task
+    set t to task expects 'boolean'
+      return $
+    return from t true
+    
+  @Test 'single type failure', task
+    set t to task expects 'number'
+      return $
+    try
+      return from t false
+    catch as e
+      return true
+    
+  @Test 'single object failure', task
+    set t to task expects 'Pork'
+      return a
+    set o to create 'Simple'
+    try
+      return from t o
+    catch as e
+      return true
+    
+  @Test 'lots of parameters', task
+    set t to task as a,b ,c, d, e, f , g
+      return g
+    return from t 0,0,0,0,0,0,true
+    
