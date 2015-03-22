@@ -1029,7 +1029,7 @@ IterateOutput
  }
  
 MultiOutput
- = AS _ k:(k:Local _ ',' {return k})* _ v:Local { k.push(v); return k; }
+ = AS _ k:(k:Local _ ',' _ {return k})* _ v:Local { k.push(v); return k; }
  
  
 
@@ -1200,8 +1200,8 @@ Logical
  / v:Comparison _ { return v }
 
 LogicalOp
- = AND { return '&&' }
- / OR { return '||' }
+ = AND Sep { return '&&' }
+ / OR Sep { return '||' }
  
 Comparison
  = l:Addition _ o:ComparisonOp _ r:Comparison { return '('+l+o+r+')' }
@@ -1209,21 +1209,26 @@ Comparison
  / v:Addition _ { return v }
  
 ComparisonOp
-  = GT { return '>' }
-  / GE { return '>=' }
-  / EQ { return '==' }
-  / IS { return '===' }
-  / LE { return '<=' }
-  / LT { return '<' }
-  / NE { return '!=' }
-  / ISNT { return '!==' }
+  = '>=' { return '>=' }
+  / '>' { return '>' }
+  / '=' { return '==' }
+  / ISNT Sep { return '!==' }
+  / IS Sep { return '===' }
+  / '<=' { return '<=' }
+  / '<' { return '<' }
+  / '!=' { return '!=' }
+
+MathOp
+ = MAX { return 'Math.max' }
+ / MIN { return 'Math.min' }
+
    
 Addition
  = l:Multiplication _ o:AdditionOp _ r:Addition { return '('+l+o+r+')' }
  / v:Multiplication _ { return v }
 
 AdditionOp
- = '+' / '-' / 'ORB' __ {return '|' } / 'ANDB' __ {return '&'}/ 'XORB' __ { return '^'}  
+ = '+' / '-' / ORB Sep {return '|' } / ANDB Sep {return '&'}/ XORB Sep { return '^'}  
 
 Multiplication 
  = l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
@@ -1238,10 +1243,6 @@ Multiplication
 
 MultiplicationOp
  = '*' / '/' / '%' 
-
-MathOp
- = MAX { return 'Math.max' }
- / MIN { return 'Math.min' }
 
  
 Value
@@ -1297,11 +1298,11 @@ IdentifierProto
  = v1:[a-zA-Z] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
 
 Literal
- = TRUE { return 'true' }
- / FALSE { return 'false' }
- / UNDEFINED { return 'undefined' }
- / v:Number { return v }
- / v:StringLiteral { return v }
+ = TRUE 
+ / FALSE
+ / UNDEFINED 
+ / Number 
+ / StringLiteral
 
 IntoClause
  = INTO __ r:Expression _ { return r }

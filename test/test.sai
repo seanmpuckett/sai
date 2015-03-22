@@ -10,9 +10,16 @@ Instantiate task
 
   debug 'Test coverage is really minimal right now. So is the documentation.'
 
-  @RValues
-  @Conditionals
-  @Functions
+  set tests to list
+    RValues
+    Operators
+    Precedence
+    Conditionals
+    Functions
+    
+  ply tests
+    set @section to it
+    @|it
 
   if @fail.length
     debug 'FAILED'
@@ -40,71 +47,201 @@ Test task as description, function
     @fail.push description
 
 
+Match task as description, expected, function
+  set description to '{@section}: {self}'
+  
+  set result to '(exception)'
+  try 
+    set result from function
+  catch as e
+    debug e
+    @fail.push e
+    
+  if result = expected
+    @pass.push description
+  else
+    @fail.push 'test "{description}" expected {expected}, got {result}\n{function.toString()}'
 
 
 
+Operators task
 
+  @Match '+', 5, task
+    return 3 + 2
+
+  @Match '-', 1, task
+    return 4 - 3
+
+  @Match 'binary or', 7, task
+    return 5 orb 3 
+
+  @Match 'binary and', 1, task
+    return 5 andb 3 
+
+  @Match 'binary xor', 6, task
+    return 5 xorb 3 
+
+  @Match '*', 6, task
+    return 2 * 3
+
+  @Match '/', 3, task
+    return 6 / 2
+
+  @Match '%', 1, task
+    return 6 % 5
+
+  @Match '**', 9, task
+    return 3 ** 2
+    
+  @Match 'unary -', 3, task
+    return 1 - -2
+    
+  @Match 'binary not', -8, task
+    return notb 7
+
+  @Match 'logical not', false, task
+    return not true
+    
+  @Match 'number valid', 10, task
+    return number '10'
+
+  @Match 'number invalid', 0, task
+    return number 'frog'
+    
+  @Test 'exists', task
+    return exists false
+    
+  @Match 'max', 6, task
+    return 4 max 6
+    
+  @Match 'min', 4, task
+    return 4 min 6
+    
+  @Test 'and', task
+    return 1 and 1
+
+  @Test 'or', task
+    return 0 or 1
+    
+  @Test 'xor', task
+    return not ((1 xor 1) or (0 xor 0)) and (0 xor 1) and (1 xor 0) 
+
+  @Test '=', task
+    return 7 = 7
+
+  @Test '>=', task
+    return (1 >= 0) and (1 >= 1) 
+
+  @Test '>', task
+    return (1 > 0) and not (1 > 1)
+
+  @Test '<', task
+    return (0 < 1) and not (1 < 1) 
+
+  @Test '<=', task
+    return (0 <= 1) and (1 <= 1)
+
+  @Test '!=', task
+    return (1 != 0) 
+
+  @Test 'is', task
+    return undefined is undefined
+    
+  @Test 'isnt', task
+    return 0 isnt false
+  
+    
+
+Precedence task
+
+  @Match '* +', 5, task
+      return 1 * 2 + 3
+      
+  @Match '* +', 7, task
+      return 1 + 2 * 3
+
+  @Match '- -', 2, task
+      return 3-2-1
+
+  @Match '/ /', 4, task
+      return 12/6/2
+
+  @Match 'min *', 4, task
+    return 4 min 2 * 3
+
+  @Match '* min', 3, task
+    return 4 * 2 min 3
+  
 
 RValues task
 
-  set @section to 'RValues'
+
+  @Test '@|', task
+    set @b to true
+    set c to 'b'
+    return @|c
+
+  @Test '@[]', task
+    set @b to true
+    set c to 'b'
+    return @[c]
 
   @Test 'self = 2', task
     set b to 1
     set b to self + 1
-    return b eq 2
+    return b = 2
 
   @Test 'it = 1', task
     ply list 1
-      return it eq 1
+      return it = 1
 
   @Test 'trial = 1', task
     if 1
-      return trial eq 1
+      return trial = 1
 
   @Test 'it = 1 (ply)', task
     ply list 1
-      return it eq 1
+      return it = 1
 
   @Test 'it = 1 (each)', task
     each list 1
-      return it eq 1
+      return it = 1
 
-  @Test 'key === 0 (ply)', task
+  @Test 'key is 0 (ply)', task
     ply list a
       return key is 0
 
   @Test 'key = a (each)', task
     each traits a b
-      return key eq 'a'
+      return key = 'a'
 
   @Test 'key = 1 (count up)', task
     count 1 to 2
-      return key eq 1
+      return key = 1
 
   @Test 'key = 1 (count down)', task
     count from 2 
-      return key eq 1
+      return key = 1
 
   @Test 'b=1', task
     set local b to 1
-    return b eq 1
+    return b = 1
 
   @Test '@b=1', task
     set @b to 1
-    return @b eq 1
+    return @b = 1
 
   @Test '.b=1 (ply)', task
     ply list traits b 1 
-      return .b eq 1
+      return .b = 1
 
   @Test '.b=1 (each)', task
     each list traits b 1 
-      return .b eq 1
+      return .b = 1
 
   @Test '$b=1', task
     set local f to task expects $b
-      return $b eq 1
+      return $b = 1
     return from f: b 1
   
   @Test '?1.c.d exception', task
@@ -122,23 +259,22 @@ RValues task
 
   @Test 'b.cow = 1', task
     set local b to traits cow 1
-    return b.cow eq 1
+    return b.cow = 1
 
   @Test 'b|a = 1', task
     set local b to traits cow 1
     set a to 'cow'
-    return b|a eq 1
+    return b|a = 1
 
   @Test 'b[a] = 1', task
     set local b to traits cow 1
     set a to 'cow'
-    return b[a] eq 1
+    return b[a] = 1
 
 
 
 Conditionals task
 
-  set @section to 'Conditionals'
 
   @Test 'if true', task
     if true
@@ -148,27 +284,12 @@ Conditionals task
     unless false
       return true
     
-  @Test '1 eq 1', task
-    return 1 eq 1
-
-  @Test '0 ne 1', task
-    return 0 ne 1
-
-
-
-
-  @Test '0 lt 1', task
-    return 0 lt 1
-
-  @Test '1 gt 0', task
-    return 1 gt 0
-
+    
 
 
 Functions task
 
-  set @section to 'Functions'
-  
+
   @Test 'from', task
     set t to task
       return true
@@ -212,12 +333,12 @@ Functions task
   @Test '1,2,3', task
     set t to task as a,b,c
       return a+b+c
-    return 6 eq t(1,2,3)
+    return 6 = t(1,2,3)
 
   @Test 'a 1, b 2, c 3', task
     set t to task expects $a,$b,$c
       return $a+$b+$c
-    return 6 eq t(:a 1, b 2, c 3)
+    return 6 = t(:a 1, b 2, c 3)
 
   @Test 'expects a', task
     set t to task expects $a
@@ -287,4 +408,8 @@ Functions task
     catch as e
       return true
     
-  
+  @Test 'lots of parameters', task
+    set t to task as a,b ,c, d, e, f , g
+      return g
+    return from t 0,0,0,0,0,0,true
+    
