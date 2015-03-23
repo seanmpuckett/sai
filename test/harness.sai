@@ -2,25 +2,29 @@ object Harness
 
 Instantiate task expects 'Test'
   set 
-    @section to $section
     @pass to $pass
     @fail to $fail
     @ids to $ids
-    
+
+
+
+Log task as description
+  if @ids|description
+    debug 'Duplicate test: "{description}"'
+  set @ids|description to true
+
+
 
 Test task as description, function
-  set description to '{@section}: {self}'
+  set description to '{@isa}: {self}'
+  @Log description
   
   set success to false
   try 
     set success from function
-  catch as e
-    debug e
-    @fail.push e
-
-  if @ids|description
-    debug 'Duplicate test description: {description}'
-  set @ids|description to true
+  catch 
+    debug error
+    @fail.push err
 
   if success
     @pass.push description
@@ -28,20 +32,18 @@ Test task as description, function
     @fail.push 'test "{description}" failed:\n{function.toString()}'
 
 
+
 Match task as description, expected, function
-  set description to '{@section}: {self}'
+  set description to '{@isa}: {self}'
+  @Log description
   
   set result to '(exception)'
   try 
     set result from function
-  catch as e
-    debug e
-    @fail.push e
+  catch 
+    debug error
+    @fail.push error
     
-  if @ids|description
-    debug 'Duplicate test description: {description}'
-  set @ids|description to true
-
   if result = expected
     @pass.push description
   else

@@ -15,14 +15,13 @@ Instantiate task
     RValues
     Operators
     Precedence
-    Conditionals
+    Constructs
     Functions
+    SetStatement
     
   ply tests
-    set @section to it
     set suite to create it @
     suite.Execute
-    
     
   if @fail.length
     debug 'FAILED'

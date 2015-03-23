@@ -91,6 +91,7 @@
       key: [ '@key@','' ],
       trial: [ '@trial@','' ],
       result: [ '@result@','' ],
+      error: [ '@error@','' ],
       self: [ '@self@','' ],
       super: [ '@super@','' ],
       bound: [ '' , '' ],
@@ -106,6 +107,7 @@
     firststore: { //[0]+key+[1]
       function: [ '' , '' ],
       local: [ '' , ''  ],
+      error: [ '@error@','' ],
       attribute: [ '@this@.' ,  '' ],
       self: [ '@self@','' ],
       result: [ '@result@' , '' ],
@@ -155,41 +157,39 @@
   }
 
   var itselfops = {
-    '+': '^1 += ^2' , 
-    '-': '^1 -= ^2' , 
+    '+': '^1 += ^2' , // test 'self +'
+    '-': '^1 -= ^2' , // test 'self -'
     
-    '*': '^1 *= ^2' , 
-    '/': '^1 /= ^2' , 
-    '%': '^1 %= ^2' , 
-    '**': '^1 = Math.pow(^1,^2)' , 
+    '*': '^1 *= ^2' , // test 'self *'
+    '/': '^1 /= ^2' , // test 'self /'
+    '%': '^1 %= ^2' , // test 'self %'
+    '**': '^1 = Math.pow(^1,^2)' , // test 'self **'
 
-    xorb: '^1 ^= ^2' , 
-    andb: '^1 &= ^2' , 
-    orb: '^1 |= ^2' , 
+    xorb: '^1 ^= ^2' , // test 'self xorb'
+    andb: '^1 &= ^2' , // test 'self andb'
+    orb: '^1 |= ^2' , // test 'self orb'
 
-    and: '^1 = ^1 && ^2', 
-    or: '^1 = ^1 && ^2', 
-    xor: '^1 = $.__xor(^1,^2)', 
+    and: '^1 = ^1 && ^2', // test 'self and'
+    or: '^1 = ^1 || ^2', // test 'self or'
+    xor: '^1 = $.__xor(^1,^2)',  // test 'self xor'
+    nand: '^1 = (!((^1)&&(^2)))', // test 'self nand'
 
-    max: '^1 = Math.max(^1,^2)', 
-    min: '^1 = Math.min(^1,^2)', 
+    max: '^1 = Math.max(^1,^2)', // test 'self max'
+    min: '^1 = Math.min(^1,^2)', // test 'self min'
     
-    via: '^1 = ^2(^1)',
-    update: '$.__merge(^1,^2)',
-    delete: '$.__remove(^1,^2)',
-    default: 'if (undefined===^1) ^1=^2'
+    via: '^1 = ^2(^1)', // test 'self via'
+    update: '$.__merge(^1,^2)', // test 'self update'
+    delete: '$.__remove(^1,^2)', // test 'self delete*'
+    default: 'if (undefined===^1) ^1=^2' // test 'self default*'
   };
 
   var unops={
-    '-': '^1=-(^1)' ,
-    'not': '^1=!(^1)',
-    'notb': '^1=~(^1)',
-    'inc': '^1++',
-    'dec': '^1--',
-    'floor': '^1=Math.floor(^1)' ,
-    'frac': '^1=(^1)%1' ,
-    '?': '^1=(^1)*Math.random()' ,
-    'delete': 'delete ^1'
+    '-': '^1=-(^1)' , // test 'self negate'
+    'not': '^1=!(^1)', // test 'self not'
+    'notb': '^1=~(^1)', // test 'self notb'
+    'inc': '^1++', // test 'self inc'
+    'dec': '^1--', // test 'self dec'
+    'delete': 'delete ^1' // test 'self delete'
   }; 
 
   
@@ -466,7 +466,7 @@ Line
 BreakStatement
  = BREAK _ { return 'break;\n'; }
 
-SwitchStatement
+SwitchStatement // test 'switch*'
  = s:SwitchClause o:Output? EOLs INDENT c:(EOLs c:CaseClause {return c})+ d:(EOLs d:DefaultClause {return d})? EOLs DEDENT {
    o=o?o:tempvar();
    addLocal(o);
@@ -490,10 +490,10 @@ DefaultClause
 
 
 ThrowStatement // maybe get an accurate line number in here someday?!
- = THROW _ p:Expression { 
- return 'throw $.__newerror(0,_filename,'+p+');\n' }
+ = THROW _ p:Expression { // test 'throw'
+ return 'throw '+p+';\n' }
 
-TryStatement
+TryStatement // test 'try*'
  = t:TryClause c:(EOLs c:CatchClause {return c})? f:(EOLs f:FinallyClause {return f})? {
    if (!(c||f)) error("TRY needs a CATCH and/or FINALLY");
    return t+(c?c:'')+(f?f:'');
@@ -502,14 +502,14 @@ TryStatement
 TryClause
  = TRY _ b:Block { return 'try {'+b+'}\n'; }
  
-CatchClause
- = CATCH _ o:Output _ b:Block { 
+CatchClause // test 'catch*'
+ = CATCH _ o:Output? _ b:Block { 
    o=o?o:tempvar();
    addLocal(o);
-   return 'catch ('+o+') {'+b+'}\n'; 
+   return resolveVars('catch (@error@) {'+b+'}\n',{error:o}); 
  }
  
-FinallyClause
+FinallyClause // test 'finally*'
  = FINALLY _ b:Block { return 'finally {'+b+'}\n' }
  
 
@@ -519,17 +519,17 @@ IfStatement
 
 
 IfClause
- = EXISTS _ c:Expression out:Output? b:Block  { 
+ = EXISTS _ c:Expression out:Output? b:Block  { // test 'exists*'
    if (!out) out=tempvar();
    addLocal(out);
    return resolveVars('if (undefined !==(@this@=(@condition@))) {\n'+b+'\n}\n',{this:out,condition:c}); 
  }
- / IF _ c:Expression out:Output? b:Block  { 
+ / IF _ c:Expression out:Output? b:Block  { // test 'if*'
    if (!out) out=tempvar();
    addLocal(out);
    return resolveVars('if ((@trial@=(@condition@))) {\n'+b+'\n}\n',{trial:out,condition:c}); 
  }
- / UNLESS _ c:Expression b:Block  { 
+ / UNLESS _ c:Expression b:Block  { // test 'unless*'
    return 'if (!('+c+')) {\n'+b+'\n}\n' }
 
 ElseIfClause
@@ -553,9 +553,11 @@ WithStatement
   }
  
 SetStatement
- = SET _ t:SetTerms { return t }
- / SET _ EOLs INDENT EOLs t:SetBlock DEDENT { return t.join(''); } 
- / DELETE _ v:RValue { return 'delete '+v+';\n'; }
+ = SET Sep t:SetTerms { return t }
+ / SET Sep EOLs INDENT EOLs t:SetBlock DEDENT { return t.join(''); } 
+ / INC Sep v:LValue { return v+'++;\n'; } // test 'inc a'
+ / DEC Sep v:LValue { return v+'--;\n'; } // test 'dec a'
+ / DELETE Sep v:RValue { return 'delete '+v+';\n'; }
 
 SetTerms
  = t:SetTerm _ v:(',' _ v:SetTerm _ { return v })*  { return v.concat(t) }
@@ -607,14 +609,14 @@ LocalAdj
  = LOCAL __ { return 'local '; }
 
 
-UnOp
- = '-' / INC / DEC  / DELETE
+UnOp // test 'self*'
+ = '-' / INC / DEC  / DELETE / NOTB / NOT
 
-Itselfop
+Itselfop // test 'self*'
  = '+' / '-' 
- / '*' / '/' / '%' / '**' 
+ / '**' / '*' / '/' / '%'  
  / ANDB / ORB / XORB
- / AND / OR / XOR
+ / AND / OR / XOR / NAND
  / MIN / MAX
  / UPDATE / DELETE
  / VIA / DEFAULT
@@ -628,7 +630,7 @@ VerbStatement
 ReturnStatement
  = END _ { return 'return;\n'}
  / RETURN _ k:Expression  { 
-   return 'return('+k+');\n' 
+   return 'return '+k+';\n' 
   }
  / r:(ResolveReject) _ k:Expression?   { 
    return r+'('+k+');\n' ;
@@ -835,6 +837,7 @@ It
  / KEY Sep { return [['key','']]}
  / TRIAL Sep { return [['trial','']]}
  / SELF Sep { return [['self','']]}
+ / ERROR Sep { return [['error','']]}
 
 Attribute
  = DOT v:IdentifierProto { return [[ 'attribute', v ]] }
@@ -885,12 +888,22 @@ Define
     return 'var t='+v[1]+';\nfor (var i in t) { prototype.__tobelocked.push(i); Object.defineProperty(prototype,i,{ configurable:true,enumerable: true, value: t[i] }); };\n'; 
     }
   / SET _ v:Definition EOLs { return 'var Constructor=prototype.Constructor || function(){};\nprototype.Constructor=function() {\nConstructor.call(this);\nvar t='+v[1]+'; for (var i in t) this[i]=t[i];\n};\n'; }
-  / OBJECT _ k:Term _ EOLs {
+  / OBJECT _ k:Term _ v:SemVer? _ EOLs {
     code='prototype.__tobelocked.push("isa");\n';
     code+='prototype.isa='+k+';\n';
+    if (v) {
+      code='prototype.__tobelocked.push("isver");\n';
+      code+='prototype.isver='+v+';\n';
+    }
     return code;
   }
 
+
+
+SemVer
+ = maj:PositiveInteger DOT min:PositiveInteger DOT patch:PositiveInteger {
+   return "'"+maj+"."+min+"."+patch+"'";
+ }
 
 
 ParameterList
@@ -917,14 +930,6 @@ NestedDefinition
  / _ ARRAY _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['literal','['+v.join(',')+']'] }
 
 
-
-xxxxParameters
- = _ COLON _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['list', v] }
- / _ vs:(v:Expression _ ',' _ {return v})* _ v:(Expression) ';'? _ { if (vs.length) { vs.push(v); return ['list',vs]; } return ['value',v] }
- / _ BLANK _  { return ['literal','{}']; }
- / _ EMPTY _  { return ['literal','[]']; }
- / _ (DCOLON) _ v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['direct','{'+w.join(',')+'}'] }
- / _ (DCOLON) _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['direct','{'+w.join(',')+'}'] }
 
 
 Term
@@ -1505,6 +1510,7 @@ ReservedWords
  / EACH 
  / EMPTY
  / EQ
+ / ERROR
  / EXISTS
  / EXPECTS
  / FALSE
@@ -1598,6 +1604,7 @@ ELSE = 'else'i
 EMPTY = 'empty'i
 END = 'end'i
 EQ = 'eq'i 
+ERROR = 'error'i
 EXISTS = 'exists'i
 EXPECTS = 'expects'i
 FINALLY = 'finally'i

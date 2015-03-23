@@ -1,0 +1,160 @@
+
+object SetStatement
+
+inherits list Harness
+
+Execute task
+
+  @Match 'set 1', 1, task
+    set a to 1
+    return a
+    
+  @Match  'inc a', 1, task
+    set a to 0
+    inc a
+    return a
+    
+  @Match  'dec a', 1, task
+    set a to 2
+    dec a
+    return a
+    
+  @Test 'delete b', task
+    set a to: b 1
+    if a.b = 1
+      delete a.b
+      return a.b is undefined
+
+  @Match 'self +', 2, task
+    set a to 1
+    set a + 1
+    return a
+    
+  @Match 'self -', 2, task
+    set a to 3
+    set a - 1
+    return a
+
+  @Match 'self *', 2, task
+    set a to 4
+    set a * 0.5
+    return a
+    
+  @Match 'self /', 2, task
+    set a to 8
+    set a / 4
+    return a
+    
+  @Match 'self %', 2, task
+    set a to 6
+    set a % 4
+    return a
+    
+  @Match 'self **', 9, task
+    set a to 3
+    set a ** 2
+    return a
+    
+  @Match 'self andb', 2, task
+    set a to 6
+    set a andb 3
+    return a
+    
+  @Match 'self orb', 6, task
+    set a to 4
+    set a orb 2
+    return a
+    
+  @Match 'self xorb', 5, task
+    set a to 3
+    set a xorb 6
+    return a
+    
+  @Test 'self and', task
+    set a to true
+    set a and true
+    return a
+    
+  @Test 'self or', task
+    set a to true
+    set a or false
+    return a
+    
+  @Test 'self xor', task
+    set a to true
+    set a xor true
+    return not a
+    
+  @Test 'self nand', task
+    set a to false
+    set a nand false
+    return a
+    
+  @Match 'self min', 5, task
+    set a to 7
+    set a min 5
+    return a
+
+  @Match 'self max', 5, task
+    set a to 3
+    set a max 5
+    return a
+    
+  @Match 'self via', 3, task
+    set a to 3.141
+    set a via ~Math.floor
+    return a
+    
+  @Test 'self update', task
+    set a to: a 1, b 2, c 3
+    set a update: b 4, d 5
+    return a.a=1 and a.b=4 and a.c=3 and a.d=5
+    
+  @Test 'self delete traits', task
+    set a to: a 1, b 2, c 3
+    set a delete: b 4, d 5
+    return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
+  
+  @Test 'self delete list', task
+    set a to: a 1, b 2, c 3
+    set a delete list b, d
+    return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
+
+  @Match 'self default set', 2, task
+    set a to 2
+    set a default 1
+    return a
+    
+  @Match 'self default unset', 2, task
+    set a to undefined
+    set a default 2
+    return a
+  
+  @Match 'self negate', -1, task
+    set a to 1
+    set a -
+    return a
+    
+  @Match 'self not', false, task
+    set a to true
+    set a not
+    return a
+    
+  @Match 'self notb', -8, task
+    set a to 7
+    set a notb
+    return a
+    
+  @Match 'self inc', 2, task
+    set a to 1
+    set a inc
+    return a
+    
+  @Match 'self dec', 2, task
+    set a to 3
+    set a dec
+    return a
+    
+  
+  
+  

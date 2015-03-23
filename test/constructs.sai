@@ -1,0 +1,201 @@
+
+object Constructs
+
+inherits list Harness
+
+
+
+Execute task
+
+
+  @Test 'if true', task
+    if true
+      return true
+    
+  @Test 'unless false', task
+    unless false
+      return true
+    
+  @Test 'if else', task
+    if false
+      return false
+    else
+      return true
+    return false
+    
+  @Test 'unless else', task
+    unless true
+      return false
+    else
+      return true
+    return false
+    
+  @Test 'if else if', task
+    if false
+      return false
+    else if true
+      return true
+    else
+      return false
+    return false
+    
+  @Test 'if else unless', task
+    if false
+      return false
+    else unless false
+      return true
+    return false
+    
+  @Test 'unless else unless', task
+    unless true
+      return false
+    else unless false
+      return true
+    return false
+    
+  @Test 'unless else if', task
+    unless true
+      return false
+    else if true
+      return true
+    return false
+    
+  @Test 'unless else if else', task
+    unless true
+      return false
+    else if false
+      return false
+    else
+      return true
+    return false
+    
+    
+  @Test 'if trial', task
+    if true
+      return trial
+    
+  @Test 'if trial named', task
+    if true as a
+      return a
+    
+  @Test 'exists true', task
+    exists false
+      return true
+    return false
+
+  @Test 'exists undefined', task
+    exists undefined
+      return false
+    return true
+
+  @Test 'exists else', task
+    exists undefined
+      return false
+    else 
+      return true
+    return false
+
+  @Match 'exists it', 1, task
+    exists 1
+      return it
+    return false
+    
+  @Match 'exists named', 1, task
+    exists 1 as b
+      return b
+    return false
+
+
+  @Match 'with', 1, task
+    set a to: b 1
+    with a
+      return .b
+    
+    
+    
+  @Test 'switch case', task
+    switch 2
+      case 1
+        return false
+      case 2
+        return true
+      default
+        return false
+    return false
+    
+  @Test 'switch default', task
+    switch 2
+      case 1
+        return false
+      default
+        return true
+    return false
+    
+  @Test 'switch none', task
+    switch 2
+      case 1
+        return false
+    return true
+    
+    
+    
+
+  @Test 'finally uncaught', task
+    try
+      set a to undefined
+    catch 
+      return false
+    finally
+      return true
+    return false
+    
+  @Test 'finally caught', task
+    set success to false
+    try
+      set a to undefined
+      set a.b to 'uh oh'
+    catch 
+      set success to true
+    finally
+      return success
+    return false
+    
+  @Test 'try uncaught', task
+    try
+      set a to undefined
+    catch 
+      return false
+    return true
+    
+  @Test 'try caught', task
+    try
+      set a to undefined
+      set a.b to 'uh oh'
+    catch 
+      return true
+    return false
+    
+  @Test 'catch magic', task
+    try
+      set a to undefined
+      set a.b to 'uh oh'
+    catch
+      return (error isnt undefined)
+    return false
+    
+  @Test 'catch normal', task
+    try
+      set a to undefined
+      set a.b to 'uh oh'
+    catch as e
+      return (e isnt undefined)
+    return false
+    
+  @Match 'throw', 1, task
+    try
+      throw new ~Error '1'
+    catch 
+      return error.message
+    return false
+    
+  
