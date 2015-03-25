@@ -15,7 +15,7 @@ SAI exists to encourage understandable and maintainable programs through the aff
 
 My feeling is that if someone else of reasonable competency cannot easily understand what a program is doing on a cursory read-through, then one has failed as a professional programmer. James Joyce created some remarkable literary works of lasting significance, but when software used in a production environment is just as difficult to understand as _Finnegans Wake_, then as engineers we have utterly failed in our duty to our employers, co-workers and successors. Good software should be written in the style of the New York Times, not Thomas Pynchon's _Gravity's Rainbow_. 
 
-SAI, then, exists to encourage a _New York Times_ style of programming that results in software that is easy to read, easy to write and easy to maintain.
+SAI, then, exists to encourage a _New York Times_ style of programming that results in software that is easy to read, easy to write and easy to maintain. 
 
 #### What it isn't
 

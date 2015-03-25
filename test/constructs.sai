@@ -1,7 +1,8 @@
 
 object Constructs
 
-inherits list Harness
+inherit list
+  Harness
 
 
 

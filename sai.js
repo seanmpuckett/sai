@@ -4,10 +4,13 @@ var Beautify=require('js-beautify').js_beautify;
 
 var _ = require('lodash');
 
+
 var SAIverbs =  {
   debug: 'console.log',
+  require: 'require',
 }
-var SAIpaths=[];
+
+var SAIpaths=[__dirname+'/'];
 var SAIprototypes={};
 var SAIprotogens={};
 var SAIisa={};
@@ -30,7 +33,13 @@ var isMergable=function(i) {
 
 // MODULE INTERFACE
 
-var SAI = exports = module.exports = function() {}
+var SAI = exports = module.exports = function() {
+  this.__tobelocked=[];
+  this.__tobefrozen=[];
+  this.__contracts=[];
+  this.__unverified=true;
+  this.isof=[];
+}
 
 
 
@@ -248,7 +257,7 @@ var indentParserSource=hereDoc(function() {/*
       dents.push("}");
     }
 
-    if (depth != depths[0]) dents.push("!!BADDENT!!");
+    if (depth != depths[0]) dents.push("!! BAD INDENTING !!");
 
     return dents;
   }
@@ -293,9 +302,9 @@ SAI.getParser = function() {
   //console.log (mainParser.parse.toString());
   return function(source,bound,fn) {
     source+='\n\n';
-    var commentStrippedSource=source.replace(/\/\/[^\r\n]*$/gm, '');
+    //var commentStrippedSource=source.replace(/\/\/[^\r\n]*$/gm, '');
     //console.log(commentStrippedSource);
-    var newlineStrippedSource=commentStrippedSource.replace(/^\s*$[\n\r]{1,}/gm, '');
+    var newlineStrippedSource=source.replace(/^\s*$[\n\r]{1,}/gm, '');
     indentedSource=indentParser.parse(newlineStrippedSource).join('\n');
     //console.log(indentedSource);
     var parser;
@@ -311,7 +320,7 @@ SAI.getParser = function() {
       console.log(context);
       return false;
     }
-    parser=Beautify(parser,{ indent_size: 2, preserve_newlines: false});
+    //parser=Beautify(parser,{ indent_size: 2, preserve_newlines: false});
     //console.log(parser);
     return parser;
   }
@@ -328,7 +337,7 @@ getProtogen = function(name) {
     var raw=undefined;
     for (var i in SAIpaths) {
       var path=SAIpaths[i];
-      filename=path+name+'.sai';
+      filename=path+'/'+name+'.sai';
       try {
         //console.log("try to load: "+filename);
         raw=fs.readFileSync(filename).toString();
@@ -381,7 +390,7 @@ var getPrototype = function(name,bindings) {
         if (!obj.isa) {
           throw new Error("Object defined by "+name+" does not have an 'isa' type identifier in its manifest.")
         }
-        var inherits=obj._inherits;
+        var inherits=obj.__inherits;
         if (inherits) {
           for (var i in inherits) {
             var parent=inherits[i];
@@ -401,7 +410,7 @@ var getPrototype = function(name,bindings) {
     }
     Object.defineProperty(proto,"isa",{enumerable: true, value:proto.isa}); // lock it down
     if (SAIisa[proto.isa]) {
-      throw new Error("Object defined by "+name+" has a duplicate 'isa' type identifier ("+proto.isa+") which is identical to "+SAIisa[proto.isa]);
+      throw new Error("Object defined by '"+name+"' has a duplicate .isa type identifier '"+proto.isa+"',  identical to "+SAIisa[proto.isa]);
     }
     
     SAIisa[proto.isa]=name;
@@ -409,11 +418,24 @@ var getPrototype = function(name,bindings) {
       var l=proto.__tobelocked[i];
       Object.defineProperty(proto,l,{configurable:false});
     }
+    delete proto.__tobelocked;
     for (var i in proto.__tobefrozen) {
       var l=proto.__tobefrozen[i];
       proto.__deepFreeze(proto[proto.__tobefrozen[i]]);
     }
-    
+    delete proto.__tobefrozen;
+    if (proto.__unverified) {
+      for (var i in proto.__contracts) {
+        var l=proto.__contracts[i];
+        if (!proto[l]) {
+          throw new Error("Contractually required task '"+l+"' does not exist in object '"+proto.isa+"'.");
+        } else {
+          //console.log("Contract test: "+proto.isa+" does indeed have a "+l+" property.");
+        }
+      }
+      delete proto.__unverified;
+    }
+
     if (bindings) {
       for (var i in bindings.properties) {
         Object.defineProperty(proto,i,{ get: bindings.properties[i]});

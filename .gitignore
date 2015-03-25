@@ -29,3 +29,9 @@ node_modules
 
 # SAI relevant
 *.cached
+
+
+.U*
+
+*.plist
+

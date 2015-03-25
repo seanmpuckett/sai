@@ -1,7 +1,8 @@
 
 object Operators
 
-inherits list Harness
+inherit list
+  Harness
 
 Execute task
 

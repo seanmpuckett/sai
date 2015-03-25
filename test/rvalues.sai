@@ -1,7 +1,8 @@
 
 object RValues
 
-inherits list Harness
+inherit list
+  Harness
 
 
 
@@ -37,6 +38,13 @@ Execute task
   @Test 'it = 1 (each)', task
     each list 1
       return it = 1
+
+  @Test 'catch error', task
+    try
+      throw new ~Error 4
+    catch
+      return error.message=4
+    return false
 
   @Test 'key is 0 (ply)', task
     ply list a

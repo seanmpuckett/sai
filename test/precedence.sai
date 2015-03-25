@@ -1,7 +1,8 @@
 
 object Precedence
 
-inherits list Harness
+inherit list
+  Harness
 
 
 

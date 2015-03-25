@@ -18,6 +18,8 @@ Instantiate task
     Constructs
     Functions
     SetStatement
+    Loops
+    Reference
     
   ply tests
     set suite to create it @

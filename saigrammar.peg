@@ -217,7 +217,13 @@
   }
   function getList(list) {
     var list=Lists[list] || (Lists[list]=[]);
-    return '["'+list.join('","')+'"]';
+    if (list.length) {
+      return '["'+list.join('","')+'"]';
+    } 
+    return '[]';
+  }
+  function clearLists() {
+    Lists={};
   }
     
   function GetExpectsTester(x,functionname) {
@@ -250,8 +256,8 @@
     addLocal('$','=this');
     var head='', tail='';
     if (v[0]!='get' && v[0]!='set') {
+      addToList('lock',fn);
       head='var _'+fn+'=prototype["'+fn+'"];\n';
-      head+='prototype.__tobelocked.push("'+fn+'");\n';
       head+='prototype.'+fn+'=';
       tail=';\n';
     }
@@ -317,38 +323,55 @@
 
 
 start
-  = OptionalEOLs v:Segment* { 
-    var code= 
-      'if (!prototype.__tobefrozen) prototype.__tobefrozen=[];\n'+
-      'if (!prototype.__tobelocked) prototype.__tobelocked=[];\n'+
-       v.join('\n')+
-      'if (!prototype.isof) prototype.isof={};\n'+
-      'if (prototype.isa) prototype.isof[prototype.isa]=__filename;\n';
-    //console.log(code);
+  = OptionalEOLs r:Reference? o:Object+ {
+    code='';
+    if (r) code+=r;
+    code+=o.join('\n');
     return code;
-     }
+  }
   
-Segment 
- = v:(PropertyDef / Task / Define / Requires / Inherit) { return v }
- / EOLs
+Reference 
+= REFERENCE _ v:ParameterList EOLs {
+  if (v[0]!='fields') error("REFERENCE requires a trait list.");
+  code='';
+  for (var i in v[2]) {
+    var r=v[2][i];
+    code+='var '+r[0]+'='+r[1]+';\n';
+  }
+  return code;
+}
 
-Inherit
- = INHERITS _ v:Definition EOLs {
-   return 'prototype._inherits='+v[1]+';\n';
+Object
+ = OBJECT _ k:Term _ v:SemVer? _ EOLs s:Segment+ {
+    var code=s.join('\n');
+    addToList('lock','isa')
+    code+='prototype.isa='+k+';\n';
+    if (v) {
+      addToList('lock','isver');
+      code+='prototype.isver='+v+';\n';
+    }
+    var l;
+    if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
+    if (l=getList('freeze')) code+='prototype.__tobelocked=prototype.__tobefrozen.concat('+l+');\n';
+    code+='prototype.isof[prototype.isa]=__filename;\n';
+    clearLists();
+    return code;
   }
 
-Requires 
- = REQUIRE _ v:Definition EOLs {
-   console.log(v[1]);
-   var p;
-   eval('p='+v[1]);
-   code='';
-   for (var k in p) {
-     code+='var '+k+'=require("'+p[k]+'");\n';
-   }
-   return code;
- }
+Segment
+ = v:(Inherit / Contract / PropertyDef / Task / Define) { return v }
+ / EOLs
 
+
+Inherit
+ = INHERIT _ v:SimpleList EOLs {
+   return 'prototype.__inherits=['+v.join(',')+'];\n';
+  }
+
+Contract
+ = CONTRACT _ v:SimpleList EOLs {
+   return 'prototype.__contracts=prototype.__contracts.concat(['+v.join(',')+']);\n';
+  }
 
 PropertyDef
  = v:Identifier p1:PropertyClause p2:PropertyClause?  {
@@ -360,8 +383,8 @@ PropertyDef
    var ret='Object.defineProperty(prototype,"'+v+
      '",{configurable:true,enumerable:true,get:'+prop.get+
      ',set:'+prop.set+
-     '});\n'+
-     'prototype.__tobelocked.push("'+v+'");\n';
+     '});\n';
+   addToList('lock',v);
    return ret;
 }
 
@@ -398,8 +421,8 @@ TaskClause
       }
     }
   }
-  locals=locals.length?('var '+locals.join(',')):'';
-  return 'function( '+params.join(',')+') { '+FunStart()+locals+'; '+expects+b+FunStop()+' } ';
+  locals=locals.length?('var '+locals.join(',')+';'):'';
+  return 'function('+params.join(',')+'){'+FunStart()+locals+expects+b+FunStop()+'}';
 }
 
 PromiseClause
@@ -418,8 +441,8 @@ PromiseClause
       }
     }
   }
-  locals=locals.length?('var '+locals.join(',')):'';
-  return 'function('+params.join(',')+') { return new Promise(function($_resolve, $_reject) { '+FunStart()+locals+'; '+expects+b+FunStop()+' })} ';
+  locals=locals.length?('var '+locals.join(',')+';'):'';
+  return 'function('+params.join(',')+') { return new Promise(function($_resolve,$_reject) { '+FunStart()+locals+expects+b+FunStop()+'})}';
 }
 
 
@@ -463,8 +486,11 @@ Line
 
 
 
+
+
 BreakStatement
  = BREAK _ { return 'break;\n'; }
+ / CONTINUE _ { return 'continue;\n' }
 
 SwitchStatement // test 'switch*'
  = s:SwitchClause o:Output? EOLs INDENT c:(EOLs c:CaseClause {return c})+ d:(EOLs d:DefaultClause {return d})? EOLs DEDENT {
@@ -551,6 +577,8 @@ WithStatement
       var code='var @this@='+value+';\n'+block+'\n';
       return resolveVars(code,{this:(out?out:false)}); 
   }
+ 
+
  
 SetStatement
  = SET Sep t:SetTerms { return t }
@@ -681,7 +709,7 @@ IterateStatement
      var iterate=t('for (var ^k=0; ^k<^l; ^k++) { ^task(^j[^k],^k) };\n',w);
      return setup+test+iterate; 
   }
- / COUNT _ start:Expression? _ TO _ stop:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? {
+ / COUNT _ start:Expression? _ TO _ stop:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
      var dest=tempvar();
      if (!start) start=0;
      var w={start:start,stop:stop,out:out,block:block,none:none,dest:dest};
@@ -690,7 +718,7 @@ IterateStatement
      var iterate=t('while (@key@<^dest) { ^block @key@++; }\n',w);
      return resolveVars(setup+alternate+iterate,{key:(out?out[0]:false)}); 
   }
- / COUNT _ FROM _ start:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? {
+ / COUNT _ FROM _ start:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count from*'
      var w={start:start,out:out,block:block,none:none};
      var setup=t('var @key@=^start;\n ',w);
      var alternate=none?t('if (@key@<=0) { ^none } else ',w):'';
@@ -857,7 +885,10 @@ Index
  / '|' v:SimpleValue { return [[ 'index', v ]] }
 
 Local
- = v:Identifier { addLocal('$'+v); return [[ 'local','$'+v ]]}
+ = v:Identifier { 
+   if (!options.globals[v]) addLocal('$'+v); 
+   return [[ 'local','$'+v ]];
+}
 
 Parameter
  = '$' v:IdentifierProto { return [[ 'parameters','' ],['attribute',v]] }
@@ -882,21 +913,14 @@ SimpleTerm
 
 Define
   = GIVEN _ k:Identifier _ v:Definition EOLs { 
-     return 'prototype.__tobefrozen.push("'+k+'");\nprototype["'+k+'"]='+v[1]+';\n';
+     addToList('freeze',k);
+     return 'prototype["'+k+'"]='+v[1]+';\n';
    } 
   / GIVEN _ v:Definition EOLs { 
-    return 'var t='+v[1]+';\nfor (var i in t) { prototype.__tobelocked.push(i); Object.defineProperty(prototype,i,{ configurable:true,enumerable: true, value: t[i] }); };\n'; 
+    addToList('lock',i);
+    return 'var t='+v[1]+';\nfor (var i in t) { Object.defineProperty(prototype,i,{ configurable:true,enumerable: true, value: t[i] }); };\n'; 
     }
   / SET _ v:Definition EOLs { return 'var Constructor=prototype.Constructor || function(){};\nprototype.Constructor=function() {\nConstructor.call(this);\nvar t='+v[1]+'; for (var i in t) this[i]=t[i];\n};\n'; }
-  / OBJECT _ k:Term _ v:SemVer? _ EOLs {
-    code='prototype.__tobelocked.push("isa");\n';
-    code+='prototype.isa='+k+';\n';
-    if (v) {
-      code='prototype.__tobelocked.push("isver");\n';
-      code+='prototype.isver='+v+';\n';
-    }
-    return code;
-  }
 
 
 
@@ -907,10 +931,10 @@ SemVer
 
 
 ParameterList
- = _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(',')] }
- / _ COLON _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields', '{'+w.join(',')+'}'] }
- / _ v:Items ';'? { return ['array',v.join(',')] }
- / _ COLON _ v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}'] }
+ = _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
+ / _ COLON _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields', '{'+w.join(',')+'}',v] }
+ / _ v:Items ';'? { return ['array',v.join(','),v] }
+ / _ COLON _ v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
 
 
 Definition
@@ -930,6 +954,9 @@ NestedDefinition
  / _ ARRAY _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['literal','['+v.join(',')+']'] }
 
 
+SimpleList
+ = _ LIST _ v:Terms ';'? { return v }
+ / _ LIST _ EOLs INDENT EOLs v:TermBlock DEDENT { return v }
 
 
 Term
@@ -1471,10 +1498,12 @@ EOLs
  = EOL+
 
 EOL
- = CR
+ = '//' [^\r\n]* CR
+ / CR
+ 
 
 CR
- = [\n]
+ = [\n\r]
 
 OBRACE
  = '{'
@@ -1482,9 +1511,6 @@ OBRACE
 CBRACE
  = '}'
 
-Comment
- = '#' [^\n]*
- 
 
 ReservedWord
  = ReservedWords ![a-zA-Z_0-9] 
@@ -1526,7 +1552,7 @@ ReservedWords
  / HIGHEST 
  / INC
  / INITIALIZED
- / INHERITS
+ / INHERIT
  / INTO
  / IN
  / ISNT
@@ -1592,6 +1618,8 @@ CASE = 'case'i
 CATCH = 'catch'i
 CHAIN = 'chain'i
 COPY = 'copy'i
+CONTINUE = 'continue'i
+CONTRACT = 'contract'i
 COUNT = 'count'i
 CREATE = 'create'i
 DEC = 'dec'i
@@ -1624,7 +1652,7 @@ INITIALIZED = 'initialized'i
 INTO = 'into'i
 IN = 'in'i
 INC = 'inc'i
-INHERITS = 'inherits'i
+INHERIT = 'inherit'i
 ISNT = 'isnt'i
 IS = 'is'i
 IT = 'it'i 
@@ -1660,7 +1688,7 @@ PROMISE = 'promise'i
 REDUCE = 'reduce'i
 RESOLVE = 'resolve'i
 REJECT = 'reject'i
-REQUIRE = 'require'i
+REFERENCE = 'reference'i
 RETURN = 'return'i
 SELECT = 'select'i
 SELF = 'self'i

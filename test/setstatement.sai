@@ -1,7 +1,8 @@
 
 object SetStatement
 
-inherits list Harness
+inherit list
+  Harness
 
 Execute task
 
@@ -155,6 +156,10 @@ Execute task
     set a dec
     return a
     
-  
-  
+  @Test 'self indents', task
+    set
+      a to 2
+      b to 3
+      c to 4
+    return a=2 and b=3 and c=4
   

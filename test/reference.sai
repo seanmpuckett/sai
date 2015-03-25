@@ -1,0 +1,18 @@
+reference:
+  lodash from require 'lodash'
+  Simple 'Simple'
+
+object HelloHTTP
+
+inherit list
+  Harness
+
+Execute task
+  
+  @Test 'lodash required', task
+    return ~lodash.clone isnt undefined
+
+  @Test 'Simple reference', task
+    set a to create ~Simple
+    return a.a isnt undefined
+

@@ -1,0 +1,58 @@
+
+object Loops
+
+inherit list
+  Harness
+
+
+
+Execute task
+
+  @Match 'count to 4', 6, task
+    set a to 0
+    count to 4
+      set a + key
+    else
+      return false
+    return a
+
+  @Match 'count to 1-5', 10, task
+    set a to 0
+    count 1 to 5
+      set a + key
+    else
+      return false
+    return a
+
+  @Test 'count to 0', task
+    count to 0
+      return false
+    else
+      return true
+    return false
+
+  @Test 'count to 1-1', task
+    count 1 to 1
+      return false
+    else
+      return true
+    return false
+
+  @Match 'count from 4', 6, task
+    set a to 0
+    count from 4
+      set a + key
+    else
+      return false
+    return a
+
+  @Test 'count from 0', task
+    set a to 0
+    count from 0
+      return false
+    else
+      return true
+    return false
+
+
+

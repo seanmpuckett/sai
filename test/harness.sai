@@ -1,10 +1,18 @@
+
+
 object Harness
+
+contract list
+  Execute
+
 
 Instantiate task expects 'Test'
   set 
     @pass to $pass
     @fail to $fail
     @ids to $ids
+
+
 
 
 
