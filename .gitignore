@@ -31,7 +31,5 @@ node_modules
 *.cached
 
 
-.U*
-
-*.plist
+.Ulysses-Group.plist
 
