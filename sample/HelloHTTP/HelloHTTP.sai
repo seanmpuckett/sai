@@ -1,7 +1,7 @@
 reference:
   express from require 'express'
 
-object HelloHTTP
+object HelloHTTP 1.0.0
 
 Instantiate task
   set @app from ~express
@@ -9,8 +9,8 @@ Instantiate task
   @app.get '/', task as req, res
     res.send 'Hello HTTP!'
 
-  set server from @app.listen 3000, 'localhost', task
-    with server.address()
-      debug 'Example app listening at http://{.address}:{.port}'       
+  set @server from @app.listen 3000, 'localhost', task
+    with @server.address()
+      debug 'Example app listening at http://${.address}:${.port}'       
       
    

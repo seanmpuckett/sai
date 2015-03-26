@@ -342,7 +342,8 @@ Reference
 }
 
 Object
- = OBJECT _ k:Term _ v:SemVer? _ EOLs s:Segment+ {
+ = OBJECT _ k:Identifier _ v:SemVer? _ EOLs s:Segment+ {
+    k="'"+k+"'"
     var code=s.join('\n');
     addToList('lock','isa')
     code+='prototype.isa='+k+';\n';
@@ -1468,11 +1469,12 @@ BarelineStringChar
 EscapedChar
  = v:"\\'" { return [true,'\''] }
  / v:'\\"' { return [true,'"'] }
+ / v:'\\$' { return [true,'$'] }
  / v:'\\&#123;' { return [true,'&#123;'] }
  / v:'\\&#125;' { return [true,'&#125;'] }
 
 StringTemplate
- = OBRACE v:Expression CBRACE { return [false,v] }
+ = '${' v:Expression '}' { return [false,v] }
 
 
 __

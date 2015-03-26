@@ -27,7 +27,7 @@ Then __SAI.require__ is called to create a standard Javascript prototype for the
 
 Run this, and on the console appears:
 
-> > Hello World
+> Hello World
 
 So what do these three lines have to say to us? 
 
@@ -57,7 +57,9 @@ Because line endings are also significant, it is not necessary to signify the en
 
 SAI discourages complex run-on code by making multi-line statements difficult (but not impossible), except in specific instances where clarity can instead be encouraged through using multiple-lines.
 
-And that's a simple three line example of a trivial yet functional SAI object that with source code that contains only words, white space and common punctuation. In general, SAI code does not become too much more symbol-laden. However, three symbols in particular are important as a means of asserting variable scope, and we’ll introduce two of them next.
+And that's a simple three line example of a trivial yet functional SAI object that with source code that contains only words, white space and common punctuation. 
+
+In general, SAI code does not become too much more symbol-laden. However, four symbols in particular are very important as a means of asserting variable scope, and we’ll introduce two of them in the next example.
 
 
 ### Hello, World HTTP
@@ -71,7 +73,7 @@ We'll omit the __index.js__ in these future examples; it looks just like the one
 	reference:
 	  express from require 'express'
 	
-	object HelloHTTP
+	object HelloHTTP 1.0.0
 	
 	Instantiate task
 	  set @app from ~express
@@ -79,10 +81,81 @@ We'll omit the __index.js__ in these future examples; it looks just like the one
 	  @app.get '/', task as req, res
 	    res.send 'Hello HTTP!'
 	
-	  set server from @app.listen 3000, 'localhost', task
-	    with server.address()
+	  set @server from @app.listen 3000, 'localhost', task
+	    with @server.address()
 	      debug 'Example app listening at http://{.address}:{.port}'       
   
+On my system, this prints
+  
+>  Example app listening at http://127.0.0.1:3000
+  
+And when I access http:/127.0.0.1:3000 with a browser, I get the response:
 
+> Hello HTTP!
 
-\#\## 
+Let's take it line by line again.
+  
+	reference:
+
+References are global variables. They should only be used for __require__ and for preset constants or configuration values. The colon __:__ begins the definition of a series of named fields, like {} would be used in Javascript.
+
+	  express from require 'express'
+
+The first term in fields definition is the field name, in this case __express__. Everything after that term is an expression that provides the value of the field, in this case `from require 'express'`. 
+
+Here, __require__ is the same require function provided by Node. If a verb isn't at the beginning of a line, we can invoke it one of two ways, with `from` as shown here, or by using parenthesis immediately following it as one would in Javascript: `require('express')`. Because SAI seeks to reduce the need for symbology and encourages readability, __from__ is the preferred form. 
+
+All references must be declared before any objects are defined.
+
+	object HelloHTTP 1.0.0
+	Instantiate task
+  
+These lines are familiar; they declare the beginning of an object named 'HelloHTTP' and define code that will execute when that object is instantiated.
+  
+	  set @app from ~express
+
+This line introduces two of the four major _scoping prefixes_ used in SAI. 
+
+It also introduces the __set__ verb, which is how one assigns values in code. In SAI, one does not use the equals sign __=__ for assignment. Equals is _only used in comparisons_. 
+
+The first scoping prefix used here is the at sign __@__, which translates directly in Javascript to `this.`.  Variables prefixed with @ always belong to the instance of the object that is running the current code. You also use the @ to refer to code functions that are attached to an object.  (If __@__ appears by itself, it translates to `this` by itself.)
+
+The other prefix is the tildis __\~__ which is always used to indicate a global variable or function. A good mnemonic for the global scope prefix is to think of the variable as just waving in the wind \~\~\~\~ it's unattached to anything.
+
+Now, knowing what you know about `from` you can see that this statement executes the global verb `~express` (which we defined in the references) and assigns the resulting value to the object variable `@app`. In Javascript, this would be `this.app=express();`
+
+	  @app.get '/', task as req, res
+	    res.send 'Hello HTTP!'
+
+First term in a line is a verb: `@app.get` followed by comma-separated parameters. First `'/'`, and then `task as req, res` -- but note that the keyword __task__ also requires an indented block of code following as the task definition, so the next line, indented, is part of the second parameter. 
+
+Here the appearance of __task__ is followed by the __as__ keyword, which names any top-level parameters that might be passed to the task. In this case, __req__ and __res__. In SAI, variables that don't have a scoping prefix are _local_ variables and exist only within the scope of the task that encloses them (exceptions apply, see the reference docs). 
+
+The body of the task is a simple verb call: `res.send 'Hello HTTP!'`, which sends that message to the connecting web browser. 
+
+	  set @server from @app.listen 3000, 'localhost', task
+  
+Another easy to parse line, we're setting the object variable __server__ to the result of a call to `@app.listen` with the parameters `3000`, `'localhost'` and a task which itself has no parameters of its own but has the body:
+
+	    with @server.address()
+	      debug 'Example app listening at http://${.address}:${.port}'       
+
+SAI, like Javascript, has a __with__ keyword, but they do not work the same way. Javascript's __with__ is mysterious and dangerous, and can dramatically slow down your code, because what it does is inobvious. SAI fixes the problems of JS's __with__ and in so doing allows your code to be shorter and clearer.
+
+SAI's __with__ takes the value of the expression following, and for the indented code block that follows, makes it available with the third scoping prefix; the dot __.__.  A dot with nothing before it is a shorthand way of referring to, quite literally, __it__.  In English, _it_ is used as a shorthand to help us avoid repeating the same nouns over and over, and in SAI grammatical shorthands like the dot prefix are used extensively in exactly the same way.
+
+In the `debug` line, notice that the string enclosed within quotes uses the EcmaScript 6 string composition operator __${ _expression_ }__ to embed the server's listening address and port, which are specified using the dot scoping prefix. If we weren't using string composition or the `with` shortcut, that statement would look more like this:
+
+	debug 'Example app listening at http://' + @server.address().address + ':' + @server.address().port
+
+Using `with` that becomes the less repetitive:
+
+	with @server.address()
+	  debug 'Example app listening at http://' + .address + ':' + .port
+  
+And with string composition as in the example, it's very nice and tidy.
+
+	with @server.address()
+	  debug 'Example app listening at http://${.address}:${.port}'       
+
+You’re not forced to use `with` or string composition. But they do make code clearer and shorter, reduce the possibility of mistakes and make reviews simpler. That’s what I mean by _affordances_. 
