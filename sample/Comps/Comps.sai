@@ -13,7 +13,7 @@ Instantiate task
    :name 'Jenna', age 28, #dog, province 'ON'
 
   debug "\nWho likes cats?"
-  debug friends #cat
+  debug friends #cat 
 
   debug "\nWho doesn't like dogs?"
   debug friends !#dog
@@ -24,11 +24,11 @@ Instantiate task
   debug "\nWho is 21 or over?"
   debug friends having .age >= 21
   
-  debug "\nWho likes cats or dogs?"
-  debug friends having .cat or .dog
+  debug "\nWho lives in Quebec and likes cats or dogs?"
+  debug friends having (.province = 'QC') and (.cat or .dog)
   
   debug "\nUnder 21 and likes cats?"
-  debug friends #cat having .age < 21
+  debug friends #cat having .age < 21 
   
   debug "\nWho can rent a car?"
   set rentAge to: ON 25, QC 21
@@ -43,5 +43,31 @@ Instantiate task
     return row.age >= rentAge[row.province]
   debug friends filter CanRent
   
-    
+  debug "\n\nSorted names"
+  debug friends by .name
+  
+  debug "\nOldest to youngest"
+  debug friends by .age descending
+  
+  debug "\nLength of name, then age"
+  debug friends by .name.length by .age
+  
+  debug "\nOldest friend"
+  debug friends highest .age
+  
+  debug "\nYoungest cat-loving friend in Ontario"
+  debug friends #cat lowest .age
+  
+  debug "\nAges by province (code block)"
+  debug friends sort
+    return a.province <=> b.province or a.age <=> b.age
+  
+  debug "\nAges by province (named task)"
+  set ProvinceAge to task as a, b
+    return a.province <=> b.province or a.age <=> b.age
+  debug friends sort ProvinceAge
+  
+  
+  
+  
   

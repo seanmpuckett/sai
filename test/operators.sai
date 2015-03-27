@@ -81,11 +81,11 @@ Execute task
   @Test '!=', task
     return (1 != 0) 
 
-  @Match 'min', 2, task
-    return 2 min 3
+  @Match '?<', 2, task
+    return 2 ?< 3
 
-  @Match 'max', 3, task
-    return 2 max 3
+  @Match '?>', 3, task
+    return 2 ?> 3
 
   @Test 'is undef', task
     return undefined is undefined

@@ -174,8 +174,8 @@
     xor: '^1 = $.__xor(^1,^2)',  // test 'self xor'
     nand: '^1 = (!((^1)&&(^2)))', // test 'self nand'
 
-    max: '^1 = Math.max(^1,^2)', // test 'self max'
-    min: '^1 = Math.min(^1,^2)', // test 'self min'
+    '?>': '^1 = Math.max(^1,^2)', // test 'self ?>'
+    '?<': '^1 = Math.min(^1,^2)', // test 'self ?<'
     
     via: '^1 = ^2(^1)', // test 'self via'
     update: '$.__merge(^1,^2)', // test 'self update'
@@ -646,7 +646,7 @@ Itselfop // test 'self*'
  / '**' / '*' / '/' / '%'  
  / ANDB / ORB / XORB
  / AND / OR / XOR / NAND
- / MIN / MAX
+ / '?>' / '?<'
  / UPDATE / DELETE
  / VIA / DEFAULT
 
@@ -865,6 +865,7 @@ It
  = IT Sep { return [['it','']] }
  / KEY Sep { return [['key','']]}
  / TRIAL Sep { return [['trial','']]}
+ / RESULT Sep { return [['result','']]}
  / SELF Sep { return [['self','']]}
  / ERROR Sep { return [['error','']]}
 
@@ -1095,7 +1096,11 @@ SortComprehension
   }
 
 MapComprehension
- = _ MAP _ o:IterateOutput? b:Block _ {
+ = _ THRU _ x:Logical _ {
+     var block=resolveVars('function(@this@,@key@){ return '+x+'}',{this:'$_v',key:'$_k'});
+     return ['$.__map(' , ','+block+')']; 
+  }
+ / _ MAP _ o:IterateOutput? b:Block _ {
      var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['$.__map(' , ','+block+')']; 
   }
@@ -1104,6 +1109,10 @@ MapComprehension
   }
 
 ReduceComprehension
+// = GATHER _ b:Logical _ {
+//    var block=resolveVars('function(@result@,@this@,@key@){ return '+b+'; //}',{result:'$_r',this:'$_v',key:'$_k'});
+//    return ['$.__reduce(' , ','+block+')' ];
+//  }
  = _ REDUCE _ into:IntoClause? o:IterateOutput? b:Block _ {
     if (!o) o=[];
     if (!o[0]) o[0]='$result';
@@ -1212,8 +1221,8 @@ Criteria
  = HAVING _ v:Logical _ { return ['having',v] }
 
 Sequence
- = ORDER _ v:Logical d:SortDirection? _ { return ['by',[v,d?d:1]] }
- / ORDER _ d:SortDirection? _ { return ['by',[null,d?d:1]] }
+ = BY _ v:Logical d:SortDirection? _ { return ['by',[v,d?d:1]] }
+ / BY _ d:SortDirection? _ { return ['by',[null,d?d:1]] }
  / HIGHEST _ v:Logical _ { return ['by',[v,-1],'limit',{extract:true,sort:1}]}
  / LOWEST _ v:Logical _ { return ['by',[v,1],'limit',{extract:true,sort:1}]}
 
@@ -1246,8 +1255,8 @@ LogicalOp
  / OR Sep { return '||' } // test 'or'
  
 Comparison
- = l:Addition _ o:ComparisonOp _ r:Comparison { return '('+l+o+r+')' }
- / l:Addition _ o:MathOp _ r:Comparison { return o+'('+l+','+r+')' }
+ = l:Addition _ o:MathOp _ r:Comparison { return o+'('+l+','+r+')' }
+ / l:Addition _ o:ComparisonOp _ r:Comparison { return '('+l+o+r+')' }
  / v:Addition _ { return v }
  
 ComparisonOp
@@ -1260,10 +1269,13 @@ ComparisonOp
   / '<' { return '<' } // test '<'
   / '!=' { return '!=' } // test '!='
 
-MathOp
- = MAX { return 'Math.max' } // test 'max'
- / MIN { return 'Math.min' } // test 'min'
 
+MathOp
+ = '?>' { return 'Math.max' } // test '?>'
+ / '?<' { return 'Math.min' } // test '?<'
+ / '<=>' { return '$.__compare' } 
+
+   
    
 Addition
  = l:Multiplication _ o:AdditionOp _ r:Addition { return '('+l+o+r+')' }
@@ -1532,6 +1544,7 @@ ReservedWords
  / ASCENDING / ASC
  / BLANK
  / BREAK
+ / BY
  / CASE
  / CHAIN
  / CREATE
@@ -1553,6 +1566,7 @@ ReservedWords
  / FIRST 
  / FOR
  / FROM
+ / GATHER
  / GET
  / GE
  / GT
@@ -1576,8 +1590,6 @@ ReservedWords
  / LOWEST 
  / LT
  / MAP
- / MAX
- / MIN
  / NAND
  / NEW
  / NE
@@ -1587,12 +1599,12 @@ ReservedWords
  / OBJECT
  / OPTIONAL
  / ORB
- / ORDER
  / OR
  / OVERLAY
  / PLY
  / PROMISE
  / REDUCE
+ / RESULT
  / SELECT
  / SELF
  / SORT
@@ -1600,6 +1612,7 @@ ReservedWords
  / TASK
  / TRIAL
  / THROW
+ / THRU
  / TO
  / TRAITS
  / TRUE
@@ -1622,6 +1635,7 @@ ASC = 'asc'i
 ASCENDING = 'ascending'i
 BLANK = 'blank'i
 BREAK = 'break'i
+BY = 'by'i
 CASE = 'case'i
 CATCH = 'catch'i
 CHAIN = 'chain'i
@@ -1649,6 +1663,7 @@ FILTER = 'filter'i
 FIRST = 'first'i
 FOR = 'for'i
 FROM = 'from'i
+GATHER = 'gather'i
 GE = 'ge'i 
 GET = 'get'i
 GIVEN = 'given'i
@@ -1674,8 +1689,6 @@ LOCAL = 'local'i
 LOWEST = 'lowest'i
 LT = 'lt'i
 MAP = 'map'i
-MAX = 'max'i
-MIN = 'min'i
 NAND = 'nand'i
 NE = 'ne'i
 NEW = 'new'i
@@ -1686,7 +1699,6 @@ OBJECT = 'object'i
 ON  = 'on'i 
 OPTIONAL = 'optional'i
 OR = 'or'i
-ORDER = 'order'i
 ORB = 'orb'i
 OVERLAY = 'overlay'i
 TRUE = 'true'i
@@ -1695,6 +1707,7 @@ PLY = 'ply'i
 PROMISE = 'promise'i
 REDUCE = 'reduce'i
 RESOLVE = 'resolve'i
+RESULT = 'result'i
 REJECT = 'reject'i
 REFERENCE = 'reference'i
 RETURN = 'return'i
@@ -1706,6 +1719,7 @@ SUPER = 'super'i
 SWITCH = 'switch'i
 TASK = 'task'i
 THROW = 'throw'i
+THRU = 'thru'i
 TRAITS = 'traits'i
 TRIAL = 'trial'i
 TRY = 'try'i

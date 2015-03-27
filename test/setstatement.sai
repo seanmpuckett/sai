@@ -91,14 +91,14 @@ Execute task
     set a nand false
     return a
     
-  @Match 'self min', 5, task
+  @Match 'self ?<', 5, task
     set a to 7
-    set a min 5
+    set a ?< 5
     return a
 
-  @Match 'self max', 5, task
+  @Match 'self ?>', 5, task
     set a to 3
-    set a max 5
+    set a ?> 5
     return a
     
   @Match 'self via', 3, task

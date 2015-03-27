@@ -129,6 +129,12 @@ SAI.prototype.__xor = function(a,b) { // test 'xor'
   return a?(b?false:a):(b?b:false);
 }
 
+SAI.prototype.__compare = function(a,b) { 
+  if (a<b) return -1;
+  if (a>b) return 1;
+  return 0;
+}
+
 SAI.prototype.__keys = function(a) {
   var result=[];
   if (Array.isArray(a)) { // test 'keys list'
@@ -321,7 +327,7 @@ SAI.getParser = function() {
       return false;
     }
     parser=Beautify(parser,{ indent_size: 2, preserve_newlines: false});
-    //console.log(parser);
+    console.log(parser);
     return parser;
   }
 }();
