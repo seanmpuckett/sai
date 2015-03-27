@@ -903,7 +903,7 @@ Property
  / '@' { return [['this','']] }
 
 SimpleTerm
- = It/Local/Parameter/Property
+ = It/Local/Parameter/Property/Root
  / v:Number { return [['literal',v]] }
 
 // DEFINITIONS
@@ -1206,6 +1206,7 @@ Limit
  
 Quality
  = HASH v:Keyword _ { return ['quality', 'obj["'+v+'"]'] }
+ / BANG HASH v:Keyword _ { return ['quality', '(!obj["'+v+'"])'] }
 
 Criteria
  = HAVING _ v:Logical _ { return ['having',v] }
@@ -1447,14 +1448,19 @@ PositiveInteger
  = v:[0-9]+ { return parseInt(v.join('')) } 
 
 SimpleStringLiteral
- = '\'' v:(EscapedChar/StringChar)* '\'' { return assembleLiteral(v) }
+ = '\'' v:(EscapedChar/StringTickChar)* '\'' { return assembleLiteral(v) }
+ / '\"' v:(EscapedChar/StringQuoteChar)* '\"' { return assembleLiteral(v) }
  
 StringLiteral
  = MultiString
- / '\'' v:(EscapedChar/StringTemplate/StringChar)* '\'' { return assembleLiteral(v) }
+ / '\'' v:(EscapedChar/StringTemplate/StringTickChar)* '\'' { return assembleLiteral(v) }
+ / '\"' v:(EscapedChar/StringTemplate/StringQuoteChar)* '\"' { return assembleLiteral(v) }
  
-StringChar
+StringTickChar
  = v:[^\'\n] { return [true,v] }
+
+StringQuoteChar
+ = v:[^\"\n] { return [true,v] }
 
 MultiString
  = "'''" _ EOLs INDENT EOLs v:(Bareline)* DEDENT &EOLs { return v.join("+'\\n'+") } 

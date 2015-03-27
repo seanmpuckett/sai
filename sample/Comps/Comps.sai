@@ -1,0 +1,47 @@
+
+object Comps 1.0.0
+Instantiate task
+
+  set friends to list
+   :name 'Sara', age 23, #cat, province 'ON'
+   :name 'John', age 19, #cat, #dog, province 'ON'
+   :name 'Ellie', age 22, province 'QC'
+   :name 'Marshal', age 21, #dog, province 'QC'
+   :name 'Doug', age 18, province 'ON'
+   :name 'Ann', age 23, #cat, province 'QC'
+   :name 'Harry', age 31, province 'QC'
+   :name 'Jenna', age 28, #dog, province 'ON'
+
+  debug "\nWho likes cats?"
+  debug friends #cat
+
+  debug "\nWho doesn't like dogs?"
+  debug friends !#dog
+  
+  debug "\nWho likes both?"
+  debug friends #dog #cat
+  
+  debug "\nWho is 21 or over?"
+  debug friends having .age >= 21
+  
+  debug "\nWho likes cats or dogs?"
+  debug friends having .cat or .dog
+  
+  debug "\nUnder 21 and likes cats?"
+  debug friends #cat having .age < 21
+  
+  debug "\nWho can rent a car?"
+  set rentAge to: ON 25, QC 21
+  debug friends having .age >= rentAge[.province]
+  
+  debug "\nWho can rent a car? (code block)"
+  debug friends filter
+    return .age >= rentAge[.province]
+
+  debug "\nWho can rent a car (named task)"
+  set CanRent to task as row
+    return row.age >= rentAge[row.province]
+  debug friends filter CanRent
+  
+    
+  

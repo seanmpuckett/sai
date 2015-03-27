@@ -1,6 +1,6 @@
-# Basics
+## Hello Basics
 
-Here are some typical small programs rendered in SAI. All are coded within the NodeJS ecosystem.
+Here are some small programs rendered in SAI. All are coded within the NodeJS ecosystem.
 
 
 ### Hello, World!
@@ -35,7 +35,7 @@ Let’s have a look, line by line.
 
 	object HelloWorld 0.1.0
 
-SAI is an object-oriented language, and in order to execute any code at all, you must create an object that contains and defines it. SAI object definitions are saved as plain text files with the extension __.sai__, and each file defines one (and only one) object.  
+SAI is an object-oriented language, and in order to execute any code at all, you must create an object that contains and defines that code. SAI object definitions are saved as plain text files with the extension __.sai__, and each file defines one (and only one) object.  
 
 Objects must have formal names that describe what kind of object it is, and should have version numbers (_SemVer_ numbers, to be specific). 
 
@@ -45,26 +45,28 @@ So, in the first line, we define an object called _HelloWorld_ and give it the v
 
 When an object is instantiated -- when memory is allocated for an instance that object -- the first thing that object does after setting up its traits is call its own __Instantiate__ task. One could think of Instantiate as a constructor, but the formal object construction happens behind the scenes. Instantiate takes place after everything is ready.
 
+_Note: object verbs/tasks/methods should properly be capitalized in order to differentiate them from object fields/traits/properties. While this differs from JS’s traditional coding style, it does make code clearer, and clarity trumps tradition._
+
 The keyword __task__ is essentially equivalent to JS's __function__ in that it is used to define a chunk of code that can be called. In this example we don't have any parameters to our object's __Instantiate__, so no parameters are described after __task__.
 
 	    debug 'Hello, World!'
  
-Because indent whitespace is semantically significant in SAI, braces are not needed. Instead, the code that forms the body of the task is indented by one or more spaces (two preferred).
+Because indent whitespace is semantically significant in SAI, braces are not needed. Instead, the code that forms the body of the task is indented by one or more spaces (two spaces per level of indent is preferred).
 
-__debug__ is a task; a built-in function that puts a line of text on the output console. In SAI, all lines of code begin with a verb directing some action to take place. Because of this consistency, parentheses are typically not needed where it is clear they are not needed (however, they can be used at will).  
+__debug__ is a verb; a built-in code function that puts a line of text on the output console. In SAI, all lines of code begin with a verb directing some action to take place. Because of this consistency, parentheses around parameters are typically not needed for simple expressions (however, they can be used at will).  
 
-Because line endings are also significant, it is not necessary to signify the end of a line of code with a semi-colon or other indicator. So this line of code is functionally equivalent to debug('Hello, World!');
+Because line endings are also significant in SAI, it is not necessary to signify the end of a line of code with a semi-colon or other indicator. So this line of code is functionally equivalent to `debug('Hello, World!');`.
 
-SAI discourages complex run-on code by making multi-line statements difficult (but not impossible), except in specific instances where clarity can instead be encouraged through using multiple-lines.
+SAI discourages complex run-on code by making multi-line statements difficult (but not impossible), except in specific instances where clarity can instead be encouraged through using multiple lines.
 
 And that's a simple three line example of a trivial yet functional SAI object that with source code that contains only words, white space and common punctuation. 
 
-In general, SAI code does not become too much more symbol-laden. However, four symbols in particular are very important as a means of asserting variable scope, and we’ll introduce two of them in the next example.
+In general, SAI code does not become too much more symbol-laden. However, four symbols in particular are very important as a means of asserting variable scope, and we’ll introduce three of them in the next example.
 
 
-### Hello, World HTTP
+### Hello HTTP
 
-Keep in mind, however, that SAI isn't a new environment, it's just a new way of creating programs in the old one. This sample shows bringing up a trivial HTTP server in node using express.
+Keep in mind that SAI isn't a new environment, it's just a new way of creating programs in the old one. This sample shows bringing up a trivial HTTP server in node using express.
 
 We'll omit the __index.js__ in these future examples; it looks just like the one above though requiring a different SAI object each time. Just remember: all it does is require the SAI framework, specify what directory SAI objects are found in, then instantiates a single object. That object takes it all from there.
 
@@ -83,7 +85,7 @@ We'll omit the __index.js__ in these future examples; it looks just like the one
 	
 	  set @server from @app.listen 3000, 'localhost', task
 	    with @server.address()
-	      debug 'Example app listening at http://{.address}:{.port}'       
+	      debug 'Example app listening at http://${.address}:${.port}'       
   
 On my system, this prints
   
@@ -101,11 +103,11 @@ References are global variables. They should only be used for __require__ and fo
 
 	  express from require 'express'
 
-The first term in fields definition is the field name, in this case __express__. Everything after that term is an expression that provides the value of the field, in this case `from require 'express'`. 
+The first term in a field definition is the field name, in this case `express`. Everything after that term is an expression that provides the value of the field, in this case `from require 'express'`. 
 
-Here, __require__ is the same require function provided by Node. If a verb isn't at the beginning of a line, we can invoke it one of two ways, with `from` as shown here, or by using parenthesis immediately following it as one would in Javascript: `require('express')`. Because SAI seeks to reduce the need for symbology and encourages readability, __from__ is the preferred form. 
+Here, `require` is the same require function provided by Node. If a verb isn't at the beginning of a line, we can invoke it one of two ways, as in `from require 'express'`, or by using parenthesis immediately following it as one would in Javascript: `require('express')`. Because SAI seeks to reduce the need for symbology and encourages readability, __from__ is the preferred form. (By putting `from` _in front_ of the verb, it is more clear when one is reading source that a verb is being invoked, rather than a value being referenced.)
 
-All references must be declared before any objects are defined.
+All references must be declared before any objects are defined, and now that that’s done we can continue.
 
 	object HelloHTTP 1.0.0
 	Instantiate task
@@ -118,7 +120,7 @@ This line introduces two of the four major _scoping prefixes_ used in SAI.
 
 It also introduces the __set__ verb, which is how one assigns values in code. In SAI, one does not use the equals sign __=__ for assignment. Equals is _only used in comparisons_. 
 
-The first scoping prefix used here is the at sign __@__, which translates directly in Javascript to `this.`.  Variables prefixed with @ always belong to the instance of the object that is running the current code. You also use the @ to refer to code functions that are attached to an object.  (If __@__ appears by itself, it translates to `this` by itself.)
+The first scoping prefix used here is the at sign __@__, which translates directly in Javascript to `this.`.  Variables prefixed with @ always belong to the instance of the object that is running the current code. You also use the @ prefix to refer to tasks that are attached to an object.  (If __@__ appears by itself, it translates to `this` by itself.)
 
 The other prefix is the tildis __\~__ which is always used to indicate a global variable or function. A good mnemonic for the global scope prefix is to think of the variable as just waving in the wind \~\~\~\~ it's unattached to anything.
 
@@ -140,15 +142,15 @@ Another easy to parse line, we're setting the object variable __server__ to the 
 	    with @server.address()
 	      debug 'Example app listening at http://${.address}:${.port}'       
 
-SAI, like Javascript, has a __with__ keyword, but they do not work the same way. Javascript's __with__ is mysterious and dangerous, and can dramatically slow down your code, because what it does is inobvious. SAI fixes the problems of JS's __with__ and in so doing allows your code to be shorter and clearer.
+SAI, like Javascript, has a __with__ keyword, but they do not work the same way. Javascript's __with__ is mysterious and dangerous, and can dramatically slow down your code because what it does is inobvious. SAI fixes the problems of JS's __with__ and in so doing allows your code to be shorter and clearer.
 
-SAI's __with__ takes the value of the expression following, and for the indented code block that follows, makes it available with the third scoping prefix; the dot __.__.  A dot with nothing before it is a shorthand way of referring to, quite literally, __it__.  In English, _it_ is used as a shorthand to help us avoid repeating the same nouns over and over, and in SAI grammatical shorthands like the dot prefix are used extensively in exactly the same way.
+SAI's __with__ takes the value of the expression following, and for the indented code block that follows, makes it available with the third scoping prefix; the dot __.__.  A dot with nothing before it is a shorthand way of referring to, quite literally, __it__.  In English, _it_ is used as a shorthand to help us avoid repeating the same nouns over and over, and in SAI grammatical shorthands like the dot prefix are used in the same way.
 
 In the `debug` line, notice that the string enclosed within quotes uses the EcmaScript 6 string composition operator __${ _expression_ }__ to embed the server's listening address and port, which are specified using the dot scoping prefix. If we weren't using string composition or the `with` shortcut, that statement would look more like this:
 
 	debug 'Example app listening at http://' + @server.address().address + ':' + @server.address().port
 
-Using `with` that becomes the less repetitive:
+Using `with`, that becomes the less repetitive:
 
 	with @server.address()
 	  debug 'Example app listening at http://' + .address + ':' + .port
@@ -159,3 +161,5 @@ And with string composition as in the example, it's very nice and tidy.
 	  debug 'Example app listening at http://${.address}:${.port}'       
 
 You’re not forced to use `with` or string composition. But they do make code clearer and shorter, reduce the possibility of mistakes and make reviews simpler. That’s what I mean by _affordances_. 
+
+
