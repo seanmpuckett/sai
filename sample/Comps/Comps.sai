@@ -22,6 +22,9 @@ Instantiate task
   debug friends #dog #cat
   
   debug "\nWho is 21 or over?"
+  debug friends having .cat or .dog
+  
+  debug "\nWho is 21 or over?"
   debug friends having .age >= 21
   
   debug "\nWho lives in Quebec and likes cats or dogs?"
@@ -69,6 +72,9 @@ Instantiate task
   
   debug "\n\nJust the names in alpha order"
   debug friends by .name thru .name
+  
+  debug "\n\nJust the names in alpha order (alternate)"
+  debug friends thru .name by .
   
   debug "\nSummary of cat-fanciers"
   debug friends #cat thru '${.name} (${.age}), lives in ${.province}'

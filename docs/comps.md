@@ -4,8 +4,7 @@ SAI's began as an AI scripting language for a role-playing game. As such, the la
 
 _Comprehensions_ are a way of operating on a list or set of traits as a whole. In Javascript, familiar comprehensions are `.map`, `.filter` and `.sort`. SAI doesn’t introduce any particularly new comprehensions in terms of functionality, but it does afford their use in a clearer, more concise way.
 
-_Note: comprehensions _do not modify_ lists they are applied to. Invariably, they return a new list (or other data type). If you want a comprehension to replace the list it is applied to, you’ll need to specifically make that assignment yourself._
-
+_Note: comprehensions __do not modify_ lists they are applied to. Invariably, they return a new list (or other data type). If you want a comprehension to replace the list it is applied to, you’ll need to specifically make that assignment yourself._ 
 We’ll be working with the following set of data to make our examples clearer.
 
 	set friends to list
@@ -20,7 +19,7 @@ We’ll be working with the following set of data to make our examples clearer.
 
 _Note: the `#tag` syntax in a fields constructor creates a field with the given name and a value of true, e.g. `#cat` is equivalent to `cat true`. _
 
-All of the examples below appear in the `Comps` sample.  I’m not going to show you the results of the run; just run the sample and see the results for yourself.
+All of the examples below appear in the `Comps` sample.  I’m not going to show the results here; just run the sample and see for yourself.
 
 ### Filtration
 
@@ -36,20 +35,26 @@ Filtration comprehensions test each element of a list and return a new list made
 
 	friends !#dog
 
-**Who likes both?**
+**Who likes cats and dogs?**
 
 	friends #dog #cat
 
-_Note: tag comprehensions do not support logical OR. You can, however, use the filter-by-expression variant to create an expression with OR and many other logical operators._
+_Note: multiple-tag comprehensions are tested with a logical **and**; all conditions must be fulfilled for the row to be included in the result.
 
 #### HAVING
 
-The comprehension operator **having** indicates an expression based filter using the **it** magical value to represent the item currently under examination. Since **it** is in use, the **dot** scoping prefix is also active within the expression for easy access to fields within the item. In the first example below, both lines produce the same code and result.
+The comprehension operator **having** indicates an expression based filter using the **it** _magical value_ to represent the item currently under examination. 
+
+Since **it** is in play, the associated **dot** scoping prefix is also active within the expression for easy access to fields within the item. In the first example below, both lines produce the same code and result. 
 
 **Who is 21 or over?**
 
 	friends having it.age >= 21
 	friends having .age >= 21
+
+**Who likes cats or dogs?**
+
+	friends having .cat or .dog
  
 **Who lives in Quebec and likes cats or dogs?**
 
@@ -94,7 +99,7 @@ Keyword **filter** can reference a block of code directly, which makes the **it*
 
 SAI comprehensions also allow sorting through both the familiar Javascript `.sort` method as well as more succinct and expressive variations similar to those offered for filtration. 
 
-_Important note: unlike the `.sort` array method, neither  the**by** nor the **sort** operators modify the original array; they always produce a sorted copy. This ensures that variables used in comprehension expressions remain immutable. If you want to sort an array in place, use the `.sort` method.
+_Important note: unlike the `.sort` array method, neither  the **by** nor the **sort** operators modify the original array; they always produce a sorted copy. This ensures that variables used in comprehension expressions remain immutable. If you want to sort an array in place, use the `.sort` method._
 
 #### BY
 
@@ -161,6 +166,12 @@ The **thru** operator passes each value in a collection “through” an express
 **Just the names in alpha order**
 
 	friends by .name thru .name
+
+**Just the names in alpha order (alternate)**
+
+	friends thru .name by .
+
+_Here we use **.** (dot) alone as a synonym for **it**. It’s there but you don’t have to use it (rimshot)._
 
 **Summary of cat-fanciers**
 
