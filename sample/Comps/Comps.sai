@@ -55,7 +55,7 @@ Instantiate task
   debug "\nOldest friend"
   debug friends highest .age
   
-  debug "\nYoungest cat-loving friend in Ontario"
+  debug "\nYoungest cat-loving friend"
   debug friends #cat lowest .age
   
   debug "\nAges by province (code block)"
@@ -67,7 +67,17 @@ Instantiate task
     return a.province <=> b.province or a.age <=> b.age
   debug friends sort ProvinceAge
   
+  debug "\n\nJust the names in alpha order"
+  debug friends by .name thru .name
   
-  
-  
+  debug "\nSummary of cat-fanciers"
+  debug friends #cat thru '${.name} (${.age}), lives in ${.province}'
+
+  debug "\nNumbered list of friends"
+  debug friends map
+    return '${key+1}) ${.name}'
+
+  debug "\nAll-caps names"
+  debug friends map
+    return it overlay: name from .name.toUpperCase
   

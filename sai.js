@@ -56,6 +56,8 @@ SAI.prototype.__sort = function(a,f) {
     } else {
       return a;
     }
+  } else {
+    a=_.clone(a);
   }
   return a.sort(f);
 };

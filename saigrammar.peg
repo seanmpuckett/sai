@@ -1149,6 +1149,7 @@ OtherComprehension
  = _ q:(Quality / Criteria / Sequence / Limit)+ _ 
  {
    var code='';
+   var needscopy=true;
    q=[].concat(q);
    var expr={quality:[],having:[],by:[],map:[],limit:[]};
    for (var i in q) { 
@@ -1167,6 +1168,7 @@ OtherComprehension
    }
    if (conds.length) {
      code+=resolveVars(t('.filter(function(obj){ return ^c; })',{c:conds.join(' && ')}),{this:'obj'});
+     needscopy=false;
    }
    if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
      code+='.reduce(function(a,b) { if (!a) return b; var aa,bb; ';
@@ -1180,6 +1182,7 @@ OtherComprehension
      code+=conds.join(' ')+'return a; },undefined)';
    } else {
      if (expr.by.length) {
+       if (needscopy) code+=".map(function(a){return a})";
        code+='.sort(function(a,b) { var aa,bb; ';
        var conds=expr.by.map(function(c){
          c[0]=c[0]||'@this@';

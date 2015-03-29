@@ -1,6 +1,6 @@
 ## Comprehensions
 
-SAI's began as an AI scripting language for a role-playing game. As such, the language evolved to deal in a succinct way with objects, lists, and decision making. It's extensive set of composable comprehensions reflects this.
+SAI's began as an AI scripting language for a role-playing game. As such, the language evolved to deal in a succinct way with objects, lists, and decision making. Its extensive set of composable comprehensions reflects this.
 
 _Comprehensions_ are a way of operating on a list or set of traits as a whole. In Javascript, familiar comprehensions are `.map`, `.filter` and `.sort`. SAI doesn’t introduce any particularly new comprehensions in terms of functionality, but it does afford their use in a clearer, more concise way.
 
@@ -20,7 +20,7 @@ We’ll be working with the following set of data to make our examples clearer.
 
 _Note: the `#tag` syntax in a fields constructor creates a field with the given name and a value of true, e.g. `#cat` is equivalent to `cat true`. _
 
-All of the examples below appear in the `Comps` sample.  I’m not going to show you the results of the run; just run the sample and see for yourself.
+All of the examples below appear in the `Comps` sample.  I’m not going to show you the results of the run; just run the sample and see the results for yourself.
 
 ### Filtration
 
@@ -94,9 +94,11 @@ Keyword **filter** can reference a block of code directly, which makes the **it*
 
 SAI comprehensions also allow sorting through both the familiar Javascript `.sort` method as well as more succinct and expressive variations similar to those offered for filtration. 
 
+_Important note: unlike the `.sort` array method, neither  the**by** nor the **sort** operators modify the original array; they always produce a sorted copy. This ensures that variables used in comprehension expressions remain immutable. If you want to sort an array in place, use the `.sort` method.
+
 #### BY
 
-Like the **having** operator, the **by** operator provides for sorting of array elements within an expression.
+Similarly to the way the **having** operator works for selecting elements in an expression, the **by** operator provides for sorting of elements.
 
 **By name**
 
@@ -120,7 +122,7 @@ The operators **highest** and **lowest** also sort by the provided expression, b
 
 	friends highest .age
 
-**Youngest cat-loving friend in Ontario**
+**Youngest cat-loving friend**
 
 	friends #cat lowest .age
 
@@ -146,13 +148,51 @@ The magic variables in play with **sort** are, as used in almost every textbook 
 	 
 	friends sort ProvinceAge
 
-_Note: as you might have guessed, **\<=\>** is a SAI-specific comparison operator useful for sorting numeric and string values. It returns -1 if the value to the left is less than the right, 1 if it is greater, and 0 if they’re equal. Because of the way the **or** operator shortcuts evaluation when it finds the first truthy value, you can compose multiple sort operators in this way without using **if** statements._
+_Note: as you might have guessed, **\<=\>** is a SAI-specific comparison operator useful for sorting numeric and string values. It returns -1 if the value to the left is less than the right, 1 if it is greater, and 0 if they’re equal. Because of the way the **or** operator shortcuts evaluation when it finds the first truthy value, you can string together multiple comparison operators without using **if** statements._
 
 ### Mapping
 
+Mapping offers a streamlined way of transforming values in a collection. Javascript offers the `.map` array method, while SAI extends this with the **thru** and **map** operators, making simple transformations fast to write, and complex ones easy to understand.
+
 #### THRU
 
+The **thru** operator passes each value in a collection “through” an expression. The result of the expression becomes the new value in a copy of the collection.
+
+**Just the names in alpha order**
+
+	friends by .name thru .name
+
+**Summary of cat-fanciers**
+
+	friends #cat thru '${.name}, age ${.age}, lives in ${.province}'
+
 #### MAP
+
+Like the **sort** and **filter** operators, **map** makes _magic variables_ available, eliminating redundant code.  Map provides **it** (which enables the dot scoping prefix), as well as the **key** variable, which holds the current index of the collection item under examination.
+
+**Numbered list of friends**
+
+	friends map
+	  return '${key+1}) ${.name}'
+
+**All-caps names**
+
+	friends map
+	 return it overlay: name from .name.toUpperCase
+
+I’ve sprung another new operator on you here: **overlay**. It’s not a comprehension but this is still a good place to introduce it.  Overlay makes a _shallow copy_ of the object on the left that has the values of the object on the right _overlaid_ on top. The new values will replace old ones, or add new ones if they didn’t exist before. In this example, overlay copies **it** then overlays the name field with a capitalized version of the original name.
+
+Without using overlay and just using the **copy** operator, the same functionality looks like this:
+
+	friends map
+	 set temp to copy it
+	 set temp.name from temp.name.toUpperCase
+	 return temp
+
+_Aside: if we wanted to all-caps the names in the `friends` list itself, rather than produce a new list with capitalized names as we have been doing thus leaving the source list unchanged, we could do it like this:_
+
+	ply friends
+	  set .name from .name.toUpperCase
 
 ### Reduction
 
