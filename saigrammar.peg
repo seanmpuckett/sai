@@ -171,15 +171,15 @@
 
     and: '^1 = ^1 && ^2', // test 'self and'
     or: '^1 = ^1 || ^2', // test 'self or'
-    xor: '^1 = $.__xor(^1,^2)',  // test 'self xor'
+    xor: '^1 = _$AI.xor(^1,^2)',  // test 'self xor'
     nand: '^1 = (!((^1)&&(^2)))', // test 'self nand'
 
     '?>': '^1 = Math.max(^1,^2)', // test 'self ?>'
     '?<': '^1 = Math.min(^1,^2)', // test 'self ?<'
     
     via: '^1 = ^2(^1)', // test 'self via'
-    update: '$.__merge(^1,^2)', // test 'self update'
-    delete: '$.__remove(^1,^2)', // test 'self delete*'
+    update: '_$AI.merge(^1,^2)', // test 'self update'
+    delete: '_$AI.remove(^1,^2)', // test 'self delete*'
     default: 'if (undefined===^1) ^1=^2' // test 'self default*'
   };
 
@@ -234,7 +234,7 @@
       var p='"'+x[i][0][1]+'":'+x[i][1];
       l.push(p);
     }
-    return '$.__expects(p,{'+l.join(',')+'},"'+functionname+'");\n';
+    return '_$AI.expects(p,{'+l.join(',')+'},"'+functionname+'");\n';
   }
   
   function TaskFormatter(v,k) {
@@ -1078,36 +1078,52 @@ ListQualify
  } 
 
 Comprehension
- = (MapComprehension / ReduceComprehension / FilterComprehension / SortComprehension / OtherComprehension)
+ = MapComprehension 
+ / ReduceComprehension 
+ / FilterComprehension 
+ / SortComprehension 
+ / KeysComprehension 
+ / ValuesComprehension
+ / OtherComprehension
 
+
+KeysComprehension
+ = _ KEYS {
+     return ['_$AI.keys(',')'];
+   }
+
+ValuesComprehension
+ = _ VALUES {
+     return ['_$AI.values(',')'];
+   }
 
 SortComprehension
  = _ SORT _ o:IterateOutput? b:Block _ {
     if (!o) o=['$a','$b'];
     var block=resolveVars('function('+o[0]+','+o[1]+'){'+b+'}');
-    return ['$.__sort(' , ','+block+')']; 
+    return ['_$AI.sort(' , ','+block+')']; 
   }
  / _ SORT _ x:Value _ {
-   return ['$.__sort(' , ','+x+')' ];
+   return ['_$AI.sort(' , ','+x+')' ];
   }
 
 MapComprehension
  = _ THRU _ x:Logical _ {
      var block=resolveVars('function(@this@,@key@){ return '+x+'}',{this:'$_v',key:'$_k'});
-     return ['$.__map(' , ','+block+')']; 
+     return ['_$AI.map(' , ','+block+')']; 
   }
  / _ MAP _ o:IterateOutput? b:Block _ {
      var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['$.__map(' , ','+block+')']; 
+     return ['_$AI.map(' , ','+block+')']; 
   }
  / _ MAP _ x:Value _ {
-   return ['$.__map(' , ','+x+')' ];
+   return ['_$AI.map(' , ','+x+')' ];
   }
 
 ReduceComprehension
 // = GATHER _ b:Logical _ {
 //    var block=resolveVars('function(@result@,@this@,@key@){ return '+b+'; //}',{result:'$_r',this:'$_v',key:'$_k'});
-//    return ['$.__reduce(' , ','+block+')' ];
+//    return ['_$AI.reduce(' , ','+block+')' ];
 //  }
  = _ REDUCE _ into:IntoClause? o:IterateOutput? b:Block _ {
     if (!o) o=[];
@@ -1117,26 +1133,26 @@ ReduceComprehension
     b+='return @accum@;\n';
     var block=resolveVars('function(@accum@,@this@,@key@){'+b+'}',{accum:o[0],this:o[1],key:o[2]});
     if (into===null) {
-      return ['$.__reduce(' , ','+block+')' ];
+      return ['_$AI.reduce(' , ','+block+')' ];
     } else {
-      return ['$.__reduce(' , ','+block+','+into+')' ];
+      return ['_$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
   / _ REDUCE _ into:IntoClause? _ x:Value _ {
     if (into===null) {
-      return ['$.__reduce(' , ','+x+')' ];
+      return ['_$AI.reduce(' , ','+x+')' ];
     } else {
-      return ['$.__reduce(' , ','+x+','+into+')' ];
+      return ['_$AI.reduce(' , ','+x+','+into+')' ];
     }
   }
 
 FilterComprehension
  = _ FILTER _ o:IterateOutput? b:Block _ {
      var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['$.__filter(' , ','+block+')']; 
+     return ['_$AI.filter(' , ','+block+')']; 
   }
   / _ FILTER  _ x:Value _ {
-    return ['$.__filter(' , ','+x+')' ];
+    return ['_$AI.filter(' , ','+x+')' ];
   }
 
 
@@ -1163,10 +1179,10 @@ OtherComprehension
      var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
    }
    if (conds.length) {
-     code=resolveVars(t('$.__filter(^v,function(obj){ return ^c; })',{v:code,c:conds.join(' && ')}),{this:'obj'});
+     code=resolveVars(t('_$AI.filter(^v,function(obj){ return ^c; })',{v:code,c:conds.join(' && ')}),{this:'obj'});
    }
    if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
-     code='$.__reduce('+code+',function(a,b) { if (!a) return b; var aa,bb; ';
+     code='_$AI.reduce('+code+',function(a,b) { if (!a) return b; var aa,bb; ';
      expr.by[0][1]*=expr.limit[0].sort; // flip sort if looking for "last"
      var conds=expr.by.map(function(c){
        c[0]=c[0]||'@this@';
@@ -1177,7 +1193,7 @@ OtherComprehension
      code+=conds.join(' ')+'return a; },undefined)';
    } else {
      if (expr.by.length) {
-       code='$.__sort('+code+',function(a,b) { var aa,bb; ';
+       code='_$AI.sort('+code+',function(a,b) { var aa,bb; ';
        var conds=expr.by.map(function(c){
          c[0]=c[0]||'@this@';
          var x1=resolveVars('aa='+c[0]+'; ',{this:'a'});
@@ -1190,13 +1206,13 @@ OtherComprehension
        var l=expr.limit[0];
        if (l.slice) {
          if (l.len) {
-           code='$.__slice('+code+','+l.start+','+l.len+')';
+           code='_$AI.slice('+code+','+l.start+','+l.len+')';
          } else {
-           code='$.__slice('+code+','+l.start+')';
+           code='_$AI.slice('+code+','+l.start+')';
          }
        }
        if (l.extract) { 
-         code+='$.__first('+code+')';
+         code+='_$AI.slice('+code+',0,1)';
        }
      }
    } 
@@ -1232,7 +1248,7 @@ SortDirection
 Logical
  = l:Comparison _ o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
  / l:Comparison _ VIA _ f:VerbValue { return '('+f[0]+f[1]+')('+l+')' } // test 'via'
- / c:Comparison _ XOR _ l:Logical  { return '($.__xor('+c+','+l+'))' } // test 'xor' 
+ / c:Comparison _ XOR _ l:Logical  { return '(_$AI.xor('+c+','+l+'))' } // test 'xor' 
  / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
  / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { 
      return t('((^c)?(^l):(^r))',{c:c,l:l,r:r}); 
@@ -1270,7 +1286,7 @@ ComparisonOp
 MathOp
  = '?>' { return 'Math.max' } // test '?>'
  / '?<' { return 'Math.min' } // test '?<'
- / '<=>' { return '$.__compare' } 
+ / '<=>' { return '_$AI.compare' } 
 
    
    
@@ -1289,10 +1305,10 @@ Multiplication
  = l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
  / l:Value _ '**' _ r:Multiplication { return 'Math.pow('+l+','+r+')' } // test '**'
  / l:Value _ OVERLAY Sep r:Multiplication { // test 'overlay *'
-   return '$.__overlay('+l+','+r+')' 
+   return '_$AI.overlay('+l+','+r+')' 
  }
  / l:Value _ SELECT Sep r:Multiplication { // test 'select *'
-   return '$.__select('+l+','+r+')' 
+   return '_$AI.select('+l+','+r+')' 
  }
  / v:Value _ { return v }
 
@@ -1306,11 +1322,11 @@ Value
  = '-' _ v:Value _ { return '(0-('+v+'))' } // test 'unary -'
  / NOTB Sep v:Value _ { return '(~('+v+'))' } // test 'unary binary not' 
  / NOT Sep v:Value _ { return '(!('+v+'))' } // test 'unary not'
- / NUMBER Sep v:Value { return '($.__number('+v+'))'; } // test 'number *'
+ / NUMBER Sep v:Value { return '(_$AI.number('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
- / COPY Sep v:Value _ { return '$.__copy('+v+')'; } // test 'copy'
- / KEYS Sep v:Value _ { return '($.__keys('+v+'))' } // test 'keys*'
- / VALUES Sep v:Value _ { return '($.__values('+v+'))' } // test 'values*'
+ / COPY Sep v:Value _ { return '_$AI.copy('+v+')'; } // test 'copy'
+ / KEYS Sep v:Value _ { return '(_$AI.keys('+v+'))' } // test 'keys*'
+ / VALUES Sep v:Value _ { return '(_$AI.values('+v+'))' } // test 'values*'
  / TASK Sep v:TaskClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
  / FROM Sep v:VerbSentence _ { return v }
@@ -1413,11 +1429,11 @@ NewObject
 // = NEW _ v:ClassName _ o:Parameters _ VerbTerminal { 
 //   var clause;
 //   if (o[0]=='list') clause=o[1].join(','); else clause=o[1];
-//   return '$.__new("'+v+'",'+clause+')'; 
+//   return '_$AI.new("'+v+'",'+clause+')'; 
 // }
 // /
  = CREATE _ v:Value _ o:ParameterList? _ VerbTerminal { 
-   return '$.__new('+v+',['+(o?o[1]:'undefined')+'])'; 
+   return '_$AI.new('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
  / NEW Sep _ v:Value _ o:ParameterList? _ VerbTerminal {
    return 'new '+v+'('+(o?o[1]:'undefined')+')'; 
@@ -1579,7 +1595,6 @@ ReservedWords
  / IS
  / IT
  / KEYS
- / KEY
  / LAST
  / LE
  / LIMIT

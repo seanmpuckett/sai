@@ -31,25 +31,12 @@ var isMergable=function(i) {
 }
 
 
-// MODULE INTERFACE
 
-var SAI = exports = module.exports = function() {
-  this.__tobelocked=[];
-  this.__tobefrozen=[];
-  this.__contracts=[];
-  this.__unverified=true;
-  this.isof=[];
-}
+/// TOOLKIT
 
+var _$AI = {}
 
-
-//////////////// PROTOTYPE
-
-SAI.prototype.sai = {
-  dirname:__dirname
-}
-
-SAI.prototype.__sort = function(a,f) {
+_$AI.sort=function(a,f) {
   if (_.isPlainObject(a)) { // test 'sort traits'
     a=_.values(a);
   } else if (!_.isArray(a)) { // test 'sort undef' 'sort value'
@@ -60,7 +47,7 @@ SAI.prototype.__sort = function(a,f) {
   return a.sort(f);
 };
 
-SAI.prototype.__map = function(a,f) {
+_$AI.map = function(a,f) {
   if (a===undefined) return undefined; // test 'map undef'
   if (_.isArray(a)) { // test 'map list'
     var r=[];
@@ -81,7 +68,7 @@ SAI.prototype.__map = function(a,f) {
   return f(a); // test 'map value'
 }
 
-SAI.prototype.__filter = function(a,f) {
+_$AI.filter = function(a,f) {
   if (a===undefined) return undefined; // test 'filter undef'
   if (_.isArray(a)) { // test 'filter list'
     var r=[];
@@ -101,7 +88,7 @@ SAI.prototype.__filter = function(a,f) {
   return f(a,undefined)?a:undefined; // test 'filter value*'
 }
 
-SAI.prototype.__reduce = function(a,f,accum) {
+_$AI.reduce = function(a,f,accum) {
   if (a===undefined) return undefined; // test 'reduce undef'
   if (_.isPlainObject(a)) { // test 'reduce traits*'
     if (undefined===accum) {
@@ -133,9 +120,18 @@ SAI.prototype.__reduce = function(a,f,accum) {
   return accum;
 }
 
-SAI.prototype.__copy = _.clone;
+_$AI.slice = function(a,start,count) {
+  if (a===undefined) return undefined; 
+  if (_.isArray(a)) return a.slice(start,count);
+  if (_.isPlainObject(a)) throw new Error("Cannot use LIMIT/FIRST/LAST on traits.");
+  if (start==0 && (count===undefined || end>0)) return a;
+  if (start==-1 && (count===undefined || count<0)) return a;
+  return undefined;
+}
 
-SAI.prototype.__overlay = function(l,r) { // test 'overlay'
+_$AI.copy = _.clone;
+
+_$AI.overlay = function(l,r) { // test 'overlay'
   if (!isMergable(l)) throw new Error("Attempt to OVERLAY onto something that's not a list or traits.");
   if (!isMergable(r)) throw new Error("Attempt to OVERLAY wih something that's not a list or traits.");
   var result=l?_.clone(l):{};
@@ -147,7 +143,7 @@ SAI.prototype.__overlay = function(l,r) { // test 'overlay'
 }
 
 // get traits of the elements of src enumerated by keys
-SAI.prototype.__select = function(src,keys) {
+_$AI.select = function(src,keys) {
   if (!isMergable(src)) throw new Error("Attempt to SELECT with something that's not a list or traits.");
   var result={};
   if (!isMergable(keys)) { // test 'select value'
@@ -161,7 +157,7 @@ SAI.prototype.__select = function(src,keys) {
   return result;
 }
 
-SAI.prototype.__merge = function(dest,keys) {
+_$AI.merge = function(dest,keys) {
   if (!isMergable(dest)) throw new Error("Attempt to MERGE into something that's not a list or traits.");
   if (!isMergable(keys)) throw new Error("Attempt to MERGE from something that's not a list or traits.");
   for (i in keys) {
@@ -169,7 +165,7 @@ SAI.prototype.__merge = function(dest,keys) {
   }
 }
 
-SAI.prototype.__remove = function(dest,keys) {
+_$AI.remove = function(dest,keys) {
   if (!isObject(dest)) throw new Error("Attempt to REMOVE from something that's not traits.");
   if (!isMergable(keys)) {
     delete dest[keys];
@@ -180,7 +176,7 @@ SAI.prototype.__remove = function(dest,keys) {
   }
 }
 
-SAI.prototype.__deepFreeze = function(o) {
+_$AI.deepFreeze = function(o) {
   var prop, propKey;
   Object.freeze(o); // First freeze the object.
   for (propKey in o) {
@@ -188,21 +184,21 @@ SAI.prototype.__deepFreeze = function(o) {
     if (!o.hasOwnProperty(propKey) || !(typeof prop === 'object') || Object.isFrozen(prop)) {
       continue;
     }
-    this.__deepFreeze(prop); // Recursively call deepFreeze.
+    _$AI.__deepFreeze(prop); // Recursively call deepFreeze.
   }
 }
 
-SAI.prototype.__xor = function(a,b) { // test 'xor'
+_$AI.xor = function(a,b) { // test 'xor'
   return a?(b?false:a):(b?b:false);
 }
 
-SAI.prototype.__compare = function(a,b) { 
+_$AI.compare = function(a,b) { 
   if (a<b) return -1;
   if (a>b) return 1;
   return 0;
 }
 
-SAI.prototype.__keys = function(a) {
+_$AI.keys = function(a) {
   var result=[];
   if (Array.isArray(a)) { // test 'keys list'
     var len=a.length;
@@ -216,7 +212,7 @@ SAI.prototype.__keys = function(a) {
   return result;
 }
 
-SAI.prototype.__values = function(a) {
+_$AI.values = function(a) {
   var result=[];
   if (Array.isArray(a)) { // test 'values list'
     var len=a.length;
@@ -232,26 +228,22 @@ SAI.prototype.__values = function(a) {
   return result;
 }
 
-SAI.prototype.__new = function(cls,parm) {
+_$AI.new = function(cls,parm) {
   return SAI.create(cls,parm);  
 }
 
-SAI.prototype.__newerror = function(line,file,parameters) {
+_$AI.newerror = function(line,file,parameters) {
   var e = new Error(parameters.message,file,line);
   for (var i in parameters) e[i]=parameters[i];
   return e;
 }
 
-SAI.prototype.__number = function(x) {
+_$AI.number = function(x) {
   var n=parseFloat(x);
   return isNaN(n)?0:n;
 }
 
-SAI.prototype.__expects = function(params,prototype,name) {
-  //console.log("EXPECTS");
-  //console.log(params);
-  //console.log(prototype);
-  //console.log(name);
+_$AI.expects = function(params,prototype,name) {
   for (var j in prototype) {
     type=prototype[j];
     if (j==='_root') {
@@ -283,6 +275,25 @@ SAI.prototype.__expects = function(params,prototype,name) {
       }
     }
   }
+}
+
+
+
+
+
+
+//////////////// PROTOTYPE
+
+var SAI = exports = module.exports = function() {
+  this.__tobelocked=[];
+  this.__tobefrozen=[];
+  this.__contracts=[];
+  this.__unverified=true;
+  this.isof=[];
+}
+
+SAI.prototype.sai = { // wtf why is this
+  dirname:__dirname
 }
 
 
@@ -425,7 +436,7 @@ getProtogen = function(name) {
     var source=SAI.getParser(raw);
     source='var __filename="'+filename+'";\n'+source;
     //console.log(source);
-    protogen=new Function('prototype','options','require',source);
+    protogen=new Function('prototype','options','require','_$AI',source);
     if (!protogen) {
       throw new Error("ERROR IN SAI CODE "+name);
       process.exit();
@@ -458,7 +469,7 @@ var getPrototype = function(name,bindings) {
         nodupes[leaf]=true;
         var obj=new SAI(name); 
         var protogen=getProtogen(leaf);
-        protogen(obj,{name:leaf},require); 
+        protogen(obj,{name:leaf},require,_$AI); 
         obj.Constructor();
         if (!obj.isa) {
           throw new Error("Object defined by "+name+" does not have an 'isa' type identifier in its manifest.")
@@ -479,7 +490,7 @@ var getPrototype = function(name,bindings) {
     for (var i in ancestors) {
       var parent=ancestors[i];
       var protogen=getProtogen(parent);
-      protogen(proto,{name:parent},require);
+      protogen(proto,{name:parent},require,_$AI);
     }
     Object.defineProperty(proto,"isa",{enumerable: true, value:proto.isa}); // lock it down
     if (SAIisa[proto.isa]) {

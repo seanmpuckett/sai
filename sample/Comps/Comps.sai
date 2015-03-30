@@ -10,7 +10,7 @@ Instantiate task
    :name 'Sara', age 23, #cat, province 'ON'
    :name 'John', age 19, #cat, #dog, province 'ON'
    :name 'Ellie', age 22, province 'QC'
-   :name 'Marshal', age 21, #dog, province 'QC'
+   :name 'Marshal', age 21, #dog, province 'ON'
    :name 'Doug', age 18, province 'ON'
    :name 'Ann', age 23, #cat, province 'QC'
    :name 'Harry', age 31, province 'QC'
@@ -92,7 +92,10 @@ Instantiate task
     return it overlay: name from .name.toUpperCase
   
   debug "\n\nHow many friends live in each province?"
-  debug friends reduce into blank
-    set accum[.province] to (self default 0) + 1
-
+  debug chain friends 
+    reduce into blank
+      set accum[.province] to (self default 0) + 1
+      
+      
+    
 

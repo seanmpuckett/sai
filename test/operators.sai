@@ -104,36 +104,68 @@ Execute task
     set c to copy a
     return (a is b) and (a isnt c) and (c.d=1) and (c.e=2)
     
-  @Test 'keys undefined', task
+  @Test 'keys comp undefined', task
+    set a to undefined keys
+    return ~Array.isArray(a) and (a.length = 0)
+  
+  @Test 'keys comp value', task 
+    set a to 1 keys
+    return ~Array.isArray(a) and (a.length=0)
+  
+  @Test 'keys comp list', task 
+    set a to: 1, 2; keys
+    return ~Array.isArray(a) and (a.length=2) and (a|0=0) and (a|1=1)
+    
+  @Test 'keys comp traits', task
+    set a to: a 1, b 2; keys
+    return ~Array.isArray(a) and (a.length=2) and (a|0='a') and (a|1='b')
+    
+  @Test 'keys unary undefined', task
     set a to keys undefined
     return ~Array.isArray(a) and (a.length = 0)
   
-  @Test 'keys value', task 
+  @Test 'keys unary value', task 
     set a to keys 1
     return ~Array.isArray(a) and (a.length=0)
   
-  @Test 'keys list', task 
-    set a to keys list 1, 2
+  @Test 'keys unary list', task 
+    set a to keys: 1, 2
     return ~Array.isArray(a) and (a.length=2) and (a|0=0) and (a|1=1)
     
-  @Test 'keys traits', task
-    set a to keys traits a 1, b 2
+  @Test 'keys unary traits', task
+    set a to keys: a 1, b 2
     return ~Array.isArray(a) and (a.length=2) and (a|0='a') and (a|1='b')
     
-  @Test 'values undefined', task
+  @Test 'values comp undefined', task
+    set a to undefined values
+    return ~Array.isArray(a) and (a.length is 0)
+    
+  @Test 'values comp value', task
+    set a to 1 values
+    return ~Array.isArray(a) and (a|0=1)
+    
+  @Test 'values comp list', task
+    set a to: 1, 2; values
+    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
+    
+  @Test 'values comp traits', task
+    set a to: a 1, b 2; values
+    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
+    
+  @Test 'values unary undefined', task
     set a to values undefined
     return ~Array.isArray(a) and (a.length is 0)
     
-  @Test 'values value', task
+  @Test 'values unary value', task
     set a to values 1
     return ~Array.isArray(a) and (a|0=1)
     
-  @Test 'values list', task
-    set a to values list 1, 2
+  @Test 'values unary list', task
+    set a to values: 1, 2
     return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
     
-  @Test 'values traits', task
-    set a to values traits a 1, b 2
+  @Test 'values unary traits', task
+    set a to values: a 1, b 2
     return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
     
   @Test 'overlay', task
