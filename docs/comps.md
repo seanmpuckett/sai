@@ -249,6 +249,8 @@ Here’s a hint: **self** is another _magic variable_ used only in **set** state
 
 Another hint: **default** is an operator that evaluates to its right hand value if and only if the left hand value is _undefined_.
 
+Last hint: **blank** initializes an object with no traits; it is the SAI equivalent of Javascript’s `{}`.  The comparable word for arrays/lists with no elements is **empty**; in Javascript you’d write `[]`.
+
 #### LIMIT
 
 #### FIRST / LAST
