@@ -576,8 +576,9 @@ LocalStatement
  
 WithStatement
   = WITH _ value:Expression out:Output? block:Block {
-      var code='var @this@='+value+';\n'+block+'\n';
-      return resolveVars(code,{this:(out?out:false)}); 
+      var r={this:(out?out:tempvar())};
+      var code=resolveVars('var @this@=',r)+value+resolveVars(';\n'+block+'\n',r);
+      return code; 
   }
  
 
@@ -585,9 +586,9 @@ WithStatement
 SetStatement
  = SET Sep t:SetTerms { return t }
  / SET Sep EOLs INDENT EOLs t:SetBlock DEDENT { return t.join(''); } 
- / INC Sep v:LValue { return v+'++;\n'; } // test 'inc a'
- / DEC Sep v:LValue { return v+'--;\n'; } // test 'dec a'
- / DELETE Sep v:RValue { return 'delete '+v+';\n'; }
+ / INC Sep v:LValue _ { return v+'++;\n'; } // test 'inc a'
+ / DEC Sep v:LValue _ { return v+'--;\n'; } // test 'dec a'
+ / DELETE Sep v:RValue _ { return 'delete '+v+';\n'; }
 
 SetTerms
  = t:SetTerm _ v:(',' _ v:SetTerm _ { return v })*  { return v.concat(t) }
@@ -1113,6 +1114,7 @@ ReduceComprehension
     if (!o[0]) o[0]='$accum';
     if (!o[1]) o[1]='$_v';
     if (!o[2]) o[2]='$_k';
+    b+='return @accum@;\n';
     var block=resolveVars('function(@accum@,@this@,@key@){'+b+'}',{accum:o[0],this:o[1],key:o[2]});
     if (into===null) {
       return ['$.__reduce(' , ','+block+')' ];

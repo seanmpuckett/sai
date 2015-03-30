@@ -3,40 +3,6 @@ object Comps 1.0.0
 Instantiate task
 
 
-  set add to task as a,b
-    return a+b
-    
-  set add2 to task expects $a, $b
-    return $a+$b
-    
-  if from add 1, 2
-     debug trial
-
-  if from add2 a 1, b 2
-    debug trial
-    
-  if from add: 
-    1
-    2
-  ...
-    debug trial
-
-  if from add2: 
-    a 1
-    b 2
-  ...
-    debug trial
-
-  ~process.exit
-
-
-
-
-
-
-
-
-
 
 
 
@@ -125,3 +91,8 @@ Instantiate task
   debug friends map
     return it overlay: name from .name.toUpperCase
   
+  debug "\n\nHow many friends live in each province?"
+  debug friends reduce into blank
+    set accum[.province] to (self default 0) + 1
+
+

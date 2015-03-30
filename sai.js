@@ -64,15 +64,17 @@ SAI.prototype.__map = function(a,f) {
   if (a===undefined) return undefined; // test 'map undef'
   if (_.isArray(a)) { // test 'map list'
     var r=[];
-    r.length=a.length;
-    for (var k in a) {
-      r[k]=f(a[k]);
+    var k=0,l=a.length;
+    r.length=l;
+    while (k<l) {
+      r[k]=f(a[k],k);
+      k++;
     }
     return r;
   } else if (_.isPlainObject(a)) { // test 'map traits'
     var r={};
     for (var k in a) {
-      r[k]=f(a[k]);
+      r[k]=f(a[k],k);
     }
     return r;
   } 
