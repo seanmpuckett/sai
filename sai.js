@@ -50,23 +50,86 @@ SAI.prototype.sai = {
 }
 
 SAI.prototype.__sort = function(a,f) {
-  if (!_.isArray(a)) {
-    if (_.isPlainObject(a)) {
-      a=_.values(a);
-    } else {
-      return a;
-    }
-  } else {
-    a=_.clone(a);
+  if (_.isPlainObject(a)) { // test 'sort traits'
+    a=_.values(a);
+  } else if (!_.isArray(a)) { // test 'sort undef' 'sort value'
+    return a;
+  } else { // test 'sort list'
+    a=a.slice(0);
   }
   return a.sort(f);
 };
 
-SAI.prototype.__map = _.map;
+SAI.prototype.__map = function(a,f) {
+  if (a===undefined) return undefined; // test 'map undef'
+  if (_.isArray(a)) { // test 'map list'
+    var r=[];
+    r.length=a.length;
+    for (var k in a) {
+      r[k]=f(a[k]);
+    }
+    return r;
+  } else if (_.isPlainObject(a)) { // test 'map traits'
+    var r={};
+    for (var k in a) {
+      r[k]=f(a[k]);
+    }
+    return r;
+  } 
+  return f(a); // test 'map value'
+}
 
-SAI.prototype.__filter = _.filter;
+SAI.prototype.__filter = function(a,f) {
+  if (a===undefined) return undefined; // test 'filter undef'
+  if (_.isArray(a)) { // test 'filter list'
+    var r=[];
+    for (var k in a) {
+      var v=a[k];
+      if (f(v,k)) r.push(v);
+    }
+    return r;
+  } else if (_.isPlainObject(a)) { // test 'filter traits*'
+    var r={};
+    for (var k in a) {
+      var v=a[k];
+      if (f(v,k)) r[k]=v;
+    }
+    return r;
+  } 
+  return f(a,undefined)?a:undefined; // test 'filter value*'
+}
 
-SAI.prototype.__reduce = _.reduce;
+SAI.prototype.__reduce = function(a,f,accum) {
+  if (a===undefined) return undefined; // test 'reduce undef'
+  if (_.isPlainObject(a)) { // test 'reduce traits*'
+    if (undefined===accum) {
+      var first=true;
+      for (var k in a) {
+        if (first) {
+          accum=a[k];
+          first=0;
+        } else {
+          accum=f(accum,a[k],k);
+        }
+      }
+    } else {
+      for (var k in a) {
+        accum=f(accum,a[k],k);
+      }
+    }
+    return accum;
+  } 
+  if (!_.isArray(a)) a=[a]; // test 'reduce value'
+  var l=a.length;
+  if (!l) return accum;
+  var k=0;
+  if (undefined===accum) accum=a[k++];
+  while (k<l) {
+    accum=f(accum,a[k],k);
+    k++;
+  }
+  return accum;
+}
 
 SAI.prototype.__copy = _.clone;
 
@@ -329,7 +392,7 @@ SAI.getParser = function() {
       return false;
     }
     parser=Beautify(parser,{ indent_size: 2, preserve_newlines: false});
-    console.log(parser);
+    //console.log(parser);
     return parser;
   }
 }();

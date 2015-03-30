@@ -13,6 +13,7 @@ Instantiate task
   debug 'Test coverage is really minimal right now. So is the documentation.'
 
   set tests to list
+    Comps
     RValues
     Operators
     Precedence
@@ -29,7 +30,7 @@ Instantiate task
   if @fail.length
     debug 'FAILED'
     each @fail
-      debug 'FAIL: {it}'
+      debug 'FAIL: ${it}'
     ~process.exit 1
   else
     debug 'SUCCESS'

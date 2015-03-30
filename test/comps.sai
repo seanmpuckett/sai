@@ -1,0 +1,164 @@
+
+object Comps
+
+inherit list
+  Harness
+
+
+
+Execute task
+
+  // first section tests low level functionality, not the parser
+
+  @Test 'filter undef', task
+    set b to undefined having true
+    return b is undefined
+    
+  @Test 'filter value true', task
+    set b to 'a' having it='a'
+    return b is 'a'
+    
+  @Test 'filter value false', task
+    set b to 'a' having it='b'
+    return b is undefined
+    
+  @Test 'having list all', task
+    set b to: 1, 2, 3; having it
+    return b[0]=1 and b[1]=2 and b[2]=3 and b.length = 3
+    
+  @Test 'filter list some', task
+    set b to: 1, 2, 3; having it>1
+    return b[0]=2 and b[1]=3 and b.length = 2
+    
+  @Test 'filter list none', task
+    set b to: 1, 2, 3; having it>4
+    return b.length = 0
+    
+  @Test 'filter traits all', task
+    set b to: a 1, b 2, c 3; having it>0
+    return b.a=1 and b.b=2 and b.c=3
+    
+  @Test 'filter traits some', task
+    set b to: a 1, b 2, c 3; having it>1
+    return b.a is undefined and b.b=2 and b.c=3
+    
+  @Test 'filter traits none', task
+    set b to: a 1, b 2, c 3; having it>4
+    return b.a is undefined and b.b is undefined and b.c is undefined
+    
+  
+  @Test 'sort undef', task
+    set b to undefined by it
+    return b is undefined
+  
+  @Test 'sort value', task
+    set b to 'fred' by it
+    return b='fred'
+    
+  @Test 'sort list', task
+    set b to: 3,2,1; by it
+    return b[0]=1 and b[1]=2 and b[2]=3 and b.length=3
+    
+  @Test 'sort traits', task
+    set b to: a 3,b 2,c 1; by it
+    return b[0]=1 and b[1]=2 and b[2]=3 and b.length=3
+  
+    
+  @Test 'map undef', task
+    set b to undefined thru it
+    return b is undefined
+    
+  @Test 'map value', task
+    set b to 1 thru it+1
+    return b=2
+    
+  @Test 'map list', task
+    set b to: 1, 2, 3; thru it+1
+    return b[0]=2 and b[1]=3 and b[2]=4 and b.length=3
+    
+  @Test 'map traits', task
+    set b to: a 1, b 2, c 3; thru it+1
+    return b.a=2 and b.b=3 and b.c=4
+    
+    
+    
+  @Match 'reduce no list into', 'a', task
+    set b to empty reduce into 'a'
+       return accum+it
+    return b
+    
+  @Test 'reduce no list no into', task
+    set b to empty reduce
+       return accum+it
+    return b is undefined
+
+  @Match 'reduce 1 list into', 'aa', task
+    set b to list a; reduce into 'a'
+       return accum+it
+    return b
+    
+  @Match 'reduce 1 list no into', 'a', task
+    set b to list a; reduce
+       return accum+it
+    return b
+
+  @Match 'reduce 3 list into', 'abc', task
+    set b to list a,b,c; reduce into ''
+       return accum+it
+    return b
+    
+  @Match 'reduce 3 list no into', 'abc', task
+    set b to list a,b,c; reduce
+       return accum+it
+    return b
+
+    
+  @Match 'reduce no traits into', 'a', task
+    set b to blank reduce into 'a'
+       return accum+key+it
+    return b
+
+  @Test 'reduce no traits no into', task
+    set b to blank reduce 
+       return accum+key+it
+    return b is undefined
+
+    
+  @Match 'reduce 1 trait into', 'a1', task
+    set b to: a 1; reduce into ''
+       return accum+key+it
+    return b
+
+  // GIGO result expected because reduce can't intuit key+it value
+  @Match 'reduce 1 traits no into', '1', task
+    set b to: a 1; reduce 
+       return accum+key+it
+    return b
+
+  @Match 'reduce 3 traits into', 'a1b2c3', task
+    set b to: a 1, b 2, c 3; reduce into ''
+       return accum+key+it
+    return b
+
+  // GIGO result expected because reduce can't intuit key+it value
+  @Match 'reduce 3 traits no into', '1b2c3', task
+    set b to: a 1, b 2, c 3; reduce 
+       return accum+key+it
+    return b
+
+  @Match 'reduce value no into', 'a', task
+    set b to 'a' reduce
+      return accum+it
+    return b
+    
+  @Match 'reduce value into', 'ba', task
+    set b to 'a' reduce into 'b'
+      return accum+it
+    return b
+    
+  @Test 'reduce undefined', task
+    set b to undefined reduce
+      return accum+it
+    return b is undefined
+     
+    

@@ -1,10 +1,15 @@
 ## Comprehensions
 
-SAI's began as an AI scripting language for a role-playing game. As such, the language evolved to deal in a succinct way with objects, lists, and decision making. Its extensive set of composable comprehensions reflects this.
+SAI began as an AI scripting language for a role-playing game. As such, the language evolved to deal in a succinct way with traits, lists, and decision making. Its extensive set of composable comprehensions reflects this.
 
-_Comprehensions_ are a way of operating on a list or set of traits as a whole. In Javascript, familiar comprehensions are `.map`, `.filter` and `.sort`. SAI doesn’t introduce any particularly new comprehensions in terms of functionality, but it does afford their use in a clearer, more concise way.
+_Comprehensions_ are a way of operating on a list or set of traits as a whole. In Javascript, familiar comprehensions are `.map`, `.filter`, `.reduce` and `.sort`. SAI doesn’t introduce any new comprehensions in terms of functionality, but it does afford their use in a clearer, more concise way.
 
-_Note: comprehensions __do not modify_ lists they are applied to. Invariably, they return a new list (or other data type). If you want a comprehension to replace the list it is applied to, you’ll need to specifically make that assignment yourself._ 
+In Javascript, most comprehensions only work on lists, that is, the **Array** type. SAI extends this functionality by allowing comprehensions to apply to any data type — undefined, value, array or object — with the result generally being the same data type. 
+
+A notable exception is the application of a sorting operator to traits (e.g. an **object**); you get in return a list of trait values without the associated trait names, because JS’s specification holds that the enumeration order of an object’s properties is uncertain.
+
+_Critical note: comprehensions **do not modify** collections they are applied to, instead returning an altered copy. If you want a comprehension result to replace its source data, specifically make that assignment yourself._
+
 We’ll be working with the following set of data to make our examples clearer.
 
 	set friends to list
@@ -23,7 +28,7 @@ All of the examples below appear in the `Comps` sample.  I’m not going to show
 
 ### Filtration
 
-Filtration comprehensions test each element of a list and return a new list made up only of elements that pass the test. 
+Filtration comprehensions test each element of a collection and return a new collection made up only of elements that pass the test. 
 
 #### By Tag
 
@@ -43,9 +48,7 @@ _Note: multiple-tag comprehensions are tested with a logical **and**; all condit
 
 #### HAVING
 
-The comprehension operator **having** indicates an expression based filter using the **it** _magical value_ to represent the item currently under examination. 
-
-Since **it** is in play, the associated **dot** scoping prefix is also active within the expression for easy access to fields within the item. In the first example below, both lines produce the same code and result. 
+The comprehension operator **having** indicates an expression based filter using the **it** _magical value_ to represent the item currently under examination. Since **it** is in play, the associated **dot** scoping prefix is also active within the expression for easy access to item fields. In the first example below, both lines produce the same code and result. 
 
 **Who is 21 or over?**
 
@@ -60,7 +63,7 @@ Since **it** is in play, the associated **dot** scoping prefix is also active wi
 
 	friends having (.province = 'QC') and (.cat or .dog)
 
-Comprehensions, like any other operator, can be chained together. Every comprehension has the same precedence, and they are evaluated from left to right. 
+Comprehensions, like any other operator, can be chained together. Every comprehension has the same precedence, and they are evaluated in sequence from left to right. 
 
 **Under 21 and likes cats?**
 
@@ -97,9 +100,9 @@ Keyword **filter** can reference a block of code directly, which makes the **it*
 
 ### Sorting
 
-SAI comprehensions also allow sorting through both the familiar Javascript `.sort` method as well as more succinct and expressive variations similar to those offered for filtration. 
+SAI comprehensions allow sorting through both the familiar Javascript `.sort` method as well as more succinct and expressive variations similar to those offered for filtration. 
 
-_Important note: unlike the `.sort` array method, neither  the **by** nor the **sort** operators modify the original array; they always produce a sorted copy. This ensures that variables used in comprehension expressions remain immutable. If you want to sort an array in place, use the `.sort` method._
+_Reminder: unlike the `.sort` array method, neither  the **by** nor the **sort** operators modify the original data set; they always produce a sorted copy. This ensures that variables used in comprehension expressions remain immutable. If you want to sort an array in place, use the `.sort` method._
 
 #### BY
 
@@ -121,7 +124,7 @@ You may sort by more than one value by adding another **by** clause. Multiple so
 
 #### HIGHEST / LOWEST
 
-The operators **highest** and **lowest** also sort by the provided expression, but when the sort is complete they _extract_ the highest/lowest value from the array and return it as a single value.  
+The operators **highest** and **lowest** also sort by the provided expression, but when the sort is complete they _extract_ the highest/lowest value from the dataset and return it as a single value.  
 
 **Oldest friend** 
 
@@ -131,7 +134,7 @@ The operators **highest** and **lowest** also sort by the provided expression, b
 
 	friends #cat lowest .age
 
-_Note that because the result of **highest/lowest** is not a list, no further comprehensions may be performed on it. Also note that combining **highest/lowest** with other sorting operators is not recommended. Instead use  **by** and follow up with **first/last**._
+_Note: combining **highest/lowest** with other sorting operators is not recommended and may result in unexpected behaviour. Instead, use  **by** and follow up with **first/last**._
 
 #### SORT
 
@@ -153,7 +156,7 @@ The magic variables in play with **sort** are, as used in almost every textbook 
 	 
 	friends sort ProvinceAge
 
-_Note: as you might have guessed, **\<=\>** is a SAI-specific comparison operator useful for sorting numeric and string values. It returns -1 if the value to the left is less than the right, 1 if it is greater, and 0 if they’re equal. Because of the way the **or** operator shortcuts evaluation when it finds the first truthy value, you can string together multiple comparison operators without using **if** statements._
+_Note: as you might have guessed, **\<=\>** is a SAI-specific comparison operator useful for sorting numeric and string values. It returns -1 if the value to the left is less than the right, 1 if it is greater, and 0 if they’re equal. Because of the way the **or** operator shortcuts evaluation when it finds the first truthy value, you can string together multiple comparison operators without using **if**._
 
 ### Mapping
 
@@ -200,7 +203,7 @@ Without using overlay and just using the **copy** operator, the same functionali
 	 set temp.name from temp.name.toUpperCase
 	 return temp
 
-_Aside: if we wanted to all-caps the names in the `friends` list itself, rather than produce a new list with capitalized names as we have been doing thus leaving the source list unchanged, we could do it like this:_
+_Aside: if we wanted to all-caps the names in the `friends` list itself, rather than produce a new list with capitalized names as we have been doing (thus leaving the source list unchanged), we could do it like this:_
 
 	ply friends
 	  set .name from .name.toUpperCase

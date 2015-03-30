@@ -90,7 +90,7 @@
       it: [ '@this@','' ],
       key: [ '@key@','' ],
       trial: [ '@trial@','' ],
-      result: [ '@result@','' ],
+      accum: [ '@accum@','' ],
       error: [ '@error@','' ],
       self: [ '@self@','' ],
       super: [ '@super@','' ],
@@ -110,7 +110,7 @@
       error: [ '@error@','' ],
       attribute: [ '@this@.' ,  '' ],
       self: [ '@self@','' ],
-      result: [ '@result@' , '' ],
+      accum: [ '@accum@' , '' ],
       property: [ '$["' , '"]' ], 
       parameter: [ 'p["','"]' ],
     },
@@ -207,6 +207,7 @@
       }
     }
     if (build.length) result.push(quoted(build));
+    if (!result.length) result=[quoted('')];
     return result.join('+');
   }
 
@@ -452,11 +453,11 @@ ExpectsParameter
  = i:Parameter _ t:Term? _ { return [i[1],t?t:true] }
 
 Expects 
- = EXPECTS _ is:(i:ExpectsParameter ',' _ {return i})* i:ExpectsParameter { is.push(i); return is; }
+ = EXPECTS _ is:(i:ExpectsParameter COMMA _ {return i})* i:ExpectsParameter { is.push(i); return is; }
  / EXPECTS _ t:Term _ { return [[['','_root'],t]] }
  
 Optional
- = OPTIONAL _ is:(i:ExpectsParameter ',' _ {return i})* i:ExpectsParameter { is.push(i); return is; }
+ = OPTIONAL _ is:(i:ExpectsParameter COMMA _ {return i})* i:ExpectsParameter { is.push(i); return is; }
  / OPTIONAL _ t:Term _ { return [[['','_root'],t]] }
  
  
@@ -865,7 +866,7 @@ It
  = IT Sep { return [['it','']] }
  / KEY Sep { return [['key','']]}
  / TRIAL Sep { return [['trial','']]}
- / RESULT Sep { return [['result','']]}
+ / ACCUM Sep { return [['accum','']]}
  / SELF Sep { return [['self','']]}
  / ERROR Sep { return [['error','']]}
 
@@ -933,10 +934,10 @@ SemVer
 
 
 ParameterList
- = _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
- / _ COLON _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields', '{'+w.join(',')+'}',v] }
- / _ v:Items ';'? { return ['array',v.join(','),v] }
- / _ COLON _ v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
+ = _ COLON _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields', '{'+w.join(',')+'}',v] }
+ / _ COLON _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
+ / _ COLON? _ v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
+ / _ COLON? _ v:Items ';'? { return ['array',v.join(','),v] }
 
 
 Definition
@@ -946,18 +947,18 @@ Definition
 NestedDefinition
  = _ EMPTY _ { return ['literal','[]']; }
  / _ BLANK _ { return ['literal','{}']; }
- / _ LIST _ v:Terms ';'? { return ['literal','['+v.join(',')+']'] }
+ / _ LIST _ v:Terms _ SEMI? _ { return ['literal','['+v.join(',')+']'] }
  / _ LIST _ EOLs INDENT EOLs v:TermBlock DEDENT { return ['literal','['+v.join(',')+']'] }
- / _ TRAITS _ v:Traits ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal','{'+w.join(',')+'}'] }
+ / _ TRAITS _ v:Traits _ SEMI? _ { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal','{'+w.join(',')+'}'] }
  / _ TRAITS _ EOLs INDENT EOLs v:TraitBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal', '{'+w.join(',')+'}'] }
- / _ (COLON/FIELDS) _ v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal','{'+w.join(',')+'}'] }
+ / _ (COLON/FIELDS) _ v:Fields _ SEMI? _ { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal','{'+w.join(',')+'}'] }
  / _ (COLON/FIELDS) _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal', '{'+w.join(',')+'}'] }
- / _ ARRAY _ v:Items ';'? { return ['literal','['+v.join(',')+']'] }
- / _ ARRAY _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['literal','['+v.join(',')+']'] }
+ / _ (COLON/ARRAY) _ v:Items _ SEMI? _ { return ['literal','['+v.join(',')+']'] }
+ / _ (COLON/ARRAY) _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['literal','['+v.join(',')+']'] }
 
 
 SimpleList
- = _ LIST _ v:Terms ';'? { return v }
+ = _ LIST _ v:Terms _ SEMI? _ { return v }
  / _ LIST _ EOLs INDENT EOLs v:TermBlock DEDENT { return v }
 
 
@@ -976,7 +977,7 @@ BareString
 
 
 TermSep
- = v:Term _ ',' _  { return v }
+ = v:Term _ COMMA _  { return v }
  
 Terms
  = v:(TermSep)* t:(Term) { return v.concat(t) }
@@ -993,19 +994,16 @@ Item
  = Expression
 
 ItemSep
- = v:Expression _ ',' _  { return v }
+ = v:Expression _ COMMA _  { return v }
  
 Items
- = v:(ItemSep)* t:(Expression) { return v.concat(t) }
+ = v:(ItemSep)* t:(Item) { return v.concat(t) }
   
 ItemLine
  = v:Items EOLs { return v }
 
 ItemBlock
  = v:(ItemLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
-
-
-
 
  
 
@@ -1016,12 +1014,10 @@ Trait
  / k:Keyword _ v:Term _ { return [[k,v]] }
  
 TraitSep
- = v:Trait _ ',' _ { return v }
+ = v:Trait _ COMMA _ { return v }
 
 Traits
- = EMPTY _ { return {}; }
- / v:(TraitSep)+ t:(Trait) { var r=[]; for (var i in v) r=r.concat(v[i]); r=r.concat(t);  return r; }
- / t:(Trait) { return t }
+ = v:(TraitSep)* t:(Trait) { var r=[]; for (var i in v) r=r.concat(v[i]); r=r.concat(t);  return r; }
  
 TraitLine
  = v:Traits EOLs { return v }
@@ -1029,7 +1025,8 @@ TraitLine
 TraitBlock
  = v:(TraitLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
- 
+
+
 Field
  = TYPE _ HASH k:Keyword  _ { return [['type',"'"+k+"'"],[k,true]] }
  / TYPE _ k:Keyword _ v:Expression _ { return [['type',"'"+k+"'"],[k,v]] }
@@ -1037,12 +1034,10 @@ Field
  / k:Keyword _ v:Expression _ { return [[k,v]] }
  
 FieldSep
- = v:Field _ ',' _ { return v }
+ = v:Field _ COMMA _ { return v }
 
 Fields
- = EMPTY _ { return {}; }
- / v:(FieldSep)+ t:(Field) { var r=[]; for (var i in v) r=r.concat(v[i]); r=r.concat(t); return r; }
- / t:(Field) { return t }
+ = v:(FieldSep)* t:(Field) { var r=[]; for (var i in v) r=r.concat(v[i]); r=r.concat(t); return r; }
  
 FieldLine
  = v:Fields EOLs { return v }
@@ -1063,7 +1058,7 @@ IterateOutput
  }
  
 MultiOutput
- = AS _ k:(k:Local _ ',' _ {return k})* _ v:Local { k.push(v); return k; }
+ = AS _ k:(k:Local _ COMMA _ {return k})* _ v:Local { k.push(v); return k; }
  
  
 
@@ -1074,7 +1069,7 @@ Expression
 
 
 ListQualify
- = v:Logical _ c:(';'?_ c:Comprehension {return c})* _ {
+ = v:Logical _ c:(c:Comprehension {return c})* _ {
    for (var i in c) {
      v=c[i][0]+v+c[i][1];
    }
@@ -1115,10 +1110,10 @@ ReduceComprehension
 //  }
  = _ REDUCE _ into:IntoClause? o:IterateOutput? b:Block _ {
     if (!o) o=[];
-    if (!o[0]) o[0]='$result';
+    if (!o[0]) o[0]='$accum';
     if (!o[1]) o[1]='$_v';
     if (!o[2]) o[2]='$_k';
-    var block=resolveVars('function(@result@,@this@,@key@){'+b+'}',{result:o[0],this:o[1],key:o[2]});
+    var block=resolveVars('function(@accum@,@this@,@key@){'+b+'}',{accum:o[0],this:o[1],key:o[2]});
     if (into===null) {
       return ['$.__reduce(' , ','+block+')' ];
     } else {
@@ -1148,8 +1143,7 @@ FilterComprehension
 OtherComprehension
  = _ q:(Quality / Criteria / Sequence / Limit)+ _ 
  {
-   var code='';
-   var needscopy=true;
+   var code='({<>})';
    q=[].concat(q);
    var expr={quality:[],having:[],by:[],map:[],limit:[]};
    for (var i in q) { 
@@ -1167,11 +1161,10 @@ OtherComprehension
      var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
    }
    if (conds.length) {
-     code+=resolveVars(t('.filter(function(obj){ return ^c; })',{c:conds.join(' && ')}),{this:'obj'});
-     needscopy=false;
+     code=resolveVars(t('$.__filter(^v,function(obj){ return ^c; })',{v:code,c:conds.join(' && ')}),{this:'obj'});
    }
    if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
-     code+='.reduce(function(a,b) { if (!a) return b; var aa,bb; ';
+     code='$.__reduce('+code+',function(a,b) { if (!a) return b; var aa,bb; ';
      expr.by[0][1]*=expr.limit[0].sort; // flip sort if looking for "last"
      var conds=expr.by.map(function(c){
        c[0]=c[0]||'@this@';
@@ -1182,8 +1175,7 @@ OtherComprehension
      code+=conds.join(' ')+'return a; },undefined)';
    } else {
      if (expr.by.length) {
-       if (needscopy) code+=".map(function(a){return a})";
-       code+='.sort(function(a,b) { var aa,bb; ';
+       code='$.__sort('+code+',function(a,b) { var aa,bb; ';
        var conds=expr.by.map(function(c){
          c[0]=c[0]||'@this@';
          var x1=resolveVars('aa='+c[0]+'; ',{this:'a'});
@@ -1196,17 +1188,17 @@ OtherComprehension
        var l=expr.limit[0];
        if (l.slice) {
          if (l.len) {
-           code+='.slice('+l.start+','+l.len+')';
+           code='$.__slice('+code+','+l.start+','+l.len+')';
          } else {
-           code+='.slice('+l.start+')';
+           code='$.__slice('+code+','+l.start+')';
          }
        }
        if (l.extract) { 
-         code+='[0]';
+         code+='$.__first('+code+')';
        }
      }
    } 
-   return ['(',')'+code];
+   return code.split('{<>}');
  }
 
 
@@ -1368,7 +1360,7 @@ Literal
  / StringLiteral
 
 IntoClause
- = INTO __ r:Expression _ { return r }
+ = INTO Sep r:Expression _ { return r }
 
 
 ////////////////////////////////////////////////////////// VERBS
@@ -1540,6 +1532,7 @@ ReservedWord
 
 ReservedWords
  = SET
+ / ACCUM
  / ANDB 
  / AND
  / ARRAY
@@ -1607,7 +1600,6 @@ ReservedWords
  / PLY
  / PROMISE
  / REDUCE
- / RESULT
  / SELECT
  / SELF
  / SORT
@@ -1629,7 +1621,7 @@ ReservedWords
  / XORB
  / XOR
  
- 
+ACCUM = 'accum'i
 AND = 'and'i
 ANDB = 'andb'i
 ARRAY = 'array'i
@@ -1710,7 +1702,6 @@ PLY = 'ply'i
 PROMISE = 'promise'i
 REDUCE = 'reduce'i
 RESOLVE = 'resolve'i
-RESULT = 'result'i
 REJECT = 'reject'i
 REFERENCE = 'reference'i
 RETURN = 'return'i
@@ -1741,8 +1732,9 @@ XORB  = 'xorb'i
 BANG = '!'
 DOT = '.'
 HASH = '#'
-DCOLON = '::' &[^:] { return '::' }
-COLON  = ':' &[^:] { return ':' }
+SEMI = ';'
+COMMA = ','
+COLON  = ':' { return ':' }
 INDENT = '{'
 DEDENT = '}'
 EQUALS = '='

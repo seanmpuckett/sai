@@ -2,7 +2,45 @@
 object Comps 1.0.0
 Instantiate task
 
-  set friends to list
+
+  set add to task as a,b
+    return a+b
+    
+  set add2 to task expects $a, $b
+    return $a+$b
+    
+  if from add 1, 2
+     debug trial
+
+  if from add2 a 1, b 2
+    debug trial
+    
+  if from add: 
+    1
+    2
+  ...
+    debug trial
+
+  if from add2: 
+    a 1
+    b 2
+  ...
+    debug trial
+
+  ~process.exit
+
+
+
+
+
+
+
+
+
+
+
+
+  set friends to:
    :name 'Sara', age 23, #cat, province 'ON'
    :name 'John', age 19, #cat, #dog, province 'ON'
    :name 'Ellie', age 22, province 'QC'

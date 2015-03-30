@@ -20,11 +20,11 @@ Execute task
   @Match '/ /', 4, task
       return 12/6/2
 
-  @Match 'min *', 4, task
-    return 4 min 2 * 3
+  @Match '?< *', 4, task
+    return 4 ?< 2 * 3
 
-  @Match '* min', 3, task
-    return 4 * 2 min 3
+  @Match '* ?<', 3, task
+    return 4 * 2 ?< 3
   
   @Test '= and', task
      return 2 < 3 and 1
