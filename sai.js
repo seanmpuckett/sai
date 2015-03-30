@@ -281,7 +281,6 @@ _$AI.expects = function(params,prototype,name) {
 
 
 
-
 //////////////// PROTOTYPE
 
 var SAI = exports = module.exports = function() {
@@ -292,11 +291,7 @@ var SAI = exports = module.exports = function() {
   this.isof=[];
 }
 
-SAI.prototype.sai = { // wtf why is this
-  dirname:__dirname
-}
-
-
+// placeholder
 SAI.prototype.Constructor=function() {}
 
 

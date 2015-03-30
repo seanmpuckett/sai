@@ -1088,12 +1088,12 @@ Comprehension
 
 
 KeysComprehension
- = _ KEYS {
+ = _ KEYS { // test 'keys comp*'
      return ['_$AI.keys(',')'];
    }
 
 ValuesComprehension
- = _ VALUES {
+ = _ VALUES { // test 'values comp*'
      return ['_$AI.values(',')'];
    }
 
@@ -1325,8 +1325,8 @@ Value
  / NUMBER Sep v:Value { return '(_$AI.number('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
  / COPY Sep v:Value _ { return '_$AI.copy('+v+')'; } // test 'copy'
- / KEYS Sep v:Value _ { return '(_$AI.keys('+v+'))' } // test 'keys*'
- / VALUES Sep v:Value _ { return '(_$AI.values('+v+'))' } // test 'values*'
+ / KEYS Sep v:Value _ { return '(_$AI.keys('+v+'))' } // test 'keys unary *'
+ / VALUES Sep v:Value _ { return '(_$AI.values('+v+'))' } // test 'values unary*'
  / TASK Sep v:TaskClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
  / FROM Sep v:VerbSentence _ { return v }

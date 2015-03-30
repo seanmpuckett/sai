@@ -91,11 +91,19 @@ Instantiate task
   debug friends map
     return it overlay: name from .name.toUpperCase
   
-  debug "\n\nHow many friends live in each province?"
-  debug chain friends 
-    reduce into blank
-      set accum[.province] to (self default 0) + 1
+  debug "\nTotal ages (block)"
+  debug friends reduce into 0 
+    set accum + .age
+
+  debug "\nTotal ages (task)"
+  set ageTotal to task as accumulator, row
+    return accumulator + row.age
+  debug friends reduce into 0 ageTotal
+  
+  debug "\nCount friends in each province"
+  debug friends reduce into blank
+    set accum[.province] to (self default 0) + 1
       
-      
+
     
 

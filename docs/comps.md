@@ -208,9 +208,46 @@ _Aside: if we wanted to all-caps the names in the `friends` list itself, rather 
 	ply friends
 	  set .name from .name.toUpperCase
 
+#### KEYS / VALUES
+
+The **keys** and **values** unary operators can also be used as comprehensions. **Keys** transforms a set of traits into a list of the trait names. **Values** transforms a set of traits into a list of the trait values. The ordering of the transformation is uncertain.
+
 ### Reduction
 
+Reduction is similar to mapping in that all of the elements of a collection are visited in turn. However, the output of **reduce** is typically a single value, not a collection. Reduce is useful for summarizing, totaling or collating data.
+
 #### REDUCE
+
+The **reduce** comprehension takes the same form as **filter** in that a block of code is required, through which each item from the collection is passed. However, in addition to the item itself, an accumulator variable (with the magic name **accum**) is passed into the block of code. Each time the block is processed, **accum** has the same value it had last time.
+
+Below, the **accum** variable is initialized by `into 0`, and then each row in the collection is visited and we add `.age` to it. This totals the ages of every friend.
+
+**Total ages (block)**
+
+	friends reduce into 0
+	  set accum + .age
+
+You can also reduce with a named task, however be aware that the task must always `return` the accumulator so the value can be preserved across function calls.  (The block version of **reduce** takes care of this for you.)
+
+**Total ages (task)**
+
+	set ageTotal to task as accumulator, row
+	  return accumulator + row.age
+	 
+	 ... later ...
+	 
+	friends reduce into 0 ageTotal
+
+A more complex example.  See if you can suss out how it works.
+
+**Count friends in each province**
+
+	friends reduce into blank
+	  set accum[.province] to (self default 0) + 1
+
+Here’s a hint: **self** is another _magic variable_ used only in **set** statements. It is initialized to the previous value of the variable being changed by **set**. 
+
+Another hint: **default** is an operator that evaluates to its right hand value if and only if the left hand value is _undefined_.
 
 #### LIMIT
 
