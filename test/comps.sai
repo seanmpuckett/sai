@@ -11,39 +11,39 @@ Execute task
   // first section tests low level functionality, not the parser
 
   @Test 'filter undef', task
-    set b to undefined having true
+    set b to undefined has true
     return b is undefined
     
   @Test 'filter value true', task
-    set b to 'a' having it='a'
+    set b to 'a' has it='a'
     return b is 'a'
     
   @Test 'filter value false', task
-    set b to 'a' having it='b'
+    set b to 'a' has it='b'
     return b is undefined
     
-  @Test 'having list all', task
-    set b to: 1, 2, 3; having it
+  @Test 'has list all', task
+    set b to: 1, 2, 3; has it
     return b[0]=1 and b[1]=2 and b[2]=3 and b.length = 3
     
   @Test 'filter list some', task
-    set b to: 1, 2, 3; having it>1
+    set b to: 1, 2, 3; has it>1
     return b[0]=2 and b[1]=3 and b.length = 2
     
   @Test 'filter list none', task
-    set b to: 1, 2, 3; having it>4
+    set b to: 1, 2, 3; has it>4
     return b.length = 0
     
   @Test 'filter traits all', task
-    set b to: a 1, b 2, c 3; having it>0
+    set b to: a 1, b 2, c 3; has it>0
     return b.a=1 and b.b=2 and b.c=3
     
   @Test 'filter traits some', task
-    set b to: a 1, b 2, c 3; having it>1
+    set b to: a 1, b 2, c 3; has it>1
     return b.a is undefined and b.b=2 and b.c=3
     
   @Test 'filter traits none', task
-    set b to: a 1, b 2, c 3; having it>4
+    set b to: a 1, b 2, c 3; has it>4
     return b.a is undefined and b.b is undefined and b.c is undefined
     
   
@@ -82,82 +82,80 @@ Execute task
     
     
     
-  @Match 'reduce no list into', 'a', task
-    set b to empty reduce into 'a'
+  @Match 'gather no list into', 'a', task
+    set b to empty gather into 'a'
        return accum+it
     return b
     
-  @Test 'reduce no list no into', task
-    set b to empty reduce
+  @Test 'gather no list no into', task
+    set b to empty gather
        return accum+it
     return b is undefined
 
-  @Match 'reduce 1 list into', 'aa', task
-    set b to list a; reduce into 'a'
+  @Match 'gather 1 list into', 'aa', task
+    set b to list a; gather into 'a'
        return accum+it
     return b
     
-  @Match 'reduce 1 list no into', 'a', task
-    set b to list a; reduce
+  @Match 'gather 1 list no into', 'a', task
+    set b to list a; gather
        return accum+it
     return b
 
-  @Match 'reduce 3 list into', 'abc', task
-    set b to list a,b,c; reduce into ''
+  @Match 'gather 3 list into', 'abc', task
+    set b to list a,b,c; gather into ''
        return accum+it
     return b
     
-  @Match 'reduce 3 list no into', 'abc', task
-    set b to list a,b,c; reduce
+  @Match 'gather 3 list no into', 'abc', task
+    set b to list a,b,c; gather
        return accum+it
     return b
 
-    
-  @Match 'reduce no traits into', 'a', task
-    set b to blank reduce into 'a'
+  @Match 'gather no traits into', 'a', task
+    set b to blank gather into 'a'
        return accum+key+it
     return b
 
-  @Test 'reduce no traits no into', task
-    set b to blank reduce 
+  @Test 'gather no traits no into', task
+    set b to blank gather 
        return accum+key+it
     return b is undefined
 
-    
-  @Match 'reduce 1 trait into', 'a1', task
-    set b to: a 1; reduce into ''
+  @Match 'gather 1 trait into', 'a1', task
+    set b to: a 1; gather into ''
        return accum+key+it
     return b
 
-  // GIGO result expected because reduce can't intuit key+it value
-  @Match 'reduce 1 traits no into', '1', task
-    set b to: a 1; reduce 
+  // GIGO result expected because gather can't intuit key+it value
+  @Match 'gather 1 traits no into', '1', task
+    set b to: a 1; gather 
        return accum+key+it
     return b
 
-  @Match 'reduce 3 traits into', 'a1b2c3', task
-    set b to: a 1, b 2, c 3; reduce into ''
+  @Match 'gather 3 traits into', 'a1b2c3', task
+    set b to: a 1, b 2, c 3; gather into ''
        return accum+key+it
     return b
 
-  // GIGO result expected because reduce can't intuit key+it value
-  @Match 'reduce 3 traits no into', '1b2c3', task
-    set b to: a 1, b 2, c 3; reduce 
+  // GIGO result expected because gather can't intuit key+it value
+  @Match 'gather 3 traits no into', '1b2c3', task
+    set b to: a 1, b 2, c 3; gather 
        return accum+key+it
     return b
 
-  @Match 'reduce value no into', 'a', task
-    set b to 'a' reduce
+  @Match 'gather value no into', 'a', task
+    set b to 'a' gather
       return accum+it
     return b
     
-  @Match 'reduce value into', 'ba', task
-    set b to 'a' reduce into 'b'
+  @Match 'gather value into', 'ba', task
+    set b to 'a' gather into 'b'
       return accum+it
     return b
     
-  @Test 'reduce undefined', task
-    set b to undefined reduce
+  @Test 'gather undefined', task
+    set b to undefined gather
       return accum+it
     return b is undefined
      

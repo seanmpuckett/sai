@@ -1098,12 +1098,12 @@ ValuesComprehension
    }
 
 SortComprehension
- = _ SORT _ o:IterateOutput? b:Block _ {
+ = _ BY _ o:IterateOutput? b:Block _ {
     if (!o) o=['$a','$b'];
     var block=resolveVars('function('+o[0]+','+o[1]+'){'+b+'}');
     return ['_$AI.sort(' , ','+block+')']; 
   }
- / _ SORT _ x:Value _ {
+ / _ BY _ VIA _ x:Value _ {
    return ['_$AI.sort(' , ','+x+')' ];
   }
 
@@ -1112,11 +1112,11 @@ MapComprehension
      var block=resolveVars('function(@this@,@key@){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+')']; 
   }
- / _ MAP _ o:IterateOutput? b:Block _ {
+ / _ THRU _ o:IterateOutput? b:Block _ {
      var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.map(' , ','+block+')']; 
   }
- / _ MAP _ x:Value _ {
+ / _ THRU _ VIA _ x:Value _ {
    return ['_$AI.map(' , ','+x+')' ];
   }
 
@@ -1125,7 +1125,7 @@ ReduceComprehension
 //    var block=resolveVars('function(@result@,@this@,@key@){ return '+b+'; //}',{result:'$_r',this:'$_v',key:'$_k'});
 //    return ['_$AI.reduce(' , ','+block+')' ];
 //  }
- = _ REDUCE _ into:IntoClause? o:IterateOutput? b:Block _ {
+ = _ GATHER _ into:IntoClause? o:IterateOutput? b:Block _ {
     if (!o) o=[];
     if (!o[0]) o[0]='$accum';
     if (!o[1]) o[1]='$_v';
@@ -1138,7 +1138,7 @@ ReduceComprehension
       return ['_$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
-  / _ REDUCE _ into:IntoClause? _ x:Value _ {
+  / _ GATHER _ VIA _ x:Value _ into:IntoClause?  {
     if (into===null) {
       return ['_$AI.reduce(' , ','+x+')' ];
     } else {
@@ -1147,11 +1147,11 @@ ReduceComprehension
   }
 
 FilterComprehension
- = _ FILTER _ o:IterateOutput? b:Block _ {
+ = _ HAS _ o:IterateOutput? b:Block _ {
      var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.filter(' , ','+block+')']; 
   }
-  / _ FILTER  _ x:Value _ {
+  / _ HAS  _ VIA _ x:Value _ {
     return ['_$AI.filter(' , ','+x+')' ];
   }
 
@@ -1232,7 +1232,7 @@ Quality
  / BANG HASH v:Keyword _ { return ['quality', '(!obj["'+v+'"])'] }
 
 Criteria
- = HAVING _ v:Logical _ { return ['having',v] }
+ = HAS _ v:Logical _ { return ['having',v] }
 
 Sequence
  = BY _ v:Logical d:SortDirection? _ { return ['by',[v,d?d:1]] }
@@ -1577,7 +1577,6 @@ ReservedWords
  / EXPECTS
  / FALSE
  / FIELDS
- / FILTER
  / FIRST 
  / FOR
  / FROM
@@ -1585,7 +1584,7 @@ ReservedWords
  / GET
  / GE
  / GT
- / HAVING 
+ / HAS 
  / HIGHEST 
  / INC
  / INITIALIZED
@@ -1603,7 +1602,6 @@ ReservedWords
  / LOCAL
  / LOWEST 
  / LT
- / MAP
  / NAND
  / NEW
  / NE
@@ -1617,10 +1615,8 @@ ReservedWords
  / OVERLAY
  / PLY
  / PROMISE
- / REDUCE
  / SELECT
  / SELF
- / SORT
  / SWITCH
  / TASK
  / TRIAL
@@ -1672,7 +1668,6 @@ EXISTS = 'exists'i
 EXPECTS = 'expects'i
 FINALLY = 'finally'i
 FIELDS = 'fields'i
-FILTER = 'filter'i
 FIRST = 'first'i
 FOR = 'for'i
 FROM = 'from'i
@@ -1681,7 +1676,7 @@ GE = 'ge'i
 GET = 'get'i
 GIVEN = 'given'i
 GT = 'gt'i 
-HAVING = 'having'i
+HAS = 'has'i
 HIGHEST = 'highest'i
 IF = 'if'i
 INITIALIZED = 'initialized'i
@@ -1701,7 +1696,6 @@ LIST = 'list'i
 LOCAL = 'local'i
 LOWEST = 'lowest'i
 LT = 'lt'i
-MAP = 'map'i
 NAND = 'nand'i
 NE = 'ne'i
 NEW = 'new'i
@@ -1718,7 +1712,6 @@ TRUE = 'true'i
 FALSE = 'false'i
 PLY = 'ply'i
 PROMISE = 'promise'i
-REDUCE = 'reduce'i
 RESOLVE = 'resolve'i
 REJECT = 'reject'i
 REFERENCE = 'reference'i
@@ -1726,7 +1719,6 @@ RETURN = 'return'i
 SELECT = 'select'i
 SELF = 'self'i
 SET = 'set'i
-SORT = 'sort'i
 SUPER = 'super'i
 SWITCH = 'switch'i
 TASK = 'task'i

@@ -26,29 +26,29 @@ Instantiate task
   debug friends #dog #cat
   
   debug "\nWho is 21 or over?"
-  debug friends having .cat or .dog
+  debug friends has .cat or .dog
   
   debug "\nWho is 21 or over?"
-  debug friends having .age >= 21
+  debug friends has .age >= 21
   
   debug "\nWho lives in Quebec and likes cats or dogs?"
-  debug friends having (.province = 'QC') and (.cat or .dog)
+  debug friends has (.province = 'QC') and (.cat or .dog)
   
   debug "\nUnder 21 and likes cats?"
-  debug friends #cat having .age < 21 
+  debug friends #cat has .age < 21 
   
   debug "\nWho can rent a car?"
   set rentAge to: ON 25, QC 21
-  debug friends having .age >= rentAge[.province]
+  debug friends has .age >= rentAge[.province]
   
   debug "\nWho can rent a car? (code block)"
-  debug friends filter
+  debug friends has
     return .age >= rentAge[.province]
 
   debug "\nWho can rent a car (named task)"
   set CanRent to task as row
     return row.age >= rentAge[row.province]
-  debug friends filter CanRent
+  debug friends has via CanRent
   
   debug "\n\nSorted names"
   debug friends by .name
@@ -66,13 +66,13 @@ Instantiate task
   debug friends #cat lowest .age
   
   debug "\nAges by province (code block)"
-  debug friends sort
+  debug friends by
     return a.province <=> b.province or a.age <=> b.age
   
   debug "\nAges by province (named task)"
   set ProvinceAge to task as a, b
     return a.province <=> b.province or a.age <=> b.age
-  debug friends sort ProvinceAge
+  debug friends by via ProvinceAge
   
   debug "\n\nJust the names in alpha order"
   debug friends by .name thru .name
@@ -84,24 +84,24 @@ Instantiate task
   debug friends #cat thru '${.name} (${.age}), lives in ${.province}'
 
   debug "\nNumbered list of friends"
-  debug friends map
+  debug friends thru
     return '${key+1}) ${.name}'
 
   debug "\nAll-caps names"
-  debug friends map
+  debug friends thru
     return it overlay: name from .name.toUpperCase
   
   debug "\n\nTotal ages (block)"
-  debug friends reduce into 0 
+  debug friends gather into 0 
     set accum + .age
 
   debug "\nTotal ages (task)"
   set ageTotal to task as accumulator, row
     return accumulator + row.age
-  debug friends reduce into 0 ageTotal
+  debug friends gather via ageTotal into 0 
   
   debug "\nCount friends in each province"
-  debug friends reduce into blank
+  debug friends gather into blank
     set accum[.province] to (self default 0) + 1
       
 
