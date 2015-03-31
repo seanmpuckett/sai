@@ -122,7 +122,18 @@ _$AI.reduce = function(a,f,accum) {
 
 _$AI.slice = function(a,start,count) {
   if (a===undefined) return undefined; 
-  if (_.isArray(a)) return a.slice(start,count);
+  var end;
+  if (start==0) {
+    if (count>0) {
+      end=count; // start=0, end=count
+    } else {
+      start=count; // start=-count, end=[end of array]
+      end=undefined;
+    }
+  } else if (count!==undefined){
+    end=start+count;
+  }
+  if (_.isArray(a)) return a.slice(start,end);
   if (_.isPlainObject(a)) throw new Error("Cannot use LIMIT/FIRST/LAST on traits.");
   if (start==0 && (count===undefined || end>0)) return a;
   if (start==-1 && (count===undefined || count<0)) return a;

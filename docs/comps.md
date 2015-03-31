@@ -2,21 +2,23 @@
 
 SAI began as an AI scripting language for a role-playing game. As such, the language evolved to deal in a succinct way with traits, lists, and decision making. Its extensive set of composable comprehensions reflects this.
 
-_Comprehensions_ are a way of operating on a list or set of traits as a whole. In Javascript, familiar comprehensions are `.map`, `.filter`, `.reduce` and `.sort`. SAI doesn’t introduce any new comprehensions in terms of functionality, but it does afford their use in a clearer, more concise way.
+A word, or several, about terminology.  _List_  is used interchangably with _array_, both referring to Javascript’s `Array` type. Similarly, _traits_ and _fields_ are used to refer to the generic Javascript `Object` type as well as the properties that comprise it.  The term _collection_ refers generically to both lists and arrays, and _item_ may refer to any single list element or object trait. 
 
-In Javascript, most comprehensions only work on lists, that is, the **Array** type. SAI extends this functionality by allowing comprehensions to apply to any data type — undefined, value, array or object — with the result generally being the same data type. 
+_Comprehensions_ are a way of operating on a collection as a whole. In Javascript, familiar comprehensions are `.map`, `.filter`, `.reduce` and `.sort`. SAI doesn’t introduce any new comprehensions in terms of functionality, but it does afford their use in a clearer, more concise way.
 
-A notable exception is the application of a sorting operator to traits (e.g. an **object**); you get in return a list of trait values without the associated trait names, because JS’s specification holds that the enumeration order of an object’s properties is uncertain.
+In Javascript, most comprehensions only work on lists, that is, the **Array** type. SAI extends this functionality by allowing comprehensions to apply to any data type — undefined, value, list or traits — with the result generally being the same data type. 
+
+A notable exception is the application of a sorting operator to traits (e.g. an **object**); you get in return a list of the trait values without the associated trait names, because JS’s specification holds that the enumeration order of an object’s properties is uncertain.
 
 _Critical note: comprehensions **do not modify** collections they are applied to, instead returning an altered copy. If you want a comprehension result to replace its source data, specifically make that assignment yourself._
 
 We’ll be working with the following set of data to make our examples clearer.
 
-	set friends to list
+	set friends to:
 	   :name 'Sara', age 23, #cat, province 'ON'
 	   :name 'John', age 19, #cat, #dog, province 'ON'
 	   :name 'Ellie', age 22, province 'QC'
-	   :name 'Marshal', age 21, #dog, province 'QC'
+	   :name 'Marshal', age 21, #dog, province 'ON'
 	   :name 'Doug', age 18, province 'ON'
 	   :name 'Ann', age 23, #cat, province 'QC'
 	   :name 'Harry', age 31, province 'QC'
@@ -210,7 +212,7 @@ _Aside: if we wanted to all-caps the names in the `friends` list itself, rather 
 
 #### KEYS / VALUES
 
-The **keys** and **values** unary operators can also be used as comprehensions. **Keys** transforms a set of traits into a list of the trait names. **Values** transforms a set of traits into a list of the trait values. The ordering of the transformation is uncertain.
+The **keys** and **values** unary operators can also be used as comprehensions. **Keys** transforms a set of traits into a list of the trait names, discarding the values. **Values** transforms a set of traits into a list of the trait values, discarding the keys. The order of keys/values is the result is undefined.
 
 ### Reduction
 
@@ -218,9 +220,11 @@ Reduction is similar to mapping in that all of the elements of a collection are 
 
 #### REDUCE
 
-The **reduce** comprehension takes the same form as **filter** in that a block of code is required, through which each item from the collection is passed. However, in addition to the item itself, an accumulator variable (with the magic name **accum**) is passed into the block of code. Each time the block is processed, **accum** has the same value it had last time.
+The **reduce** comprehension takes the same form as **filter/map/sort** in that a block of code is required through which each item from the collection is passed. 
 
-Below, the **accum** variable is initialized by `into 0`, and then each row in the collection is visited and we add `.age` to it. This totals the ages of every friend.
+However, in addition to the item itself, an accumulator variable (with the magic name **accum**) is also used in the block. Each time the block is processed, **accum** has the same value it had last time.
+
+Below, the **accum** variable is initialized by `into 0`, and then each row in the collection is visited and we add `.age` to it. This totals the age of every friend.
 
 **Total ages (block)**
 
@@ -245,7 +249,7 @@ A more complex example.  See if you can suss out how it works.
 	friends reduce into blank
 	  set accum[.province] to (self default 0) + 1
 
-Here’s a hint: **self** is another _magic variable_ used only in **set** statements. It is initialized to the previous value of the variable being changed by **set**. 
+Here’s a hint: **self** is a _magic variable_ used only in **set** statements. It is initialized to the previous value of the variable being changed by **set**. 
 
 Another hint: **default** is an operator that evaluates to its right hand value if and only if the left hand value is _undefined_.
 
@@ -253,4 +257,31 @@ Last hint: **blank** initializes an object with no traits; it is the SAI equival
 
 #### LIMIT
 
+The **limit** comprehension is used to limit the number of items in the collection. Typically you’ll only want to use it when operating on lists, as the order of traits is indeterminate.
+
+**Five youngest friends**
+
+	friends by .age limit 5
+
+A negative limit chooses items from the end of the list.
+
+**Five oldest friends**
+
+	friends by .age limit -5
+
+Limit mimics the behaviour of the SQL **limit** clause; if you supply two comma separated values, the first value is the starting record and the second is the number of records desired. This is useful for paging.
+
+**Second page of five youngest**
+
+	friends by .age limit 5,5
+
+_Note: the parameters you provide to **limit** are not the same as those you provide to Javascript’s `.slice` array method. 
+
 #### FIRST / LAST
+
+The **first** and **last** terminal operators take either the first or last item in a list and returns it as a value; like the **highest** and **lowest** operators but without any sorting. Because they return a value, you probably won’t need to apply any further comprehensions afterwards (unless the value is itself a list).
+
+**Last friend in the list**
+
+	friends last
+

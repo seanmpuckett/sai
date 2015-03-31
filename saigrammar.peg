@@ -1212,7 +1212,7 @@ OtherComprehension
          }
        }
        if (l.extract) { 
-         code+='_$AI.slice('+code+',0,1)';
+         code='_$AI.slice('+code+',0,1)';
        }
      }
    } 
@@ -1223,8 +1223,9 @@ OtherComprehension
  
 Limit 
  = FIRST _ { return ['limit',{extract:true,sort:1}]; } 
- / LAST _ { return ['limit',{slice:true,start:-1,extract:true,sort:-1}]; } 
- / LIMIT _ v:Logical _ { return ['limit',{slice:true,start:0,len:v}]; } 
+ / LAST _ { return ['limit',{slice:true,start:-1}]; } 
+ / LIMIT _ s:Logical _ COMMA _ c:Logical _ { return ['limit',{slice:true,start:s,len:c}]; } 
+ / LIMIT _ s:Logical _ { return ['limit',{slice:true,start:0,len:s}]; } 
  
 Quality
  = HASH v:Keyword _ { return ['quality', 'obj["'+v+'"]'] }

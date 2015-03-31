@@ -91,7 +91,7 @@ Instantiate task
   debug friends map
     return it overlay: name from .name.toUpperCase
   
-  debug "\nTotal ages (block)"
+  debug "\n\nTotal ages (block)"
   debug friends reduce into 0 
     set accum + .age
 
@@ -105,5 +105,19 @@ Instantiate task
     set accum[.province] to (self default 0) + 1
       
 
+  debug "\n\nFive youngest friends"
+  debug friends by .age limit 5
+  
+  debug "\nFive oldest friends"
+  debug friends by .age limit -5
+  
+  debug "\nSecond page of five youngest"
+  debug friends by .age limit 5,5
+  
+  debug "\nLast friend in the list"
+  debug friends last
+  
+  
+  
     
 
