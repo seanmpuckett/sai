@@ -8,6 +8,7 @@ inherit list
 
 Execute task
 
+
   @Test '@|', task
     set @b to true
     set c to 'b'

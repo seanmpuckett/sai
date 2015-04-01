@@ -410,7 +410,7 @@ SAI.getParser = function() {
       console.log(context);
       return false;
     }
-    parser=Beautify(parser,{ indent_size: 2, preserve_newlines: false});
+    //parser=Beautify(parser,{ indent_size: 2, preserve_newlines: false});
     //console.log(parser);
     return parser;
   }

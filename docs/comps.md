@@ -91,22 +91,22 @@ Keyword **has** can reference a block of code directly, which makes the **it** m
 	friends has
 	  return .age >= rentAge[.province]
 
-#### HAS VIA
+#### HAS USING
 
-You can integrate function calls into a composed comprehension using the **via** keyword immediately following the comprehension keyword itself.
+You can integrate function calls into a composed comprehension by adding the **using** keyword immediately following the comprehension keyword itself.
 
-**Who can rent a car? (vnamed task)**
+**Who can rent a car? (named task)**
 
 	set CanRent to task as row
 	  return row.age >= rentAge[row.province]
 	
 	... later ...
 	
-	friends has via CanRent
+	friends has using CanRent
 
-In composed comprehensions, the **via** keyword signals that the following expression is a function that should be called. 
+In composed comprehensions, the **using** keyword signals that the following expression is a function that should be called. 
 
-In this usage, **has via** is almost exactly like Javascript’s `Array.prototype.filter` method though with a much broader range of applicability.
+In this usage, **has using** is almost exactly like Javascript’s `Array.prototype.filter` method, though with a much broader range of applicability.
 
 ### Sorting
 
@@ -145,18 +145,18 @@ A surprise for you: **\<=\>** is a SAI-specific comparison operator useful for s
 
 Because of the way the **or** operator shortcuts evaluation when it finds the first truthy value, you can string together multiple **\<=\>** comparison operators without using **if**.
 
-#### BY VIA 
+#### BY USING 
 
-If you’ll recall, **has via** provides the ability to use a named function for your sorting facilitator, and **by via** allows the same thing.
+If you’ll recall, **has using** provides the ability to use a named function for your sorting facilitator, and **by using** allows the same thing.
 
-**Ages by province (via named task)**
+**Ages by province (using named task)**
 
 	set ProvinceAge to task as a, b
 	 return a.province <=> b.province or a.age <=> b.age
 	 
 	 ... later ...
 	 
-	friends by via ProvinceAge
+	friends by using ProvinceAge
 
 #### HIGHEST / LOWEST
 
@@ -228,9 +228,9 @@ _Aside: if we wanted to all-caps the names in the `friends` list itself, rather 
 
 _Ply is a SAI-specific iterator that steps through array elements one at a time._
 
-#### THRU VIA
+#### THRU USING
 
-You can also call another function indirectly using **thru via**, which operates much the same way as Javascript’s `Array.prototype.map` method, though it can be applied to all types of collections.
+You can also call another function indirectly with **thru using**, which operates much the same way as Javascript’s `Array.prototype.map` method, though it can be applied to all types of collections.
 
 > example needed
 
@@ -272,9 +272,9 @@ Another hint: **default** is an operator that evaluates to its right hand value 
 
 Last hint: **blank** initializes an object with no traits; it is the SAI equivalent of Javascript’s `{}`.  The comparable word for arrays/lists with no elements is **empty**; in Javascript you’d write `[]`.
 
-#### GATHER VIA
+#### GATHER USING
 
-The addition of **via** lets you call an external function. Note that the **via** clause appears before the **into** clause. Be aware that the function must always `return` the accumulator so the value can be preserved across function calls.  (The block version of **gather** takes care of this for you.)
+The addition of **using** lets you call an external function. _Note that the **using** clause appears after the **into** clause._ Be aware that the function must always `return` the accumulator so the value can be preserved across function calls.  (The block version of **gather** takes care of this for you.)
 
 
 **Total ages (task)**
@@ -284,7 +284,7 @@ The addition of **via** lets you call an external function. Note that the **via*
 	 
 	 ... later ...
 	 
-	friends gather via ageTotal into 0 
+	friends gather into 0 using ageTotal 
 
 #### LIMIT
 

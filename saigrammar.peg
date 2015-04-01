@@ -94,6 +94,7 @@
       error: [ '@error@','' ],
       self: [ '@self@','' ],
       super: [ '@super@','' ],
+      paren: [ '', '' ],
       bound: [ '' , '' ],
       global: [ '' , '' ],
       function: [ '' , '' ],
@@ -106,6 +107,7 @@
     },
     firststore: { //[0]+key+[1]
       function: [ '' , '' ],
+      paren: [ '', '' ],
       local: [ '' , ''  ],
       error: [ '@error@','' ],
       attribute: [ '@this@.' ,  '' ],
@@ -270,7 +272,7 @@
     fun+=k+FunStop(); // function body
     fun+='}';
   
-    if (fun.indexOf('@this@')>-1) error("Cannot use unrooted . accessor without a context.");
+    //if (fun.indexOf('@this@')>-1) error("Cannot use unrooted . accessor without a context.");
     fun=resolveVars(fun,{this:false,super:'_'+fn});
   
     r=head+fun+tail;
@@ -814,7 +816,7 @@ LStem
  ///ItStem / RootedStem / PropertyStem / ParameterStem / LocalStem 
 
 RStem
- = ItStem / SuperStem / RootedStem / PropertyStem / ParameterStem / LocalStem / GlobalStem 
+ = ItStem / SuperStem / RootedStem / PropertyStem / ParameterStem / LocalStem / GlobalStem / ParenStem
 
 
 
@@ -863,6 +865,14 @@ ItStem
     return stem 
  }
  
+ParenStem
+ = x:(Parenthetic) y:(Attribute/Index/Call)+ {
+    var stem=x;
+    for (var i in y) stem=stem.concat(y[i]);
+    return stem 
+ }
+ 
+
 It
  = IT Sep { return [['it','']] }
  / KEY Sep { return [['key','']]}
@@ -887,6 +897,9 @@ Root
 Index
  = '[' _ v:Expression _ ']' _ { return [[ 'index', v ]] }
  / '|' v:SimpleValue { return [[ 'index', v ]] }
+
+Parenthetic
+ = '(' _ v:Expression _ ')' { return [[ 'paren', v ]] }
 
 Local
  = v:Identifier { 
@@ -1103,7 +1116,7 @@ SortComprehension
     var block=resolveVars('function('+o[0]+','+o[1]+'){'+b+'}');
     return ['_$AI.sort(' , ','+block+')']; 
   }
- / _ BY _ VIA _ x:Value _ {
+ / _ BY _ USING _ x:Value _ {
    return ['_$AI.sort(' , ','+x+')' ];
   }
 
@@ -1116,7 +1129,7 @@ MapComprehension
      var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.map(' , ','+block+')']; 
   }
- / _ THRU _ VIA _ x:Value _ {
+ / _ THRU _ USING _ x:Value _ {
    return ['_$AI.map(' , ','+x+')' ];
   }
 
@@ -1138,7 +1151,7 @@ ReduceComprehension
       return ['_$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
-  / _ GATHER _ VIA _ x:Value _ into:IntoClause?  {
+  / _ GATHER _ into:IntoClause? _ USING _ x:Value _  {
     if (into===null) {
       return ['_$AI.reduce(' , ','+x+')' ];
     } else {
@@ -1151,7 +1164,7 @@ FilterComprehension
      var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.filter(' , ','+block+')']; 
   }
-  / _ HAS  _ VIA _ x:Value _ {
+  / _ HAS  _ USING _ x:Value _ {
     return ['_$AI.filter(' , ','+x+')' ];
   }
 
@@ -1179,16 +1192,20 @@ OtherComprehension
      var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
    }
    if (conds.length) {
-     code=resolveVars(t('_$AI.filter(^v,function(obj){ return ^c; })',{v:code,c:conds.join(' && ')}),{this:'obj'});
+     code=resolveVars(t('_$AI.filter(^v,function($_v,$_k){ return ^c; })',{v:code,c:conds.join(' && ')}),{this:'$_v',key:'$_k'});
    }
    if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
-     code='_$AI.reduce('+code+',function(a,b) { if (!a) return b; var aa,bb; ';
+     code='_$AI.reduce('+code+',function(a,b) { if (undefined===a) return b; var r; ';
      expr.by[0][1]*=expr.limit[0].sort; // flip sort if looking for "last"
      var conds=expr.by.map(function(c){
        c[0]=c[0]||'@this@';
-       var x1=resolveVars('aa='+c[0]+'; ',{this:'a'});
-       var x2=resolveVars('bb='+c[0]+'; ',{this:'b'});
-       return x1+x2+t('if (aa<bb) return ^lt; if (aa>bb) return ^gt; ',{c:c[0],lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
+       var x1=resolveVars(c[0],{this:'a'});
+       var x2=resolveVars(c[0],{this:'b'});
+       return t('r=_$AI.compare(^x1,^x2); if (r<0) return ^lt; if (r>0) return ^gt;\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
+       
+//       var x1=resolveVars('aa='+c[0]+'; ',{this:'a'});
+//       var x2=resolveVars('bb='+c[0]+'; ',{this:'b'});
+//       return x1+x2+t('if (aa<bb) return ^lt; if (aa>bb) return ^gt; ',{c:c[0],lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
      });
      code+=conds.join(' ')+'return a; },undefined)';
    } else {
@@ -1212,7 +1229,7 @@ OtherComprehension
          }
        }
        if (l.extract) { 
-         code='_$AI.slice('+code+',0,1)';
+         code='('+code+')[0]';
        }
      }
    } 
@@ -1223,13 +1240,13 @@ OtherComprehension
  
 Limit 
  = FIRST _ { return ['limit',{extract:true,sort:1}]; } 
- / LAST _ { return ['limit',{slice:true,start:-1}]; } 
+ / LAST _ { return ['limit',{extract:true,slice:true,start:-1}]; } 
  / LIMIT _ s:Logical _ COMMA _ c:Logical _ { return ['limit',{slice:true,start:s,len:c}]; } 
  / LIMIT _ s:Logical _ { return ['limit',{slice:true,start:0,len:s}]; } 
  
 Quality
- = HASH v:Keyword _ { return ['quality', 'obj["'+v+'"]'] }
- / BANG HASH v:Keyword _ { return ['quality', '(!obj["'+v+'"])'] }
+ = HASH v:Keyword _ { return ['quality', '@this@["'+v+'"]'] }
+ / BANG HASH v:Keyword _ { return ['quality', '(!@this@["'+v+'"])'] }
 
 Criteria
  = HAS _ v:Logical _ { return ['having',v] }
@@ -1360,7 +1377,8 @@ RegexChar
  = [^\n\r/]
 
 Keyword
- = Identifier / StringLiteral 
+ = v:Identifier ![.(\[|] { return v } 
+ / StringLiteral 
 
 Identifier
  = !ReservedWord v:IdentifierProto { return v; }
@@ -1479,6 +1497,7 @@ SimpleStringLiteral
  
 StringLiteral
  = MultiString
+ / '\`' v:Bareline { return v }
  / '\'' v:(EscapedChar/StringTemplate/StringTickChar)* '\'' { return assembleLiteral(v) }
  / '\"' v:(EscapedChar/StringTemplate/StringQuoteChar)* '\"' { return assembleLiteral(v) }
  
@@ -1489,11 +1508,11 @@ StringQuoteChar
  = v:[^\"\n] { return [true,v] }
 
 MultiString
- = "'''" _ EOLs INDENT EOLs v:(Bareline)* DEDENT &EOLs { return v.join("+'\\n'+") } 
+ = "'''" _ EOLs INDENT EOLs v:(v:Bareline EOLs { return v} )* DEDENT &EOLs { return v.join("+'\\n'+") } 
 
 
 Bareline
- = v:(EscapedChar/StringTemplate/BarelineStringChar)* EOLs { return assembleLiteral(v) }
+ = v:(EscapedChar/StringTemplate/BarelineStringChar)* &EOLs { return assembleLiteral(v) }
 
 BarelineStringChar
  = v:[^\n}] { return [true,v] }  
@@ -1571,7 +1590,6 @@ ReservedWords
  / DESCENDING / DESC
  / EACH 
  / EMPTY
- / EQ
  / ERROR
  / EXISTS
  / EXPECTS
@@ -1582,8 +1600,6 @@ ReservedWords
  / FROM
  / GATHER
  / GET
- / GE
- / GT
  / HAS 
  / HIGHEST 
  / INC
@@ -1593,18 +1609,14 @@ ReservedWords
  / IN
  / ISNT
  / IS
- / IT
  / KEYS
  / LAST
- / LE
  / LIMIT
  / LIST
  / LOCAL
  / LOWEST 
- / LT
  / NAND
  / NEW
- / NE
  / NOTB
  / NOT
  / NUMBER
@@ -1628,6 +1640,7 @@ ReservedWords
  / TYPE
  / UNDEFINED
  / UPDATE
+ / USING
  / VALUES
  / VIA
  / WHILE
@@ -1672,10 +1685,8 @@ FIRST = 'first'i
 FOR = 'for'i
 FROM = 'from'i
 GATHER = 'gather'i
-GE = 'ge'i 
 GET = 'get'i
 GIVEN = 'given'i
-GT = 'gt'i 
 HAS = 'has'i
 HIGHEST = 'highest'i
 IF = 'if'i
@@ -1690,14 +1701,11 @@ IT = 'it'i
 KEYS = 'keys'i
 KEY = 'key'i
 LAST = 'last'i
-LE = 'le'i
 LIMIT = 'limit'i
 LIST = 'list'i
 LOCAL = 'local'i
 LOWEST = 'lowest'i
-LT = 'lt'i
 NAND = 'nand'i
-NE = 'ne'i
 NEW = 'new'i
 NOT = 'not'i
 NOTB = 'notb'i
@@ -1732,6 +1740,7 @@ TYPE = 'type'i
 UNLESS = 'unless'i 
 UNDEFINED = 'undefined'i
 UPDATE = 'update'i
+USING = 'using'i
 VALUES = 'values'i
 VIA = 'via'i
 WHILE = 'while'i
@@ -1744,7 +1753,7 @@ DOT = '.'
 HASH = '#'
 SEMI = ';'
 COMMA = ','
-COLON  = ':' { return ':' }
+COLON  = ':' !':' { return ':' }
 INDENT = '{'
 DEDENT = '}'
 EQUALS = '='

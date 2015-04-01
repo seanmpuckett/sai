@@ -64,19 +64,19 @@ Execute task
     return b[0]=1 and b[1]=2 and b[2]=3 and b.length=3
   
     
-  @Test 'map undef', task
+  @Test 'thru undef', task
     set b to undefined thru it
     return b is undefined
     
-  @Test 'map value', task
+  @Test 'thru value', task
     set b to 1 thru it+1
     return b=2
     
-  @Test 'map list', task
+  @Test 'thru list', task
     set b to: 1, 2, 3; thru it+1
     return b[0]=2 and b[1]=3 and b[2]=4 and b.length=3
     
-  @Test 'map traits', task
+  @Test 'thru traits', task
     set b to: a 1, b 2, c 3; thru it+1
     return b.a=2 and b.b=3 and b.c=4
     
@@ -159,4 +159,81 @@ Execute task
       return accum+it
     return b is undefined
      
+     
+     
+  // test data
+
+  set friends to:
+    :name 'Sara', age 23, #cat, province 'ON'
+    :name 'John', age 19, #cat, #dog, province 'ON'
+    :name 'Ellie', age 22, province 'QC'
+    :name 'Marshal', age 21, #dog, province 'ON'
+    :name 'Doug', age 18, province 'ON'
+    :name 'Ann', age 23, #cat, province 'QC'
+    :name 'Harry', age 31, province 'QC'
+    :name 'Jenna', age 28, #dog, province 'ON'  
+
+  
+  @Match 'has task', 'Sara', task
+    return friends has using task
+      return $name='Sara'
+    ... thru .name
+
+  @Match 'by task', 'Doug', task
+    return friends by using task as a,b
+      return a.age <=> b.age
+    ... limit 1 thru .name
+
+  @Match 'thru task', 'SARA', task
+    return friends thru using task
+      return from $name.toUpperCase
+    ... first
     
+  @Match 'gather task', 185, task
+    return friends gather into 0 using task as acc,val
+      return acc+val.age
+    
+  @Match 'age total into', 185, task
+    return friends gather into 0
+      set accum + .age
+  
+  @Match '#cat count', 3, task
+    return (friends #cat).length
+  
+  @Match '!#cat count', 5, task
+    return (friends !#cat).length
+  
+  @Match '#cat #dog count', 1, task
+    return (friends #cat #dog).length
+
+  @Match '#cat !#dog count', 2, task
+    return (friends #cat !#dog).length
+  
+  @Match '#ferret count', 0, task
+    return (friends #ferret).length
+        
+  @Match 'first', 'Sara', task
+    return (friends first).name
+      
+  @Match 'youngest dog', 'John', task
+    return (friends #dog lowest .age).name
+
+  @Match 'youngest quebec', 'Ellie', task
+    return (friends has .province='QC' lowest .age).name
+
+  @Match 'longest name', 'Marshal', task
+    return (friends highest .name.length).name
+
+  @Match 'youngest', 'Doug', task
+    return (friends by .age first).name
+
+  @Match 'lowest name', 'Ann', task
+    return (friends by .name limit 1)[0].name
+  
+  @Match 'eldest', 'Harry', task
+    return (friends highest .age).name
+
+  @Match 'last', 'Jenna', task
+    return (friends last).name
+    
+  

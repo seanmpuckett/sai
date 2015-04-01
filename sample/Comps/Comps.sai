@@ -2,10 +2,7 @@
 object Comps 1.0.0
 Instantiate task
 
-
-
-
-
+  // test data
   set friends to:
    :name 'Sara', age 23, #cat, province 'ON'
    :name 'John', age 19, #cat, #dog, province 'ON'
@@ -16,108 +13,124 @@ Instantiate task
    :name 'Harry', age 31, province 'QC'
    :name 'Jenna', age 28, #dog, province 'ON'
 
-  debug "\nWho likes cats?"
-  debug friends #cat 
-
-  debug "\nWho doesn't like dogs?"
-  debug friends !#dog
-  
-  debug "\nWho likes both?"
-  debug friends #dog #cat
-  
-  debug "\nWho is 21 or over?"
-  debug friends has .cat or .dog
-  
-  debug "\nWho is 21 or over?"
-  debug friends has .age >= 21
-  
-  debug "\nWho lives in Quebec and likes cats or dogs?"
-  debug friends has (.province = 'QC') and (.cat or .dog)
-  
-  debug "\nUnder 21 and likes cats?"
-  debug friends #cat has .age < 21 
-  
-  debug "\nWho can rent a car?"
   set rentAge to: ON 25, QC 21
-  debug friends has .age >= rentAge[.province]
-  
-  debug "\nWho can rent a car? (code block)"
-  debug friends has
-    return .age >= rentAge[.province]
 
-  debug "\nWho can rent a car (named task)"
+  // HAS filter function
   set CanRent to task as row
     return row.age >= rentAge[row.province]
-  debug friends has via CanRent
-  
-  debug "\n\nSorted names"
-  debug friends by .name
-  
-  debug "\nOldest to youngest"
-  debug friends by .age descending
-  
-  debug "\nLength of name, then age"
-  debug friends by .name.length by .age
-  
-  debug "\nOldest friend"
-  debug friends highest .age
-  
-  debug "\nYoungest cat-loving friend"
-  debug friends #cat lowest .age
-  
-  debug "\nAges by province (code block)"
-  debug friends by
-    return a.province <=> b.province or a.age <=> b.age
-  
-  debug "\nAges by province (named task)"
+
+  // BY sort function
   set ProvinceAge to task as a, b
     return a.province <=> b.province or a.age <=> b.age
-  debug friends by via ProvinceAge
-  
-  debug "\n\nJust the names in alpha order"
-  debug friends by .name thru .name
-  
-  debug "\n\nJust the names in alpha order (alternate)"
-  debug friends thru .name by .
-  
-  debug "\nSummary of cat-fanciers"
-  debug friends #cat thru '${.name} (${.age}), lives in ${.province}'
 
-  debug "\nNumbered list of friends"
-  debug friends thru
-    return '${key+1}) ${.name}'
-
-  debug "\nAll-caps names"
-  debug friends thru
-    return it overlay: name from .name.toUpperCase
-  
-  debug "\n\nTotal ages (block)"
-  debug friends gather into 0 
-    set accum + .age
-
-  debug "\nTotal ages (task)"
-  set ageTotal to task as accumulator, row
+  // GATHER reduction function
+  set AgeTotal to task as accumulator, row
     return accumulator + row.age
-  debug friends gather via ageTotal into 0 
-  
-  debug "\nCount friends in each province"
-  debug friends gather into blank
-    set accum[.province] to (self default 0) + 1
-      
 
-  debug "\n\nFive youngest friends"
-  debug friends by .age limit 5
+  // create an "adding machine tape" of results to display
+  // nb. a single backtick indicates remainder of line is a string literal
   
-  debug "\nFive oldest friends"
-  debug friends by .age limit -5
+  set tape to:
   
-  debug "\nSecond page of five youngest"
-  debug friends by .age limit 5,5
+    `HAS\nWho likes cats?
+    friends #cat 
+
+    `Who doesn't like dogs?
+    friends !#dog
+
+    `Who likes both?
+    friends #dog #cat
+
+    `Who is 21 or over?
+    friends has .cat or .dog
+
+    `Who is 21 or over?
+    friends has .age >= 21
+
+    `Who lives in Quebec and likes cats or dogs?
+    friends has (.province = 'QC') and (.cat or .dog)
+
+    `Under 21 and likes cats?
+    friends #cat has .age < 21 
+
+    `Who can rent a car?
+    friends has .age >= rentAge[.province]
+
+    `Who can rent a car? (code block)
+    friends has
+      return .age >= rentAge[.province]
+
+    `Who can rent a car (named task)
+    friends has using CanRent
+
+    `BY\nSorted names
+    friends by .name
+
+    `Oldest to youngest
+    friends by .age descending
+
+    `Length of name, then age
+    friends by .name.length by .age
+
+    `Oldest friend
+    friends highest .age
+
+    `Youngest cat-loving friend
+    friends #cat lowest .age
+
+    `Ages by province (code block)
+    friends by
+      return a.province <=> b.province or a.age <=> b.age
+
+    `Ages by province (named task)
+    friends by using ProvinceAge
+
+    `Just the names in alpha order
+    friends by .name thru .name
+
+    `THRU\nJust the names in alpha order (alternate)
+    friends thru .name by .
+
+    `Summary of cat-fanciers
+    friends #cat thru '${.name} (${.age}), lives in ${.province}'
+
+    `Numbered list of friends
+    friends thru
+      return '${key+1}) ${.name}'
+
+    `All-caps names
+    friends thru
+      return it overlay: name from .name.toUpperCase
+
+    `GATHER\nTotal ages (block)
+    friends gather into 0 
+      set accum + .age
+
+    `Total ages (task)
+    friends gather into 0 using AgeTotal  
+
+    `Count friends in each province
+    friends gather into blank
+      set accum[.province] to (self default 0) + 1
+
+    `Five youngest friends
+    friends by .age limit 5
+
+    `Five oldest friends
+    friends by .age limit -5
+
+    `Second page of five youngest
+    friends by .age limit 5,5
+
+    `Last friend in the list
+    friends last
   
-  debug "\nLast friend in the list"
-  debug friends last
-  
-  
+
+  ply tape as line,lineno
+    debug line
+    if lineno andb 1
+      debug ''
+
   
     
 
