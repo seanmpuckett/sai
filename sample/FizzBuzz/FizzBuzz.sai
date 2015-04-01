@@ -2,14 +2,13 @@
 object FizzBuzz 1.0.0
 
 Instantiate task
-  set out to ''
   set words to: Fizz 3, Buzz 5
   count 1 to 101 as num
+    set out to ''
     each words as divisor, word
       unless num % divisor
         set out + word
     if out.length
       debug out
-      set out to ''
     else
       debug num
