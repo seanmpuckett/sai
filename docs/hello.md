@@ -181,7 +181,7 @@ It does introduce a couple of iterators, so it makes for a fine example.
 	    else
 	      debug num
 
-This is a version that is not as efficient as possible, but it is clear does allow the trivial addition of more “trick” divisors by putting them in a small database.
+This is a version that is not as efficient as possible, but it is readable and does allow the trivial addition of more “trick” divisors by putting them in a small database.
 
 The first two lines used to set up an object are familiar; we’ll skip them and continue directly with:
 
@@ -189,9 +189,9 @@ The first two lines used to set up an object are familiar; we’ll skip them and
 
 This is an assignment, which takes the general form of `set varname to value` (though there are variations). In this statement, the _value_ is quite interesting: `: Fizz 3, Buzz 5`.
 
-SAI uses a colon at the beginning of both array and trait data types. It knows the difference between arrays and traits at parse time because each trait has a name _and_ a value, whereas each array element _only_ has a value.  
+SAI uses a colon at the beginning of both array and field literals. It knows the difference between arrays and traits at parse time because each field has a name _and_ a value, whereas each array element _only_ has a value.  
 
-We end up with a local variable called `wordlist` which is a small set of traits where `Fizz` has the value `3` and `Buzz` has the value 5.
+We end up with a local variable called `wordlist` which is a small set of fields where `Fizz` has the value `3` and `Buzz` has the value 5.
 
 	  count 1 to 101 as num
 
@@ -209,7 +209,7 @@ Assigning the empty string to our output buffer.
 
 	    each wordlist as divisor, word
 
-The **each** iterator is used to visit each trait in an object. Here, we want to examine the words in our word list. The **as** clause allows the assignment of each iterated trait’s value and name to variables for use in the nested code block:
+The **each** iterator is used to visit each field in an object. Here, we want to examine the words in our word list. The **as** clause allows the assignment of each iterated field’s value and name to variables for use in the nested code block:
 
 	      unless num % divisor
 
