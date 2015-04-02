@@ -2,6 +2,7 @@
 {
   var _bindings={};
   var _locals={};
+  var reCache={};
   var Entity=false;
   var FunctionChain=false;
   var SafetyFetch=false;
@@ -35,42 +36,26 @@
     return r; 
   }
 
+  function rep(list,val) {
+    var j;
+    for (var i in list) {
+      if (j==val[list[i]]) list[i]=j;
+    }
+  }
  
- 
-  function resolveVars(code,varnames) {
+  function RV(code,varnames) {
     if (!code.replace) {
       code=code.toString();
-      //console.log(code);
-      //console.log(varnames);
-      //throw code;
     }
     for (var i in varnames) {
-      code=code.replace(new RegExp('@'+i+'@','g'),varnames[i]||tempvar());
+      var val=varnames[i];
+      if (undefined===val || null===val || false===val) val=tempvar();
+      var re=reCache[i]; if (!re) re=reCache[i]=new RegExp('\\^\\{'+i+'\\}','g');
+      code=code.replace(re,val);
     }
     return code;
   }
-
-  function spliceString(str,pos,len,repl) { 
-    return str.slice(0,pos)+repl+str.slice(pos+len);
-  }
-
-  function t(pat,val) { 
-    var pos,j,i=0;
-    while ((i=pat.indexOf('^',i))>=0) {
-      pos=i+1;
-      for (j in val) {
-        if (pat.indexOf(j,pos)==pos) {
-          pat=spliceString(pat,i,j.length+1,val[j]);
-          pos=i+val[j].length;
-          break;
-        }
-      }
-      i=pos;
-    }
-
-    return pat;
-  }
-
+  
   var varnum=0;
   function tempvar() {
     var v="$"+(varnum++);
@@ -80,20 +65,19 @@
   function quoted(v) {
     return "'"+v.replace(/\'/g,"\\\'")+"'";
   }
-
   
   var accessors = {
     firstfetch: { // [0]+key+[1]
       this: [ '$' , '' ],
       local: [ '' , '' ], 
       parameters: [ 'p','' ],
-      it: [ '@this@','' ],
-      key: [ '@key@','' ],
-      trial: [ '@trial@','' ],
-      accum: [ '@accum@','' ],
-      error: [ '@error@','' ],
-      self: [ '@self@','' ],
-      super: [ '@super@','' ],
+      it: [ '^{this}','' ],
+      key: [ '^{key}','' ],
+      trial: [ '^{trial}','' ],
+      accum: [ '^{accum}','' ],
+      error: [ '^{error}','' ],
+      self: [ '^{self}','' ],
+      super: [ '^{super}','' ],
       paren: [ '', '' ],
       bound: [ '' , '' ],
       global: [ '' , '' ],
@@ -109,10 +93,10 @@
       function: [ '' , '' ],
       paren: [ '', '' ],
       local: [ '' , ''  ],
-      error: [ '@error@','' ],
-      attribute: [ '@this@.' ,  '' ],
-      self: [ '@self@','' ],
-      accum: [ '@accum@' , '' ],
+      error: [ '^{error}','' ],
+      attribute: [ '^{this}.' ,  '' ],
+      self: [ '^{self}','' ],
+      accum: [ '^{accum}' , '' ],
       property: [ '$["' , '"]' ], 
       parameter: [ 'p["','"]' ],
     },
@@ -159,39 +143,39 @@
   }
 
   var itselfops = {
-    '+': '^1 += ^2' , // test 'self +'
-    '-': '^1 -= ^2' , // test 'self -'
+    '+': '^{1} += ^{2}' , // test 'self +'
+    '-': '^{1} -= ^{2}' , // test 'self -'
     
-    '*': '^1 *= ^2' , // test 'self *'
-    '/': '^1 /= ^2' , // test 'self /'
-    '%': '^1 %= ^2' , // test 'self %'
-    '**': '^1 = Math.pow(^1,^2)' , // test 'self **'
+    '*': '^{1} *= ^{2}' , // test 'self *'
+    '/': '^{1} /= ^{2}' , // test 'self /'
+    '%': '^{1} %= ^{2}' , // test 'self %'
+    '**': '^{1} = Math.pow(^{1},^{2})' , // test 'self **'
 
-    xorb: '^1 ^= ^2' , // test 'self xorb'
-    andb: '^1 &= ^2' , // test 'self andb'
-    orb: '^1 |= ^2' , // test 'self orb'
+    xorb: '^{1} ^= ^{2}' , // test 'self xorb'
+    andb: '^{1} &= ^{2}' , // test 'self andb'
+    orb: '^{1} |= ^{2}' , // test 'self orb'
 
-    and: '^1 = ^1 && ^2', // test 'self and'
-    or: '^1 = ^1 || ^2', // test 'self or'
-    xor: '^1 = _$AI.xor(^1,^2)',  // test 'self xor'
-    nand: '^1 = (!((^1)&&(^2)))', // test 'self nand'
+    and: '^{1} = ^{1} && ^{2}', // test 'self and'
+    or: '^{1} = ^{1} || ^{2}', // test 'self or'
+    xor: '^{1} = _$AI.xor(^{1},^{2})',  // test 'self xor'
+    nand: '^{1} = (!((^{1})&&(^{2})))', // test 'self nand'
 
-    '?>': '^1 = Math.max(^1,^2)', // test 'self ?>'
-    '?<': '^1 = Math.min(^1,^2)', // test 'self ?<'
+    '?>': '^{1} = Math.max(^{1},^{2})', // test 'self ?>'
+    '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
     
-    via: '^1 = ^2(^1)', // test 'self via'
-    update: '_$AI.merge(^1,^2)', // test 'self update'
-    delete: '_$AI.remove(^1,^2)', // test 'self delete*'
-    default: 'if (undefined===^1) ^1=^2' // test 'self default*'
+    via: '^{1} = ^{2}(^{1})', // test 'self via'
+    update: '_$AI.merge(^{1},^{2})', // test 'self update'
+    delete: '_$AI.remove(^{1},^{2})', // test 'self delete*'
+    default: 'if (undefined===^{1}) ^{1}=^{2}' // test 'self default*'
   };
 
   var unops={
-    '-': '^1=-(^1)' , // test 'self negate'
-    'not': '^1=!(^1)', // test 'self not'
-    'notb': '^1=~(^1)', // test 'self notb'
-    'inc': '^1++', // test 'self inc'
-    'dec': '^1--', // test 'self dec'
-    'delete': 'delete ^1' // test 'self delete'
+    '-': '^{1}=-(^{1})' , // test 'self negate'
+    'not': '^{1}=!(^{1})', // test 'self not'
+    'notb': '^{1}=~(^{1})', // test 'self notb'
+    'inc': '^{1}++', // test 'self inc'
+    'dec': '^{1}--', // test 'self dec'
+    'delete': 'delete ^{1}' // test 'self delete'
   }; 
 
   
@@ -272,8 +256,8 @@
     fun+=k+FunStop(); // function body
     fun+='}';
   
-    //if (fun.indexOf('@this@')>-1) error("Cannot use unrooted . accessor without a context.");
-    fun=resolveVars(fun,{this:false,super:'_'+fn});
+    if (fun.indexOf('^{this}')>-1) error("Cannot use unrooted . accessor without a context\n\n"+fun);
+    fun=RV(fun,{this:false,super:'_'+fn});
   
     r=head+fun+tail;
     return r;
@@ -285,7 +269,7 @@
        return v.left+v.base+v.right;
      } else {
        if (test) {
-         return t('((undefined===($_c=($_d=^base)^verb^param))?$_d:$_c)',v);
+         return RV('((undefined===($_c=($_d=^{base})^{verb}^{param}))?$_d:$_c)',v);
        } else {
          return v.base+v.verb+v.param;
        }
@@ -500,7 +484,7 @@ SwitchStatement // test 'switch*'
  = s:SwitchClause o:Output? EOLs INDENT c:(EOLs c:CaseClause {return c})+ d:(EOLs d:DefaultClause {return d})? EOLs DEDENT {
    o=o?o:tempvar();
    addLocal(o);
-   var r=resolveVars('switch (@output@=('+s+')) {\n',{output:o});
+   var r=RV('switch (^{output}=('+s+')) {\n',{output:o});
    for (var i in c) {
      r+='case ('+c[i][0]+'): '+c[i][1]+' break; \n';
    }
@@ -536,7 +520,7 @@ CatchClause // test 'catch*'
  = CATCH _ o:Output? _ b:Block { 
    o=o?o:tempvar();
    addLocal(o);
-   return resolveVars('catch (@error@) {'+b+'}\n',{error:o}); 
+   return RV('catch (^{error}) {'+b+'}\n',{error:o}); 
  }
  
 FinallyClause // test 'finally*'
@@ -552,12 +536,12 @@ IfClause
  = EXISTS _ c:Expression out:Output? b:Block  { // test 'exists*'
    if (!out) out=tempvar();
    addLocal(out);
-   return resolveVars('if (undefined !==(@this@=(@condition@))) {\n'+b+'\n}\n',{this:out,condition:c}); 
+   return RV('if (undefined !==(^{this}=(^{condition}))) {\n'+b+'\n}\n',{this:out,condition:c}); 
  }
  / IF _ c:Expression out:Output? b:Block  { // test 'if*'
    if (!out) out=tempvar();
    addLocal(out);
-   return resolveVars('if ((@trial@=(@condition@))) {\n'+b+'\n}\n',{trial:out,condition:c}); 
+   return RV('if ((^{trial}=(^{condition}))) {\n'+b+'\n}\n',{trial:out,condition:c}); 
  }
  / UNLESS _ c:Expression b:Block  { // test 'unless*'
    return 'if (!('+c+')) {\n'+b+'\n}\n' }
@@ -579,7 +563,7 @@ LocalStatement
 WithStatement
   = WITH _ value:Expression out:Output? block:Block {
       var r={this:(out?out:tempvar())};
-      var code=resolveVars('var @this@=',r)+value+resolveVars(';\n'+block+'\n',r);
+      var code=RV('var ^{this}=',r)+value+RV(';\n'+block+'\n',r);
       return code; 
   }
  
@@ -604,7 +588,7 @@ SetBlock
 SetTerm
  = local:LocalAdj? _ l:LValues _ FROM __ v:VerbSentence {
    local=local?'var ':'';
-   if (l.length==1) return local+l[0]+'='+resolveVars(v,{self:l[0]})+';\n';
+   if (l.length==1) return local+l[0]+'='+RV(v,{self:l[0]})+';\n';
    var code='var $_='+v+';\n';
    for (var i in l) {
      code+=local+l[i]+'=$_['+i+'];\n';
@@ -613,7 +597,7 @@ SetTerm
  }
  / local:LocalAdj? _ l:LValues _ TO _ e:Expression {
    local=local?'var ':'';
-   if (l.length==1) return local+l[0]+'='+resolveVars(e,{self:l[0]})+';\n';
+   if (l.length==1) return local+l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_=[].concat('+e+');\n';
    for (var i in l) {
      code+=local+l[i]+'=$_['+i+'];\n';
@@ -624,7 +608,7 @@ SetTerm
    local=local?'var ':'';
    code='';
    for (var i in l) {
-     code+=local+t(itselfops[o], {'1':l[i], '2':resolveVars(e,{self:l[i]}) } )+';\n';
+     code+=local+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
    }
    return code;
  }
@@ -632,7 +616,7 @@ SetTerm
    code='';
    local=local?'var ':'';
    for (var i in l) {
-     code+=local+t(unops[o],{'1':l[i]})+';\n';
+     code+=local+RV(unops[o],{'1':l[i]})+';\n';
    }
    return code;
  }
@@ -661,11 +645,11 @@ VerbStatement
  / v:VerbChain { return v+';\n'; }
  
 ReturnStatement
- = END _ { return 'return;\n'}
- / RETURN _ k:Expression  { 
+ = END { return 'return;\n'}
+ / RETURN Sep k:Expression  { 
    return 'return '+k+';\n' 
   }
- / r:(ResolveReject) _ k:Expression?   { 
+ / r:(ResolveReject) Sep k:Expression?   { 
    return r+'('+k+');\n' ;
   }
 
@@ -674,63 +658,63 @@ ResolveReject
  / REJECT { return '$_reject' }
 
 NoneClause
- = ELSE _ b:Block  { return '{'+b+'}\n' }
+ = ELSE Sep b:Block  { return '{'+b+'}\n' }
 
 
 IterateStatement
- = EACH _ v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+ = EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
      var j=tempvar();
      var k=tempvar();
-     var w={b:b,i:i,j:j,v:v,n:n,k:k};
-     var setup=t('var ^j=^v;\nif (undefined===^j) ^j=[]; ',w);
-     var iterate=resolveVars(t('for (var @key@ in ^j) { var @this@=^j[@key@];\n^b}\n'+(n?'if (undefined===@key@) { ^n }\n':''),w),{key:(o?o[1]:false),this:(o?o[0]:false)});
+     var w={b:b,i:i,j:j,v:v,n:n,k:k,key:(o?o[1]:false),this:(o?o[0]:false)};
+     var setup=RV('var ^{j}=^{v};\nif (undefined===^{j}) ^{j}=[]; ',w);
+     var iterate=RV('for (var ^{key} in ^{j}) { var ^{this}=^{j}[^{key}];\n^{b}}\n'+(n?'if (undefined===^{key}) { ^{n} }\n':''),w);
      return setup+iterate; 
   }
- / EACH _ list:Expression _ task:Value none:(EOLs n:NoneClause {return n})? {
+ / EACH Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
      var j=tempvar();
      var k=tempvar();
      var w={task:task,list:list,j:j,k:k,none:none};
-     var setup=t('var ^j=^list;\nif (undefined===^j) ^j=[]; ',w);
-     var iterate=t('for (var ^k in ^j) ^task(^j[^k],^k);\n',w);
-     var final=t(none?'if (^k===undefined) { ^none }\n':'',w);
+     var setup=RV('var ^{j}=^{list};\nif (undefined===^{j}) ^{j}=[]; ',w);
+     var iterate=RV('for (var ^{k} in ^{j}) ^{task}(^{j}[^{k}],^{k});\n',w);
+     var final=RV(none?'if (^{k}===undefined) { ^{none} }\n':'',w);
      return setup+iterate+final; 
   }
- / PLY _ v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+ / PLY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
      var j=tempvar();
      var k=tempvar();
      var l=tempvar();
-     var w={b:b,i:i,j:j,v:v,n:n,k:k,l:l};
-     var setup=t('var ^j=^v;\nif (undefined===^j) ^j=[]; ',w);
-     var iterate=resolveVars(t('var ^l=^j.length; if (^l) { var @this@,@key@=0; while (@key@<^l) { @this@=^j[@key@];\n^b\n@key@++; } } '+(n?'else { $n }':'')+'\n',w),{key:(o?o[1]:false),this:(o?o[0]:false)});
+     var w={b:b,i:i,j:j,v:v,n:n,k:k,l:l,key:(o?o[1]:false),this:(o?o[0]:false)};
+     var setup=RV('var ^{j}=^{v};\nif (undefined===^{j}) ^{j}=[]; ',w);
+     var iterate=RV('var ^{l}=^{j}.length; if (^{l}) { var ^{this},^{key}=0; while (^{key}<^{l}) { ^{this}=^{j}[^{key}];\n^{b}\n^{key}++; } } '+(n?'else { ^{n} }':'')+'\n',w);
      return setup+iterate; 
   }
- / PLY _ list:Expression _ task:Value none:(EOLs n:NoneClause {return n})? {
+ / PLY Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
      var j=tempvar();
      var k=tempvar();
      var l=tempvar();
      var w={task:task,list:list,l:l,j:j,k:k,none:none};
-     var setup=t('var ^j=^list;\nif (undefined===^j) ^j=[]; var ^l=^j.length;\n',w);
-     var test=t(none?'if (!^l) ^none else ':'',w);
-     var iterate=t('for (var ^k=0; ^k<^l; ^k++) { ^task(^j[^k],^k) };\n',w);
+     var setup=RV('var ^{j}=^{list};\nif (undefined===^{j}) ^{j}=[]; var ^{l}=^{j}.length;\n',w);
+     var test=RV(none?'if (!^{l}) ^{none} else ':'',w);
+     var iterate=RV('for (var ^{k}=0; ^{k}<^{l}; ^{k}++) { ^{task}(^{j}[^{k}],^{k}) };\n',w);
      return setup+test+iterate; 
   }
- / COUNT _ start:Expression? _ TO _ stop:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
+ / COUNT Sep start:Expression? _ TO Sep stop:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
      var dest=tempvar();
      if (!start) start=0;
-     var w={start:start,stop:stop,out:out,block:block,none:none,dest:dest};
-     var setup=t('var @key@=^start,^dest=^stop;\n ',w);
-     var alternate=none?t('if (@key@>=^dest) { ^none } else ',w):'';
-     var iterate=t('while (@key@<^dest) { ^block @key@++; }\n',w);
-     return resolveVars(setup+alternate+iterate,{key:(out?out[0]:false)}); 
+     var w={start:start,stop:stop,out:out,block:block,none:none,dest:dest,key:(out?out[0]:false)};
+     var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
+     var alternate=none ? 'if (^{key}>=^{dest}) { ^{none} } else ' : '';
+     var iterate='while (^{key}<^{dest}) { ^{block} ^{key}++; }\n';
+     return RV(setup+alternate+iterate,w); 
   }
- / COUNT _ FROM _ start:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count from*'
-     var w={start:start,out:out,block:block,none:none};
-     var setup=t('var @key@=^start;\n ',w);
-     var alternate=none?t('if (@key@<=0) { ^none } else ',w):'';
-     var iterate=t('while (@key@>0) { @key@--; ^block }\n',w);
-     return resolveVars(setup+alternate+iterate,{key:(out?out[0]:false)}); 
+ / COUNT Sep FROM _ start:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count from*'
+     var w={start:start,out:out,block:block,none:none,key:(out?out[0]:false)};
+     var setup='var ^{key}=^{start};\n';
+     var alternate=none ? 'if (^{key}<=0) { ^{none} } else ' : '';
+     var iterate='while (^{key}>0) { ^{key}--; ^{block} }\n';
+     return RV(setup+alternate+iterate,w); 
   }
-  / WHILE _ v:Expression b:Block {
+  / WHILE Sep v:Expression b:Block {
     return 'while ('+v+') { '+b+' }\n';
   }
 
@@ -1113,7 +1097,7 @@ ValuesComprehension
 SortComprehension
  = _ BY _ o:IterateOutput? b:Block _ {
     if (!o) o=['$a','$b'];
-    var block=resolveVars('function('+o[0]+','+o[1]+'){'+b+'}');
+    var block=RV('function('+o[0]+','+o[1]+'){'+b+'}');
     return ['_$AI.sort(' , ','+block+')']; 
   }
  / _ BY _ USING _ x:Value _ {
@@ -1122,11 +1106,11 @@ SortComprehension
 
 MapComprehension
  = _ THRU _ x:Logical _ {
-     var block=resolveVars('function(@this@,@key@){ return '+x+'}',{this:'$_v',key:'$_k'});
+     var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+')']; 
   }
  / _ THRU _ o:IterateOutput? b:Block _ {
-     var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
+     var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.map(' , ','+block+')']; 
   }
  / _ THRU _ USING _ x:Value _ {
@@ -1135,7 +1119,7 @@ MapComprehension
 
 ReduceComprehension
 // = GATHER _ b:Logical _ {
-//    var block=resolveVars('function(@result@,@this@,@key@){ return '+b+'; //}',{result:'$_r',this:'$_v',key:'$_k'});
+//    var block=RV('function(@result@,^{this},^{key}){ return '+b+'; //}',{result:'$_r',this:'$_v',key:'$_k'});
 //    return ['_$AI.reduce(' , ','+block+')' ];
 //  }
  = _ GATHER _ into:IntoClause? o:IterateOutput? b:Block _ {
@@ -1143,8 +1127,8 @@ ReduceComprehension
     if (!o[0]) o[0]='$accum';
     if (!o[1]) o[1]='$_v';
     if (!o[2]) o[2]='$_k';
-    b+='return @accum@;\n';
-    var block=resolveVars('function(@accum@,@this@,@key@){'+b+'}',{accum:o[0],this:o[1],key:o[2]});
+    b+='return ^{accum};\n';
+    var block=RV('function(^{accum},^{this},^{key}){'+b+'}',{accum:o[0],this:o[1],key:o[2]});
     if (into===null) {
       return ['_$AI.reduce(' , ','+block+')' ];
     } else {
@@ -1161,7 +1145,7 @@ ReduceComprehension
 
 FilterComprehension
  = _ HAS _ o:IterateOutput? b:Block _ {
-     var block=resolveVars('function(@this@,@key@){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
+     var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.filter(' , ','+block+')']; 
   }
   / _ HAS  _ USING _ x:Value _ {
@@ -1192,30 +1176,26 @@ OtherComprehension
      var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
    }
    if (conds.length) {
-     code=resolveVars(t('_$AI.filter(^v,function($_v,$_k){ return ^c; })',{v:code,c:conds.join(' && ')}),{this:'$_v',key:'$_k'});
+     code=RV('_$AI.filter(^{v},function($_v,$_k){ return ^{c}; })',{v:code,c:conds.join(' && '),this:'$_v',key:'$_k'});
    }
    if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
      code='_$AI.reduce('+code+',function(a,b) { if (undefined===a) return b; var r; ';
      expr.by[0][1]*=expr.limit[0].sort; // flip sort if looking for "last"
      var conds=expr.by.map(function(c){
-       c[0]=c[0]||'@this@';
-       var x1=resolveVars(c[0],{this:'a'});
-       var x2=resolveVars(c[0],{this:'b'});
-       return t('r=_$AI.compare(^x1,^x2); if (r<0) return ^lt; if (r>0) return ^gt;\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
-       
-//       var x1=resolveVars('aa='+c[0]+'; ',{this:'a'});
-//       var x2=resolveVars('bb='+c[0]+'; ',{this:'b'});
-//       return x1+x2+t('if (aa<bb) return ^lt; if (aa>bb) return ^gt; ',{c:c[0],lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
+       c[0]=c[0]||'^{this}';
+       var x1=RV(c[0],{this:'a'});
+       var x2=RV(c[0],{this:'b'});
+       return RV('r=_$AI.compare(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
      });
      code+=conds.join(' ')+'return a; },undefined)';
    } else {
      if (expr.by.length) {
        code='_$AI.sort('+code+',function(a,b) { var aa,bb; ';
        var conds=expr.by.map(function(c){
-         c[0]=c[0]||'@this@';
-         var x1=resolveVars('aa='+c[0]+'; ',{this:'a'});
-         var x2=resolveVars('bb='+c[0]+'; ',{this:'b'});
-         return x1+x2+t('if (aa<bb) return ^lt; if (aa>bb) return ^gt; ',{c:c[0],lt:-c[1],gt:c[1]});
+         c[0]=c[0]||'^{this}';
+         var x1=RV('aa='+c[0]+'; ',{this:'a'});
+         var x2=RV('bb='+c[0]+'; ',{this:'b'});
+         return x1+x2+RV('if (aa<bb) return ^{lt}; if (aa>bb) return ^{gt}; ',{c:c[0],lt:-c[1],gt:c[1]});
        });
        code+=conds.join(' ')+'return 0; })';
      }
@@ -1245,8 +1225,8 @@ Limit
  / LIMIT _ s:Logical _ { return ['limit',{slice:true,start:0,len:s}]; } 
  
 Quality
- = HASH v:Keyword _ { return ['quality', '@this@["'+v+'"]'] }
- / BANG HASH v:Keyword _ { return ['quality', '(!@this@["'+v+'"])'] }
+ = HASH v:Keyword _ { return ['quality', '^{this}["'+v+'"]'] }
+ / BANG HASH v:Keyword _ { return ['quality', '(!^{this}["'+v+'"])'] }
 
 Criteria
  = HAS _ v:Logical _ { return ['having',v] }
@@ -1269,15 +1249,15 @@ Logical
  / c:Comparison _ XOR _ l:Logical  { return '(_$AI.xor('+c+','+l+'))' } // test 'xor' 
  / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
  / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { 
-     return t('((^c)?(^l):(^r))',{c:c,l:l,r:r}); 
+     return RV('((^{c})?(^{l}):(^{r}))',{c:c,l:l,r:r}); 
    } 
  / c:Comparison _ DEFAULT _ v:Logical  {  // test 'default*'
      SafetyFetch=true; 
-     return t('((undefined!==($_b=^c))?$_b:^v)',{c:c,v:v}); 
+     return RV('((undefined!==($_b=^{c}))?$_b:^{v})',{c:c,v:v}); 
    } 
  / c:Comparison _ INITIALIZED _ v:Logical  { // test 'initialized*'
      SafetyFetch=true; 
-     return t('((undefined!==($_b=^c))?$_b:(^c=^v))',{c:c,v:v}); 
+     return RV('((undefined!==($_b=^{c}))?$_b:(^{c}=^{v}))',{c:c,v:v}); 
    } 
  / v:Comparison _ { return v }
 
@@ -1356,7 +1336,7 @@ Value
  / '(' _ v:Expression _ o:Output? ')' _ { 
    if (o) {
      addLocal(o);
-     return resolveVars('(@out@='+v+')',{out:o}); 
+     return RV('(@out@='+v+')',{out:o}); 
    } else {
      return '('+v+')'; 
    }
@@ -1414,7 +1394,7 @@ VerbClause
   }
  / v:(VerbValue) _ { 
      composite=v[0]+v[1];
-     if (composite=='@super@') return { base:'@super@', verb:'.call', param:'($)' }; 
+     if (composite=='^{super}') return { base:'^{super}', verb:'.call', param:'($)' }; 
      return [{ base:v[0], verb:v[1], param:'()' }]
    }
 

@@ -197,7 +197,7 @@ We end up with a local variable called `wordlist` which is a small set of fields
 
 SAI has several different iterators, each tuned for a specific use. It also includes the more generic `while` iterator.
 
-The **count** iterator is designed specifically for incrementing or decrementing an integer between a range of numbers. The most important thing to remember about **count** is that whether it’s counting up or down, the produced value never visits the highest number. It is a 0-based numeric iterator designed for expressly for stepping through lists. Therefore, `count 1 to 101` will produce the integer values from 1-100 inclusive.
+The **count** iterator is designed specifically for incrementing or decrementing an integer between a range of numbers. The most important thing to remember about **count** is that whether it’s counting up or down, the produced value never visits the highest number. It is a 0-based numeric iterator designed expressly for stepping through lists. Therefore, `count 1 to 101` will produce the integer values from 1-100 inclusive.
 
 The **as** clause appears frequently in SAI, not only in iterators but in comparisons as well as in task parameter definitions. **As** gives programmer-specified names(s) to values that will be exposed within the following code block. 
 
