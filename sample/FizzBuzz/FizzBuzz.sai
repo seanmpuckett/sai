@@ -2,13 +2,13 @@
 object FizzBuzz 1.0.0
 
 Instantiate task
+  set words to:
+    :word 'Fizz', divisor 3
+    :word 'Buzz', divisor 5
+    
   count 1 to 101 as num
     set out to ''
-    unless num % 3
-      set out + 'Fizz'
-    unless num % 5
-      set out + 'Buzz'
-    if out.length
-      debug out
-    else
-      debug num
+    each words
+      unless num % .divisor
+        set out + .word
+    debug out.length ?? out :: num

@@ -55,4 +55,120 @@ Execute task
     return false
 
 
-
+  set tdata to: a 1, b 2
+  set ldata to: 1, 2
+  
+  @Match 'each it', 3, task
+    set a to 0
+    each tdata
+      set a + it
+    return a
+    
+  @Match 'each as', 3, task
+    set a to 0
+    each tdata as val
+      set a + val
+    return a
+    
+  @Match 'each key', 'ab', task
+    set a to ''
+    each tdata
+      set a + key
+    return a
+    
+  @Match 'each named key', 'ab', task
+    set a to ''
+    each tdata as v, k
+      set a + k
+    return a
+    
+  @Match 'each none', true, task
+    each empty
+      return false
+    else
+      return true
+    return false
+    
+  @Match 'each undefined', true, task
+    each undefined
+      return false
+    else
+      return true
+    return false
+    
+  @Match 'each number', true, task
+    each 2
+      return false
+    else
+      return true
+    return false
+    
+  @Match 'each list it', 3, task
+    set a to 0
+    each ldata
+      set a + it
+    return a
+    
+  @Match 'each list key', '01', task
+    set a to ''
+    each ldata
+      set a + key
+    return a
+    
+      
+  @Match 'ply it', 3, task
+    set a to 0
+    ply ldata
+      set a + it
+    return a
+    
+  @Match 'ply as', 3, task
+    set a to 0
+    ply ldata as val
+      set a + val
+    return a
+    
+  @Match 'ply key', '01', task
+    set a to ''
+    ply ldata
+      set a + key
+    return a
+    
+  @Match 'ply named key', '01', task
+    set a to ''
+    ply ldata as v, k
+      set a + k
+    return a
+    
+  @Match 'ply none', true, task
+    ply empty
+      return false
+    else
+      return true
+    return false
+    
+  @Match 'ply undefined', true, task
+    ply undefined
+      return false
+    else
+      return true
+    return false
+    
+  @Match 'ply number', true, task
+    ply 2
+      return false
+    else
+      return true
+    return false
+    
+  @Match 'ply traits', true, task
+    ply tdata
+      return false
+    else
+      return true
+    return false
+    
+    
+  
+      
+      

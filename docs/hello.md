@@ -170,28 +170,34 @@ It does introduce a couple of iterators, so it makes for a fine example.
 
 	object FizzBuzz 1.0.0
 	Instantiate task
-	  set words to: Fizz 3, Buzz 5
+	  set words to: 
+	    :word 'Fizz', divisor 3
+	    :word 'Buzz', divisor 5
+	
 	  count 1 to 101 as num
 	    set out to ''
-	    each words as divisor, word
-	      unless num % divisor
-	        set out + word
-	    if out.length
-	      debug out
-	    else
-	      debug num
+	    each words 
+	      unless num % .divisor
+	        set out + .word
+	    debug out.length ?? out :: num
 
-This is a version that is not as efficient as possible, but it is readable and does allow the trivial addition of more “trick” divisors by putting them in a small database.
+This is version is not very efficient, but it is readable and does allow the trivial addition of more “trick” divisors by putting them in an array.
 
 The first two lines used to set up an object are familiar; we’ll skip them and continue directly with:
 
-	  set wordlist to: Fizz 3, Buzz 5
+	  set words to: 
+	    :word 'Fizz', divisor 3
+	    :word 'Buzz', divisor 5
 
-This is an assignment, which takes the general form of `set varname to value` (though there are variations). In this statement, the _value_ is quite interesting: `: Fizz 3, Buzz 5`.
+This is an assignment, which takes the general form of `set varname to value` (though there are variations). In this statement, the _value_ is quite interesting.
 
 SAI uses a colon at the beginning of both array and field literals. It knows the difference between arrays and traits at parse time because each field has a name _and_ a value, whereas each array element _only_ has a value.  
 
-We end up with a local variable called `wordlist` which is a small set of fields where `Fizz` has the value `3` and `Buzz` has the value 5.
+This example creates an array (first colon, followed immediately by a two-line indented block) with two elements. Each element (line beginning with a colon) is an object with two traits, `word` and `divisor`. 
+
+We could have stored our words as separately named fields in a single object and just iterated over that object, but since Javascript doesn’t guarantee iteration order in object traits, on some platforms we might end up with “BuzzFizz” printed for 15, which is _not acceptable_ per the specification. 
+
+_Grey-haired programmer tip: it is never okay to deliver an application that works on your machine if you can’t confidently promise that it will work on someone else’s machine. So when a language definition says certain behaviour is undefined, you are not production ready even if your tests pass. Sorry, sermon over!_
 
 	  count 1 to 101 as num
 
@@ -207,21 +213,31 @@ Without the **as** clause in the example, the count value would be available onl
 
 Assigning the empty string to our output buffer.
 
-	    each wordlist as divisor, word
+	    each words
 
-The **each** iterator is used to visit each field in an object. Here, we want to examine the words in our word list. The **as** clause allows the assignment of each iterated field’s value and name to variables for use in the nested code block:
+The **each** iterator is used to visit each field in an object. Here, we want to examine the words in our word list. On each iteration pass, **each** will place the field value in the **it** magic variable, which also opens up the dot scoping prefix. 
 
-	      unless num % divisor
+	      unless num % .divisor
 
-Here we’re using **unless**, instead of **if**, because it is clearer to write `unless num % divisor` instead of `if not (num % divisor)`. 
+And there’s that dot scoping prefix: within the indented code under **each**, `.divisor` is synonymous to `it.divisor`, which is itself synonymous to `words[key].divisor`.
 
-	        set out + word
+For the conditional we’re using **unless**, instead of **if**, because it is clearer to write `unless num % .divisor` instead of `if not (num % .divisor)`. 
 
-You might thing something is missing here, but it isn’t. The **set** statement has a number of variations that make for simpler, clearer, less repetitive code. This one is the equivalent of the Javascript code `out+=word`. One could also write it as `set out to out + word` or even `set out to self + word`.
+	        set out + .word
+
+You might thing something is missing here, but it isn’t. The **set** statement has a number of variations that make for simpler, clearer, less repetitive code. 
+
+This variation is the equivalent of the Javascript code `out+=word`. One could also write it as `set out to out + word` or even `set out to self + word`.
+
+	    debug out.length ?? out :: num
+
+It’s funny: as much as I’ve said SAI should be shorter and with fewer symbols, and yet here is our old friend the Javascript trinary operator `?:` except with twice as many symbols. Actually, the thing I disliked most about the trinary operator in every language it appears in is how hard it is to see when it’s buried in a complex expression. Like this, it’s much easier to see.
+
+Anyway, that line is the equivalent of these four:
 
 	    if out.length
 	      debug out
 	    else
 	      debug num
 
-And the rest of the code is fairly mundane and hardly worth discussing.
+And that’s _FizzBuzz_.

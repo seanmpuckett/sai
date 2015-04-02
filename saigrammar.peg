@@ -663,45 +663,34 @@ NoneClause
 
 IterateStatement
  = EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-     var j=tempvar();
-     var k=tempvar();
-     var w={b:b,i:i,j:j,v:v,n:n,k:k,key:(o?o[1]:false),this:(o?o[0]:false)};
-     var setup=RV('var ^{j}=^{v};\nif (undefined===^{j}) ^{j}=[]; ',w);
-     var iterate=RV('for (var ^{key} in ^{j}) { var ^{this}=^{j}[^{key}];\n^{b}}\n'+(n?'if (undefined===^{key}) { ^{n} }\n':''),w);
-     return setup+iterate; 
+     var w={b:b,i:i,j:tempvar(),v:v,n:n,k:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false)};
+     var setup='var ^{j}=^{v};\nif (undefined===^{j}) ^{j}=[];';
+     var iterate='for (var ^{key} in ^{j}) { var ^{this}=^{j}[^{key}];\n^{b}}\n'+(n?'if (undefined===^{key}) { ^{n} }\n':'');
+     return RV(setup+iterate,w); 
   }
  / EACH Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
-     var j=tempvar();
-     var k=tempvar();
-     var w={task:task,list:list,j:j,k:k,none:none};
-     var setup=RV('var ^{j}=^{list};\nif (undefined===^{j}) ^{j}=[]; ',w);
-     var iterate=RV('for (var ^{k} in ^{j}) ^{task}(^{j}[^{k}],^{k});\n',w);
-     var final=RV(none?'if (^{k}===undefined) { ^{none} }\n':'',w);
-     return setup+iterate+final; 
+     var w={task:task,list:list,j:tempvar(),k:tempvar(),none:none};
+     var setup='var ^{j}=^{list};\nif (undefined===^{j}) ^{j}=[]; ';
+     var iterate='for (var ^{k} in ^{j}) ^{task}(^{j}[^{k}],^{k});\n';
+     var final=none?'if (^{k}===undefined) { ^{none} }\n':'';
+     return RV(setup+iterate+final,w); 
   }
  / PLY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-     var j=tempvar();
-     var k=tempvar();
-     var l=tempvar();
-     var w={b:b,i:i,j:j,v:v,n:n,k:k,l:l,key:(o?o[1]:false),this:(o?o[0]:false)};
-     var setup=RV('var ^{j}=^{v};\nif (undefined===^{j}) ^{j}=[]; ',w);
-     var iterate=RV('var ^{l}=^{j}.length; if (^{l}) { var ^{this},^{key}=0; while (^{key}<^{l}) { ^{this}=^{j}[^{key}];\n^{b}\n^{key}++; } } '+(n?'else { ^{n} }':'')+'\n',w);
-     return setup+iterate; 
+     var w={b:b,i:i,j:tempvar(),v:v,n:n,k:tempvar(),l:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false)};
+     var setup='var ^{j}=^{v};\nif (undefined===^{j}) ^{j}=[]; ';
+     var iterate='var ^{l}=^{j}.length; if (^{l}) { var ^{this},^{key}=0; while (^{key}<^{l}) { ^{this}=^{j}[^{key}];\n^{b}\n^{key}++; } } '+(n?'else { ^{n} }':'')+'\n';
+     return RV(setup+iterate,w); 
   }
  / PLY Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
-     var j=tempvar();
-     var k=tempvar();
-     var l=tempvar();
-     var w={task:task,list:list,l:l,j:j,k:k,none:none};
-     var setup=RV('var ^{j}=^{list};\nif (undefined===^{j}) ^{j}=[]; var ^{l}=^{j}.length;\n',w);
-     var test=RV(none?'if (!^{l}) ^{none} else ':'',w);
-     var iterate=RV('for (var ^{k}=0; ^{k}<^{l}; ^{k}++) { ^{task}(^{j}[^{k}],^{k}) };\n',w);
-     return setup+test+iterate; 
+     var w={task:task,list:list,l:tempvar(),j:tempvar(),k:tempvar(),none:none};
+     var setup='var ^{j}=^{list};\nif (undefined===^{j}) ^{j}=[]; var ^{l}=^{j}.length;\n';
+     var test=none?'if (!^{l}) ^{none} else ':'';
+     var iterate='for (var ^{k}=0; ^{k}<^{l}; ^{k}++) { ^{task}(^{j}[^{k}],^{k}) };\n';
+     return RV(setup+test+iterate,w); 
   }
  / COUNT Sep start:Expression? _ TO Sep stop:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
-     var dest=tempvar();
      if (!start) start=0;
-     var w={start:start,stop:stop,out:out,block:block,none:none,dest:dest,key:(out?out[0]:false)};
+     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false)};
      var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
      var alternate=none ? 'if (^{key}>=^{dest}) { ^{none} } else ' : '';
      var iterate='while (^{key}<^{dest}) { ^{block} ^{key}++; }\n';
