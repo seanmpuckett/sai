@@ -1,3 +1,3 @@
 var SAI = require('../../SAI'); 
-SAI.configure({paths:[__dirname]});
-new SAI.require('FizzBuzz')();
+SAI.Configure({paths:[__dirname]});
+new SAI.Require('FizzBuzz')();

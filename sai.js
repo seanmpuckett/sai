@@ -5,15 +5,14 @@ var Beautify=require('js-beautify').js_beautify;
 var _ = require('lodash');
 
 
-var SAIverbs =  {
-  debug: 'console.log',
-  require: 'require',
+var SAIconfig = {
+  verbs: {
+    debug: 'console.log',
+    require: 'require'
+  },
+  paths: [__dirname+'/']
 }
 
-var SAIpaths=[__dirname+'/'];
-var SAIprototypes={};
-var SAIprotogens={};
-var SAIisa={};
 
 // HELPERS
 
@@ -240,7 +239,7 @@ _$AI.values = function(a) {
 }
 
 _$AI.new = function(cls,parm) {
-  return SAI.create(cls,parm);  
+  return SAI.Create(cls,parm);  
 }
 
 _$AI.newerror = function(line,file,parameters) {
@@ -362,8 +361,12 @@ newline = "\n"/"\r"/"\r\n"                         {}
 */});
   
   
+SAI.prototypes={};
+SAI.protogens={};
+SAI.isa={};
+SAI.config=SAIconfig;
   
-SAI.getParser = function() {
+SAI.GetParser = function() {
   var indentParser = PEG.buildParser(indentParserSource);
   try {
     var grammarFile=__dirname + "/saigrammar.peg";
@@ -399,7 +402,7 @@ SAI.getParser = function() {
     //console.log(indentedSource);
     var parser;
     try {
-      parser=mainParser.parse(indentedSource,{bound:bound,globals:SAIverbs,filename:fn});
+      parser=mainParser.parse(indentedSource,{bound:bound,globals:SAI.config.verbs,filename:fn});
     } catch (e) {
       console.log('HEY WE GOT A PARSE ERROR IN YOUR SAI CODE at '+e.offset);
       var beg=indentedSource.substring(e.offset-50,e.offset);
@@ -417,49 +420,52 @@ SAI.getParser = function() {
 }();
 
 
+SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
+  var filename;
+  var raw=undefined;
+  for (var i in SAI.config.paths) {
+    var path=SAI.config.paths[i];
+    filename=path+'/'+name+'.sai';
+    try {
+      //console.log("try to load: "+filename);
+      raw=fs.readFileSync(filename).toString();
+    } catch (e) {
+      ;
+    }
+    if (raw) return {success:true,source:raw,info:filename};
+  }
+  return {
+    success:false,
+    info:'SAI.GetSourceFromPaths: Could not load '+name+'.\nCheck SAI.config.paths: ['+SAI.config.paths.join(';')+']'
+  };
+}
 
-getProtogen = function(name) {
-  var protogen=SAIprotogens[name];
+
+SAI.GetProtogen = function(name) {
+  var protogen=SAI.protogens[name];
   if (!protogen) {
-    var filename;
     var s1=new Date();
-
-    var raw=undefined;
-    for (var i in SAIpaths) {
-      var path=SAIpaths[i];
-      filename=path+'/'+name+'.sai';
-      try {
-        //console.log("try to load: "+filename);
-        raw=fs.readFileSync(filename).toString();
-      } catch (e) {
-        ;
-      }
-      if (raw) break;
+    var load=SAI.config.Loader(name);
+    if (!load.success) {
+      throw new Error('SAI.GetProtogen: Could not load object '+name+', reason given: '+load.info);
     }
-    if (!raw) {
-      throw new Error('SAI: Could not load object '+name+'.\nCheck SAIpaths: ['+SAIpaths.join(';')+']');
-    }
-    var source=SAI.getParser(raw);
-    source='var __filename="'+filename+'";\n'+source;
-    //console.log(source);
+    var source=SAI.GetParser(load.source);
+    source='var __filename="'+load.info+'";\n'+source;
     protogen=new Function('prototype','options','require','_$AI',source);
     if (!protogen) {
-      throw new Error("ERROR IN SAI CODE "+name);
+      throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
       process.exit();
     }
     var s2=new Date();
-    console.log('Compiled '+name+' in '+(s2-s1)+"ms.");
-
-    
-    SAIprotogens[name]=protogen;
-  }
-  
+    console.log("Compiled "+name+" in "+(s2-s1)+"ms.");
+    SAI.protogens[name]=protogen;
+  }  
   return protogen;
 }
 
 
-var getPrototype = function(name,bindings) {
-  var proto=SAIprototypes[name];
+SAI.GetPrototype = function(name,bindings) {
+  var proto=SAI.prototypes[name];
   //console.log("** WANT "+name);
   if (proto) {
     //console.log("** HAVE "+name);
@@ -474,11 +480,11 @@ var getPrototype = function(name,bindings) {
       if (!nodupes[leaf]) {
         nodupes[leaf]=true;
         var obj=new SAI(name); 
-        var protogen=getProtogen(leaf);
+        var protogen=SAI.GetProtogen(leaf);
         protogen(obj,{name:leaf},require,_$AI); 
         obj.Constructor();
         if (!obj.isa) {
-          throw new Error("Object defined by "+name+" does not have an 'isa' type identifier in its manifest.")
+          throw new Error("SAI.GetPrototype: object defined by "+name+" does not have an 'isa' type identifier in its manifest.")
         }
         var inherits=obj.__inherits;
         if (inherits) {
@@ -495,15 +501,15 @@ var getPrototype = function(name,bindings) {
     var proto=new SAI(name);
     for (var i in ancestors) {
       var parent=ancestors[i];
-      var protogen=getProtogen(parent);
+      var protogen=SAI.GetProtogen(parent);
       protogen(proto,{name:parent},require,_$AI);
     }
     Object.defineProperty(proto,"isa",{enumerable: true, value:proto.isa}); // lock it down
-    if (SAIisa[proto.isa]) {
-      throw new Error("Object defined by '"+name+"' has a duplicate .isa type identifier '"+proto.isa+"',  identical to "+SAIisa[proto.isa]);
+    if (SAI.isa[proto.isa]) {
+      throw new Error("Object defined by '"+name+"' has a duplicate .isa type identifier '"+proto.isa+"',  identical to "+SAI.isa[proto.isa]);
     }
     
-    SAIisa[proto.isa]=name;
+    SAI.isa[proto.isa]=name;
     for (var i in proto.__tobelocked) {
       var l=proto.__tobelocked[i];
       Object.defineProperty(proto,l,{configurable:false});
@@ -542,40 +548,43 @@ var getPrototype = function(name,bindings) {
       }
       return obj;
     }
-    SAIprototypes[name]=proto;
+    SAI.prototypes[name]=proto;
   }
   return proto;
 }
 
-SAI.require = function(name) {
+SAI.Require = function(name) {
   //console.log("* REQUIRE "+name);
-  proto=getPrototype(name).constructor;
-  if (!proto) throw new Error('Do not know how to create SAI object "'+name+'".');
+  proto=SAI.GetPrototype(name).constructor;
+  if (!proto) throw new Error('SAI.Require: Do not know how to create SAI object "'+name+'".');
   return proto;
 }
 
-SAI.create = function(name,parameters) {
-  var proto=getPrototype(name);
-  if (!proto) throw new Error('Do not know how to create SAI object "'+name+'".');
+SAI.Create = function(name,parameters) {
+  var proto=SAI.GetPrototype(name);
+  if (!proto) throw new Error('SAI.Create: Do not know how to create SAI object "'+name+'".');
   var obj=Object.create(proto); 
   obj.Constructor();
   if (obj.Instantiate) obj.Instantiate.apply(obj,parameters);
   return obj;
 }
 
-SAI.configure = function(config) {
+SAI.Configure = function(config) {
   //console.log("SAI.configure");
   //console.log(config);
+  if (config.Loader) {
+    SAI.config.Loader=config.loader;
+  }
   if (config.paths) {
-    SAIpaths=config.paths;
+    SAI.config.paths=config.paths;
   }
   if (config.verbs) {
-    SAI.prototype.__merge(SAIverbs,config.verbs);
+    _$AI.merge(SAI.config.verbs,config.verbs);
   }
 }
 
 
-
+/*
 /////// APPLICATION SPECIFIC
 
 var SAIObjId={};
@@ -598,3 +607,4 @@ SAI.spawn = function(name,host,bindings,parameters) {
   if (obj.Instantiate) obj.Instantiate(parameters);
   return obj;
 }
+*/

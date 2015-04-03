@@ -1,10 +1,7 @@
 var SAI = require('../SAI');
+SAI.Configure({paths:[__dirname+'/']});
+var Test=SAI.Require('Test');
 
-SAI.configure({paths:[
-  __dirname+'/',
-]});
-
-var Test=SAI.require('Test');
 var results=new Test();
 
 
