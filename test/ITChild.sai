@@ -1,0 +1,9 @@
+object ITChild
+
+inherit:
+  ITParent
+  ITUncle
+  
+T task
+  return 'Child'
+

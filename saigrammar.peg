@@ -149,6 +149,9 @@
     '*': '^{1} *= ^{2}' , // test 'self *'
     '/': '^{1} /= ^{2}' , // test 'self /'
     '%': '^{1} %= ^{2}' , // test 'self %'
+    '<<': '^{1} <<= ^{2}' , // 
+    '>>': '^{1} >>= ^{2}' , // 
+    '>>>': '^{1} >>>= ^{2}' , // 
     '**': '^{1} = Math.pow(^{1},^{2})' , // test 'self **'
 
     xorb: '^{1} ^= ^{2}' , // test 'self xorb'
@@ -223,10 +226,46 @@
     return '_$AI.expects(p,{'+l.join(',')+'},"'+functionname+'");\n';
   }
   
-  function TaskFormatter(v,k) {
-    var fn=(v[0]?(v[0]+'_'):'')+v[1];
+  
+  // expects
+  // as
+  // kind
+  // body
+  // preface
+  // appendix
+  function TaskClauseFormatter(o) {
+    var params=['p'];
+    var expects='',locals=[];//$unused=this';
+    if (o.expects && o.as) Error("cannot have both EXPECTS and AS in a function declaration");
+    if (o.expects && o.expects.length) {
+      expects=GetExpectsTester(o.expects,'in-line');
+    } else if (o.as) {
+      for (var i in o.as) {
+        if (i==0) {
+          locals.push(o.as[i][0][1]+'=p');
+        } else {
+          params.push(o.as[i][0][1]);
+        }
+      }
+    }
+    if (!o.preface) o.preface='';
+    if (!o.postface) o.postface='';
+    locals=locals.length?('var '+locals.join(',')+';'):'';
+    return o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+o.block+FunStop()+o.postface+'}';
+  }
+
+  
+  // prefix (v0)
+  // name (v1)
+  // as (v2)
+  // expects (v3)
+  // kind 
+  // body (k)
+  function TaskFormatter(o) {
+    
+    var fn=(o.prefix?o.prefix+'_':'')+o.name;
     var params='p';
-    var paramspec=v[2]||[];
+    var paramspec=o.as||[];
     
     for (var i in paramspec) {
       var pname=paramspec[i][0][1];
@@ -242,18 +281,18 @@
     if (FunctionChain) { addLocal('$_c'); addLocal('$_d'); FunctionChain=false; }
     addLocal('$','=this');
     var head='', tail='';
-    if (v[0]!='get' && v[0]!='set') {
+    if (o.prefix!='get' && o.prefix!='set') {
       addToList('lock',fn);
       head='var _'+fn+'=prototype["'+fn+'"];\n';
       head+='prototype.'+fn+'=';
       tail=';\n';
     }
   
-    var fun='function('+params+') {\n'+FunStart()+getLocals();
-    if (v[3]) {
-      fun+=GetExpectsTester(v[3],fn);
+    var fun=o.kind+'('+params+') {\n'+FunStart()+getLocals();
+    if (o.expects) {
+      fun+=GetExpectsTester(o.expects,fn);
     }
-    fun+=k+FunStop(); // function body
+    fun+=o.body+FunStop(); // function body
     fun+='}';
   
     if (fun.indexOf('^{this}')>-1) error("Cannot use unrooted . accessor without a context\n\n"+fun);
@@ -330,18 +369,20 @@ Reference
 
 Object
  = OBJECT _ k:Identifier _ v:SemVer? _ EOLs s:Segment+ {
-    k="'"+k+"'"
-    var code=s.join('\n');
+    if (!v) v=quoted('0.0.0-unspecified');
+    var code='',isof='';
+    var isa=quoted(k);
     addToList('lock','isa')
-    code+='prototype.isa='+k+';\n';
-    if (v) {
-      addToList('lock','isver');
-      code+='prototype.isver='+v+';\n';
-    }
+    addToList('freeze','isof')
+    code+='prototype.isa='+isa+';\n';
+    isof+='version:'+v+',';
+    isof+='isa:'+isa+',';
+    isof+='info:__info';
+    code+='prototype.isof['+isa+']={'+isof+'};\n';
     var l;
     if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
-    if (l=getList('freeze')) code+='prototype.__tobelocked=prototype.__tobefrozen.concat('+l+');\n';
-    code+='prototype.isof[prototype.isa]=__filename;\n';
+    if (l=getList('freeze')) code+='prototype.__tobefrozen=prototype.__tobefrozen.concat('+l+');\n';
+    code+=s.join('\n');
     clearLists();
     return code;
   }
@@ -353,7 +394,9 @@ Segment
 
 Inherit
  = INHERIT _ v:SimpleList EOLs {
-   return 'prototype.__inherits=['+v.join(',')+'];\n';
+   var inherit='['+v.join(',')+']';
+   var code='prototype.isof[prototype.isa].inherit=prototype.__inherits='+inherit+';\n';
+   return code;
   }
 
 Contract
@@ -380,57 +423,45 @@ PropertyClause
  = _ g:(GET/SET) _ w:Output? _ b:Block EOLs { 
    if (!g) g='get'; 
    if (g=='get') w=null; 
-   return [g,TaskFormatter([g,w],b)] 
+   return [g,TaskFormatter({prefix:g,name:w,body:b})]; 
   }
 
 Task
  = v:TaskEvent k:Block EOLs {
-   return TaskFormatter(v,k);    
+   v.body=k;
+   return TaskFormatter(v);    
   } 
 
 TaskEvent
- = v:Identifier _ TASK _ x:Expects? Optional? _ w:MultiOutput? _ { return  ['',v,w,x] } 
+ = v:Identifier _ TASK _ x:Expects? Optional? _ w:MultiOutput? _ { 
+   return  {name:v,expects:x,as:w,kind:'function'};
+ } 
+ / v:Identifier _ ITERATOR _ x:Expects? Optional? _ w:MultiOutput? _ { 
+   return  {name:v,expects:x,as:w,kind:'function*'};
+ } 
 
 
 
 TaskClause
 = x:Expects? Optional? _ o:MultiOutput? _ b:Block {
-  var params=['p'];
-  var expects='',locals=[];//$unused=this';
-  if (x && o) Error("cannot have both EXPECTS and AS in a task declaration");
-  if (x && x.length) {
-    expects=GetExpectsTester(x,'in-line');
-  } else if (o) {
-    for (var i in o) {
-      if (i==0) {
-        locals.push(o[i][0][1]+'=p');
-      } else {
-        params.push(o[i][0][1]);
-      }
-    }
-  }
-  locals=locals.length?('var '+locals.join(',')+';'):'';
-  return 'function('+params.join(',')+'){'+FunStart()+locals+expects+b+FunStop()+'}';
+  return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function'});
+}
+
+IteratorClause
+= x:Expects? Optional? _ o:MultiOutput? _ b:Block {
+  return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function*'});
 }
 
 PromiseClause
 = x:Expects? Optional? _ o:MultiOutput? _ b:Block {
-  var params=['p'];
-  var expects='',locals=[];//$unused=this';
-  if (x && o) Error("cannot have both EXPECTS and AS in a promise declaration");
-  if (x && x.length) {
-    expects=GetExpectsTester(x,'in-line');
-  } else if (o) {
-    for (var i in o) {
-      if (i==0) {
-        locals.push(o[i][0][1]+'=p');
-      } else {
-        params.push(o[i][0][1]);
-      }
-    }
-  }
-  locals=locals.length?('var '+locals.join(',')+';'):'';
-  return 'function('+params.join(',')+') { return new Promise(function($_resolve,$_reject) { '+FunStart()+locals+expects+b+FunStop()+'})}';
+  return TaskClauseFormatter({
+    expects:x,
+    as:o,
+    block:b,
+    kind:'function',
+    preface:'return new Promise(function($_resolve,$_reject) {',
+    postface:'}'
+  });
 }
 
 
@@ -586,7 +617,7 @@ SetBlock
  = v:(SetLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
 SetTerm
- = local:LocalAdj? _ l:LValues _ FROM __ v:VerbSentence {
+ = local:LocalAdj? _ l:LValues _ FROM Sep v:VerbSentence {
    local=local?'var ':'';
    if (l.length==1) return local+l[0]+'='+RV(v,{self:l[0]})+';\n';
    var code='var $_='+v+';\n';
@@ -623,7 +654,7 @@ SetTerm
 
 
 LocalAdj
- = LOCAL __ { return 'local '; }
+ = LOCAL Sep { return 'local '; }
 
 
 UnOp // test 'self*'
@@ -631,7 +662,7 @@ UnOp // test 'self*'
 
 Itselfop // test 'self*'
  = '+' / '-' 
- / '**' / '*' / '/' / '%'  
+ / '**' / '*' / '/' / '%' / '<<' / '>>' / '>>>'
  / ANDB / ORB / XORB
  / AND / OR / XOR / NAND
  / '?>' / '?<'
@@ -662,8 +693,15 @@ NoneClause
 
 
 IterateStatement
- = EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-     var w={b:b,i:i,j:tempvar(),v:v,n:n,k:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false)};
+ = ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+   var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar(),this:(o?o[0]:false)};
+   var setup='var ^{t1}=^{v}; var ^{t2}=^{t1}.next();\n';
+   var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
+   var iterate='while (!^{t2}.done) { ^{this}=^{t2}.value; ^{block}; ^{t2}=^{t1}.next(); }\n';
+   return RV(setup+none+iterate,w); 
+  }
+ / EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+     var w={b:b,j:tempvar(),v:v,n:n,k:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false)};
      var setup='var ^{j}=^{v};\nif (undefined===^{j}) ^{j}=[];';
      var iterate='for (var ^{key} in ^{j}) { var ^{this}=^{j}[^{key}];\n^{b}}\n'+(n?'if (undefined===^{key}) { ^{n} }\n':'');
      return RV(setup+iterate,w); 
@@ -783,6 +821,9 @@ VerbValue
     }
     return [stem,verb];
   }
+ / YIELDING { return ['','yield* ']; }
+ / YIELD { return ['','yield ']; }
+ 
 
 LStem
  = RStem
@@ -907,9 +948,11 @@ Define
      return 'prototype["'+k+'"]='+v[1]+';\n';
    } 
   / GIVEN _ v:Definition EOLs { 
-    addToList('lock',i);
-    return 'var t='+v[1]+';\nfor (var i in t) { Object.defineProperty(prototype,i,{ configurable:true,enumerable: true, value: t[i] }); };\n'; 
-    }
+//    addToList('lock',i);
+    var code='';
+    code+='var t='+v[1]+';\nfor (var i in t) { prototype.__tobelocked.push(i); prototype[i]=t[i]; };\n'; 
+    return code;
+  }
   / SET _ v:Definition EOLs { return 'var Constructor=prototype.Constructor || function(){};\nprototype.Constructor=function() {\nConstructor.call(this);\nvar t='+v[1]+'; for (var i in t) this[i]=t[i];\n};\n'; }
 
 
@@ -945,8 +988,8 @@ NestedDefinition
 
 
 SimpleList
- = _ LIST _ v:Terms _ SEMI? _ { return v }
- / _ LIST _ EOLs INDENT EOLs v:TermBlock DEDENT { return v }
+ = _ (COLON/LIST) _ v:Terms _ SEMI? _ { return v }
+ / _ (COLON/LIST) _ EOLs INDENT EOLs v:TermBlock DEDENT { return v }
 
 
 Term
@@ -995,9 +1038,7 @@ ItemBlock
  
 
 Trait
- = TYPE _ HASH k:Keyword _ { return [['type',"'"+k+"'"],[k,true]] }
- / TYPE _ k:Keyword _ v:Term _ { return [['type',"'"+k+"'"],[k,v]] }
- / HASH k:Keyword _ { return [[k,true]] }
+ = HASH k:Keyword _ { return [[k,true]] }
  / k:Keyword _ v:Term _ { return [[k,v]] }
  
 TraitSep
@@ -1015,9 +1056,7 @@ TraitBlock
 
 
 Field
- = TYPE _ HASH k:Keyword  _ { return [['type',"'"+k+"'"],[k,true]] }
- / TYPE _ k:Keyword _ v:Expression _ { return [['type',"'"+k+"'"],[k,v]] }
- / HASH k:Keyword _ { return [[k,true]] }
+ = HASH k:Keyword _ { return [[k,true]] }
  / k:Keyword _ v:Expression _ { return [[k,v]] }
  
 FieldSep
@@ -1107,10 +1146,6 @@ MapComprehension
   }
 
 ReduceComprehension
-// = GATHER _ b:Logical _ {
-//    var block=RV('function(@result@,^{this},^{key}){ return '+b+'; //}',{result:'$_r',this:'$_v',key:'$_k'});
-//    return ['_$AI.reduce(' , ','+block+')' ];
-//  }
  = _ GATHER _ into:IntoClause? o:IterateOutput? b:Block _ {
     if (!o) o=[];
     if (!o[0]) o[0]='$accum';
@@ -1261,19 +1296,19 @@ Comparison
  
 ComparisonOp
   = '>=' { return '>=' } // test '>='
-  / '>' { return '>' } // test '>'
+  / '>' !'>' { return '>' } // test '>'
   / '=' { return '==' } // test '='
   / ISNT Sep { return '!==' } // test 'isnt'
-  / IS Sep { return '===' } // test 'is undef' 'is obj'
+  / IS Sep { return '===' } // test 'is *'
   / '<=' { return '<=' } // test '<='
-  / '<' { return '<' } // test '<'
+  / '<' !'<' { return '<' } // test '<'
   / '!=' { return '!=' } // test '!='
 
 
 MathOp
  = '?>' { return 'Math.max' } // test '?>'
  / '?<' { return 'Math.min' } // test '?<'
- / '<=>' { return '_$AI.compare' } 
+ / '<=>' { return '_$AI.compare' } // test '<=>'
 
    
    
@@ -1302,19 +1337,24 @@ Multiplication
 MultiplicationOp
  = '*' // test '*'
  / '/' // test '/'
- / '%' // test '*'
+ / '%' // test '%'
+ / '>>>' // test 'rshz'
+ / '>>' // test 'rsh'
+ / '<<' // test 'lsh'
 
  
 Value
  = '-' _ v:Value _ { return '(0-('+v+'))' } // test 'unary -'
  / NOTB Sep v:Value _ { return '(~('+v+'))' } // test 'unary binary not' 
  / NOT Sep v:Value _ { return '(!('+v+'))' } // test 'unary not'
+ / TYPEOF Sep v:Value _ { return 'typeof ('+v+')'; }
  / NUMBER Sep v:Value { return '(_$AI.number('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
  / COPY Sep v:Value _ { return '_$AI.copy('+v+')'; } // test 'copy'
  / KEYS Sep v:Value _ { return '(_$AI.keys('+v+'))' } // test 'keys unary *'
  / VALUES Sep v:Value _ { return '(_$AI.values('+v+'))' } // test 'values unary*'
  / TASK Sep v:TaskClause _ { return v }
+ / ITERATOR Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
  / FROM Sep v:VerbSentence _ { return v }
  / '?' v:RValueSafe _ { return v }
@@ -1379,6 +1419,8 @@ VerbSentence
 
 VerbClause
 = v:(VerbValue) _ o:ParameterList? _ VerbTerminal { 
+     composite=v[0]+v[1];
+     if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'($'+(o?(','+o[1]):'')+')' }]; 
      return [{ base:v[0], verb:v[1], param:'('+(o?o[1]:'')+')' }]
   }
  / v:(VerbValue) _ { 
@@ -1437,8 +1479,7 @@ ClassName
 /////////////////////////////////////////////
 
 Number
- = v:NumericLiteral '%' { return v/100 }
- / v:NumericLiteral 'o' { return v*(Math.PI/180) } 
+ = v:NumericLiteral 'o' { return v*(Math.PI/180) } 
  / NumericLiteral
 
 NumericLiteral
@@ -1578,12 +1619,15 @@ ReservedWords
  / IN
  / ISNT
  / IS
+ / ITERATOR
+ / ITERATE
  / KEYS
  / LAST
  / LIMIT
  / LIST
  / LOCAL
  / LOWEST 
+ / LSH
  / NAND
  / NEW
  / NOTB
@@ -1596,6 +1640,7 @@ ReservedWords
  / OVERLAY
  / PLY
  / PROMISE
+ / RSH
  / SELECT
  / SELF
  / SWITCH
@@ -1606,7 +1651,7 @@ ReservedWords
  / TO
  / TRAITS
  / TRUE
- / TYPE
+ / TYPEOF
  / UNDEFINED
  / UPDATE
  / USING
@@ -1616,6 +1661,8 @@ ReservedWords
  / WITH
  / XORB
  / XOR
+ / YIELDING
+ / YIELD
  
 ACCUM = 'accum'i
 AND = 'and'i
@@ -1666,14 +1713,18 @@ INC = 'inc'i
 INHERIT = 'inherit'i
 ISNT = 'isnt'i
 IS = 'is'i
+ITERATOR = 'iterator'i
+ITERATE = 'iterate'i
 IT = 'it'i 
 KEYS = 'keys'i
 KEY = 'key'i
 LAST = 'last'i
 LIMIT = 'limit'i
 LIST = 'list'i
+LSH = 'lsh'i
 LOCAL = 'local'i
 LOWEST = 'lowest'i
+MOD = 'mod'i
 NAND = 'nand'i
 NEW = 'new'i
 NOT = 'not'i
@@ -1693,6 +1744,7 @@ RESOLVE = 'resolve'i
 REJECT = 'reject'i
 REFERENCE = 'reference'i
 RETURN = 'return'i
+RSH = 'rsh'i
 SELECT = 'select'i
 SELF = 'self'i
 SET = 'set'i
@@ -1705,7 +1757,7 @@ TRAITS = 'traits'i
 TRIAL = 'trial'i
 TRY = 'try'i
 TO = 'to'i
-TYPE = 'type'i
+TYPEOF = 'typeof'i
 UNLESS = 'unless'i 
 UNDEFINED = 'undefined'i
 UPDATE = 'update'i
@@ -1716,6 +1768,8 @@ WHILE = 'while'i
 WITH = 'with'i
 XOR  = 'xor'i
 XORB  = 'xorb'i
+YIELDING = 'yielding'i
+YIELD = 'yield'i
 
 BANG = '!'
 DOT = '.'

@@ -16,10 +16,10 @@ Instantiate task expects 'Test'
 
 
 
-Log task as description
-  if @ids|description
-    debug 'Duplicate test: "${description}"'
-  set @ids|description to true
+Log task 
+  if @ids|$
+    debug 'Duplicate test: "${$}"'
+  set @ids|$ to true
 
 
 

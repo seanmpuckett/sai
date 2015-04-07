@@ -1,0 +1,12 @@
+object ITParent
+
+given:
+ g 'Parent'
+ gruncle 'Parent'
+
+set:
+ s 'Parent'
+  
+T task
+  return 'Parent'
+

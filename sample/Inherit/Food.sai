@@ -1,0 +1,6 @@
+
+object Food 0.0.0
+
+Instantiate task
+  debug 'Food'
+  

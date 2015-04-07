@@ -1,0 +1,23 @@
+
+object Inheritance
+
+inherit list
+  Harness
+
+
+Execute task
+
+  set child to create 'ITChild'
+  
+  @Match 'given uncle', 'Uncle', task
+    return child.g
+    
+  @Match 'set parent', 'Parent', task
+    return child.s
+    
+  @Match 'given child', 'Child', task
+    return from child.T
+    
+  @Match 'given granduncle', 'Gruncle', task
+    return child.gruncle
+    

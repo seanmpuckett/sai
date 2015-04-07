@@ -1,0 +1,23 @@
+
+object Generators
+
+inherit list
+  Harness
+
+
+Execute task
+
+  set Twice to iterator as a
+    yield a
+    yield a
+
+  set Counter to iterator as a
+    count to a
+      yielding from Twice key
+
+  @Match 'generators', 6, task
+    set b to 0
+    iterate from Counter 3
+      set b + it
+    return b
+    

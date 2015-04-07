@@ -212,4 +212,27 @@ Execute task
     set b to a initialized true
     return b=false and a=false
 
+  @Match 'compare less', -1, task
+    return 0 <=> 1
+    
+  @Match 'compare eq', 0, task
+    return 1 <=> 1
+    
+  @Match 'compare greater', 1, task
+    return 2 <=> 1
+    
+  @Match 'lsh', 2, task
+    return 1 << 1
+    
+  @Match 'rsh', 1, task
+    return 2 >> 1
+    
+  @Match 'rshz', 1073741821, task
+    return -9 >>> 2
+    
+  @Match 'typeof', 'object', task
+    return typeof @
 
+  @Match 'isa', 'Operators', task
+    return @isa
+    

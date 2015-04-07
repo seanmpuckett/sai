@@ -10,7 +10,11 @@ var SAIconfig = {
     debug: 'console.log',
     require: 'require'
   },
-  paths: [__dirname+'/']
+  paths: [__dirname+'/'],
+  options: {
+    speedometer: false // print compile times
+  },
+  Loader: 'default source loader (linked later in this file)'
 }
 
 
@@ -194,7 +198,7 @@ _$AI.deepFreeze = function(o) {
     if (!o.hasOwnProperty(propKey) || !(typeof prop === 'object') || Object.isFrozen(prop)) {
       continue;
     }
-    _$AI.__deepFreeze(prop); // Recursively call deepFreeze.
+    _$AI.deepFreeze(prop); // Recursively call deepFreeze.
   }
 }
 
@@ -298,7 +302,7 @@ var SAI = exports = module.exports = function() {
   this.__tobefrozen=[];
   this.__contracts=[];
   this.__unverified=true;
-  this.isof=[];
+  this.isof={};
 }
 
 // placeholder
@@ -427,7 +431,6 @@ SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
     var path=SAI.config.paths[i];
     filename=path+'/'+name+'.sai';
     try {
-      //console.log("try to load: "+filename);
       raw=fs.readFileSync(filename).toString();
     } catch (e) {
       ;
@@ -436,7 +439,7 @@ SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
   }
   return {
     success:false,
-    info:'SAI.GetSourceFromPaths: Could not load '+name+'.\nCheck SAI.config.paths: ['+SAI.config.paths.join(';')+']'
+    info:'SAI.GetSourceFromPaths: Could not load '+name+'. Check SAI.config.paths: ['+SAI.config.paths.join(';')+']'
   };
 }
 
@@ -450,14 +453,13 @@ SAI.GetProtogen = function(name) {
       throw new Error('SAI.GetProtogen: Could not load object '+name+', reason given: '+load.info);
     }
     var source=SAI.GetParser(load.source);
-    source='var __filename="'+load.info+'";\n'+source;
+    source='var __info="'+load.info+'";\n'+source;
     protogen=new Function('prototype','options','require','_$AI',source);
     if (!protogen) {
       throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
-      process.exit();
     }
     var s2=new Date();
-    console.log("Compiled "+name+" in "+(s2-s1)+"ms.");
+    if (SAI.config.options.speedometer) console.log("Compiled "+name+" in "+(s2-s1)+"ms.");
     SAI.protogens[name]=protogen;
   }  
   return protogen;
@@ -472,7 +474,7 @@ SAI.GetPrototype = function(name,bindings) {
   } else {
     //console.log("** MAKING "+name);
     var heritage=[name]
-    var ancestors=[name];
+    var ancestors={};
     var nodupes={};
     
     while (heritage.length) {
@@ -484,13 +486,15 @@ SAI.GetPrototype = function(name,bindings) {
         protogen(obj,{name:leaf},require,_$AI); 
         obj.Constructor();
         if (!obj.isa) {
-          throw new Error("SAI.GetPrototype: object defined by "+name+" does not have an 'isa' type identifier in its manifest.")
+          throw new Error("SAI.GetPrototype: object loaded as "+leaf+" does not have an 'isa' type identifier in its manifest.")
         }
+        //console.log("object "+leaf);
         var inherits=obj.__inherits;
         if (inherits) {
+          //console.log("  inherits "+inherits);
+          ancestors[leaf]=inherits;
           for (var i in inherits) {
             var parent=inherits[i];
-            ancestors.unshift(parent);
             heritage.push(parent);
           }
         }
@@ -499,12 +503,20 @@ SAI.GetPrototype = function(name,bindings) {
 
     //console.log("Creating prototype for "+name);
     var proto=new SAI(name);
-    for (var i in ancestors) {
-      var parent=ancestors[i];
-      var protogen=SAI.GetProtogen(parent);
-      protogen(proto,{name:parent},require,_$AI);
+    var adopt=function(name) {
+      var list=ancestors[name];
+      if (list) {
+        for (var i in list) {
+          adopt(list[i]);
+        }
+      }
+      //console.log("  from "+name);
+      var protogen=SAI.GetProtogen(name);
+      protogen(proto,{name:name},require,_$AI);
     }
-    Object.defineProperty(proto,"isa",{enumerable: true, value:proto.isa}); // lock it down
+    adopt(name);
+    
+    Object.defineProperty(proto,"isa",{enumerable: false, value:proto.isa}); // lock it down
     if (SAI.isa[proto.isa]) {
       throw new Error("Object defined by '"+name+"' has a duplicate .isa type identifier '"+proto.isa+"',  identical to "+SAI.isa[proto.isa]);
     }
@@ -512,12 +524,12 @@ SAI.GetPrototype = function(name,bindings) {
     SAI.isa[proto.isa]=name;
     for (var i in proto.__tobelocked) {
       var l=proto.__tobelocked[i];
-      Object.defineProperty(proto,l,{configurable:false});
+      Object.defineProperty(proto,l,{configurable:false,writable:false});
     }
     delete proto.__tobelocked;
     for (var i in proto.__tobefrozen) {
       var l=proto.__tobefrozen[i];
-      proto.__deepFreeze(proto[proto.__tobefrozen[i]]);
+      _$AI.deepFreeze(proto[proto.__tobefrozen[i]]);
     }
     delete proto.__tobefrozen;
     if (proto.__unverified) {
@@ -572,14 +584,17 @@ SAI.Create = function(name,parameters) {
 SAI.Configure = function(config) {
   //console.log("SAI.configure");
   //console.log(config);
-  if (config.Loader) {
-    SAI.config.Loader=config.loader;
-  }
   if (config.paths) {
     SAI.config.paths=config.paths;
   }
   if (config.verbs) {
     _$AI.merge(SAI.config.verbs,config.verbs);
+  }
+  if (config.options) {
+    _$AI.merge(SAI.config.options,config.options);
+  }
+  if (config.Loader) {
+    SAI.config.Loader=config.Loader;
   }
 }
 

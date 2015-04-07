@@ -1,0 +1,13 @@
+reference:
+  Food 'Food'
+  Fruit 'Fruit'
+
+object Inheritance 0.0.0
+
+Instantiate task
+
+  debug 'Inheritance'
+  set apple to create ~Fruit
+  
+  debug apple.isof
+  

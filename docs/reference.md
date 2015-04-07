@@ -1,59 +1,61 @@
 
 ## Basic File Structure
 
-A .sai file should follow this pattern, more or less.  
+A .sai file may include the following sections. 
 
-Everything is optional except **object**.
+All sections except **object** are optional. 
 
-	reference:
-	  [global var name] [expression]
-	  ...
-	 
-	object [object name] [object semver code]
-	 
-	inherit: 
-	  [object name/version]
-	  ...
-	
-	contract: 
-	  [object name/version]
-	  ...
-	 
-	given [static var name] [expression]
-	
-	given:
-	  [static trait name] [expression] 
-	  ...
-	
-	set:
-	  [instance trait name] [expression]
-	  ...
-	 
-	[traitName] get
-	  [code block]
-	set as [parameter]
-	  [code block]
-	
-	[TaskName] task [parameters?]
-	  [code block]
-	 
-	<end of file>
+If present, **reference** must appear first, then **object**, then other sections in any order.
 
 ### Reference - Global Variables
 
+	reference:
+	  [varName] [expression]
+	  ...
+
 ### OBJECT - Object Definition
+
+	object [ObjectName] [semver]
 
 ### INHERIT - Inheritance
 
+	inherit: 
+	  '[ObjectName][semcode][semver]'
+	  ...
+
 ### CONTRACT - Contracts
+
+	contract: 
+	  '[ObjectName][semvercode][semver]'
+	  ...
 
 ### GIVEN - Static Traits
 
+	given:
+	  [traitName] [expression] 
+	  ...
+
+	given [traitName] [expression]
+
+
 ### SET - Instance Traits
+
+	set:
+	  [traitName] [expression]
+	  ...
 
 ### GET/SET - Dynamic Traits
 
+	[traitName] get
+	  [block]
+	set [parameter]
+	  [block]
+	
+
 ### TASK - Task Definition
+
+	[TaskName] task [parameters]
+	  [block]
 
 
 ## Expressions

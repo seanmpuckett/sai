@@ -1,0 +1,11 @@
+
+object Fruit
+
+inherit:
+  Food
+
+Instantiate task
+  super
+  debug 'Fruit'
+  
+  
