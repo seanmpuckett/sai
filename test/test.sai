@@ -27,6 +27,7 @@ Instantiate task
     Loops
     Reference
     
+//  set inactive to list
 
   ply tests
     set suite to create it @

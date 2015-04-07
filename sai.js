@@ -399,7 +399,7 @@ SAI.GetParser = function() {
   //console.log (mainParser.parse.toString());
   return function(source,bound,fn) {
     source+='\n\n';
-    //var commentStrippedSource=source.replace(/\/\/[^\r\n]*$/gm, '');
+    source=source.replace(/\/\/[^\r\n]*$/gm, '');
     //console.log(commentStrippedSource);
     var newlineStrippedSource=source.replace(/^\s*$[\n\r]{1,}/gm, '');
     indentedSource=indentParser.parse(newlineStrippedSource).join('\n');
