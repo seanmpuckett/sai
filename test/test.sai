@@ -16,8 +16,6 @@ Instantiate task
 
   set tests to list
     Inheritance
-    
-  set inactive to list
     Generators
     Comps
     RValues
@@ -29,6 +27,7 @@ Instantiate task
     Loops
     Reference
     
+
   ply tests
     set suite to create it @
     suite.Execute
