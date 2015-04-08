@@ -10,7 +10,7 @@ Execute task
 
   @Match 'count to 4', 6, task
     set a to 0
-    count to 4
+    count 4
       set a + key
     else
       return false
@@ -25,7 +25,7 @@ Execute task
     return a
 
   @Test 'count to 0', task
-    count to 0
+    count 0
       return false
     else
       return true
@@ -38,17 +38,25 @@ Execute task
       return true
     return false
 
-  @Match 'count from 4', 6, task
+  @Match 'count down 4', 6, task
     set a to 0
-    count from 4
+    count down 4
       set a + key
     else
       return false
     return a
 
-  @Test 'count from 0', task
+  @Match 'count down 4 2', 5, task
     set a to 0
-    count from 0
+    count down 4 to 2
+      set a + key
+    else
+      return false
+    return a
+
+  @Test 'count down 0', task
+    set a to 0
+    count down 0
       return false
     else
       return true

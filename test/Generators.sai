@@ -5,7 +5,9 @@ inherit list
   Harness
 
 
-Counter iterator as start, stop, delta
+
+
+Counter process as start, stop, delta
   if stop > start
     set delta default 1
     if delta <= 0
@@ -24,12 +26,12 @@ Counter iterator as start, stop, delta
 
 Execute task
 
-  set Twice to iterator as a
+  set Twice to process as a
     yield a
     yield a
 
-  set SimpleCounter to iterator as a
-    count to a
+  set SimpleCounter to process as a
+    count a
       yielding from Twice key
 
   @Match 'generators', 6, task
@@ -45,7 +47,7 @@ Execute task
     iterate from SimpleCounter 3 using I
     return b
         
-  @Match 'sorted iterator', 2, task
+  @Match 'sorted process', 2, task
     set c10 from @Counter 10,1,-2
     return c10 by . limit 1
     

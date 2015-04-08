@@ -1,0 +1,54 @@
+
+object Syntax
+
+inherit:
+  Harness
+
+
+Execute task
+
+  set T to task 
+    return true
+
+  set Fn to task as a
+    return a
+
+  @Test 'from function T', task
+    return from T
+
+  @Test 'function T()', task
+    return T()
+    
+  @Test 'from function (T) exp', task
+    return (from T) and true 
+
+  @Test 'from function T; exp', task
+    return from T; and true 
+
+  @Test 'from function exp T', task
+    return true and from T 
+
+  @Test 'function T() exp', task
+    return T() and true
+    
+  @Test 'from function Fn', task
+    return from Fn true
+
+  @Test 'function Fn()', task
+    return Fn(true)
+    
+  @Test 'from function Fn; exp', task
+    return from Fn true; and true
+
+  @Test 'from function (Fn) exp', task
+    return (from Fn true) and true
+
+  @Test 'from function exp Fn', task
+    return true and from Fn true
+
+  @Test 'function Fn() exp', task
+    return Fn(true) and true
+    
+    
+
+

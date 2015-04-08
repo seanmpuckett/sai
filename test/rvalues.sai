@@ -60,7 +60,7 @@ Execute task
       return key = 1
 
   @Test 'key = 1 (count down)', task
-    count from 2 
+    count down 2 
       return key = 1
 
   @Test 'b=1', task

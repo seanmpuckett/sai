@@ -436,7 +436,7 @@ TaskEvent
  = v:Identifier _ TASK _ x:Expects? Optional? _ w:MultiOutput? _ { 
    return  {name:v,expects:x,as:w,kind:'function'};
  } 
- / v:Identifier _ ITERATOR _ x:Expects? Optional? _ w:MultiOutput? _ { 
+ / v:Identifier _ PROCESS _ x:Expects? Optional? _ w:MultiOutput? _ { 
    return  {name:v,expects:x,as:w,kind:'function*'};
  } 
 
@@ -733,19 +733,20 @@ IterateStatement
      var iterate='for (var ^{k}=0; ^{k}<^{l}; ^{k}++) { ^{task}(^{j}[^{k}],^{k}) };\n';
      return RV(setup+test+iterate,w); 
   }
- / COUNT Sep start:Expression? _ TO Sep stop:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
+ / COUNT Sep DOWN Sep start:Expression stop:(TO Sep x:Expression {return x})? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
+     if (!stop) stop=0;
+     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false)};
+     var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
+     var alternate=none ? 'if (^{key}<=^{dest}) { ^{none} } else ' : '';
+     var iterate='while (^{key}>^{dest}) { ^{key}--; ^{block} }\n';
+     return RV(setup+alternate+iterate,w); 
+  }
+ / COUNT Sep start:(x:Expression _ TO Sep { return x })? stop:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
      if (!start) start=0;
      var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false)};
      var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
      var alternate=none ? 'if (^{key}>=^{dest}) { ^{none} } else ' : '';
      var iterate='while (^{key}<^{dest}) { ^{block} ^{key}++; }\n';
-     return RV(setup+alternate+iterate,w); 
-  }
- / COUNT Sep FROM _ start:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count from*'
-     var w={start:start,out:out,block:block,none:none,key:(out?out[0]:false)};
-     var setup='var ^{key}=^{start};\n';
-     var alternate=none ? 'if (^{key}<=0) { ^{none} } else ' : '';
-     var iterate='while (^{key}>0) { ^{key}--; ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
   }
   / WHILE Sep v:Expression b:Block {
@@ -975,7 +976,7 @@ ParameterList
  / _ COLON _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
  / _ COLON? _ v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
  / _ COLON? _ v:Items ';'? { return ['array',v.join(','),v] }
-
+ / ';' { return null }
 
 Definition
  = _ v:Item { return ['literal',v] }
@@ -1361,7 +1362,7 @@ Value
  / KEYS Sep v:Value _ { return '(_$AI.keys('+v+'))' } // test 'keys unary *'
  / VALUES Sep v:Value _ { return '(_$AI.values('+v+'))' } // test 'values unary*'
  / TASK Sep v:TaskClause _ { return v }
- / ITERATOR Sep v:IteratorClause _ { return v }
+ / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
  / FROM Sep v:VerbSentence _ { return v }
  / '?' v:RValueSafe _ { return v }
@@ -1605,6 +1606,7 @@ ReservedWords
  / DEFAULT
  / DELETE
  / DESCENDING / DESC
+ / DOWN
  / EACH 
  / EMPTY
  / ERROR
@@ -1626,7 +1628,6 @@ ReservedWords
  / IN
  / ISNT
  / IS
- / ITERATOR
  / ITERATE
  / KEYS
  / LAST
@@ -1647,6 +1648,7 @@ ReservedWords
  / OVERLAY
  / PLY
  / PROMISE
+ / PROCESS
  / RSH
  / SELECT
  / SELF
@@ -1694,6 +1696,7 @@ DEFAULT = 'default'i
 DELETE = 'delete'i
 DESC = 'desc'i
 DESCENDING = 'descending'i
+DOWN = 'down'i
 EACH = 'each'i
 ELSE = 'else'i 
 EMPTY = 'empty'i
@@ -1720,7 +1723,6 @@ INC = 'inc'i
 INHERIT = 'inherit'i
 ISNT = 'isnt'i
 IS = 'is'i
-ITERATOR = 'iterator'i
 ITERATE = 'iterate'i
 IT = 'it'i 
 KEYS = 'keys'i
@@ -1747,6 +1749,7 @@ TRUE = 'true'i
 FALSE = 'false'i
 PLY = 'ply'i
 PROMISE = 'promise'i
+PROCESS = 'process'i
 RESOLVE = 'resolve'i
 REJECT = 'reject'i
 REFERENCE = 'reference'i
