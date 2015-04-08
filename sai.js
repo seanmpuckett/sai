@@ -20,39 +20,51 @@ var SAIconfig = {
 
 // HELPERS
 
+var isIterable=function(i) {
+  if (!i) return false;
+  var next=i.next;
+  if (!next) return false; 
+  if ((typeof next) === 'function') return true; // close enough for our purposes
+}
+
 var isObject=function(i) {
   if (i===null) return false;
   if (typeof i !== 'object') return false;
   return true;
 }
 
-var isMergable=function(i) {
-  if (Array.isArray(i)) return true;
-  if (i===null) return false;
-  if (typeof i !== 'object') return false;
-  return true;
-}
+var isArray=_.isArray;
 
+var isMergable=function(i) {
+  return isArray(i) || isObject(i);
+}
 
 
 /// TOOLKIT
 
 var _$AI = {}
 
-_$AI.sort=function(a,f) {
-  if (_.isPlainObject(a)) { // test 'sort traits'
-    a=_.values(a);
-  } else if (!_.isArray(a)) { // test 'sort undef' 'sort value'
-    return a;
-  } else { // test 'sort list'
-    a=a.slice(0);
+_$AI.accumulate=function(iterable) {
+  var a=[];
+  var v=iterable.next();
+  while (!v.done) {
+    a.push(v.value);
+    v=iterable.next();
   }
-  return a.sort(f);
+  //console.log("Accumulated "+a);
+  return a;
+}
+
+_$AI.sort=function(a,f) {
+  if (isArray(a)) return a.slice(0).sort(f);
+  if (isIterable(a)) return _$AI.accumulate(a).sort(f);
+  if (isObject(a)) return _.values(a).sort(f);
+  return a;
 };
 
 _$AI.map = function(a,f) {
   if (a===undefined) return undefined; // test 'map undef'
-  if (_.isArray(a)) { // test 'map list'
+  if (isArray(a)) { // test 'map list'
     var r=[];
     var k=0,l=a.length;
     r.length=l;
@@ -61,7 +73,7 @@ _$AI.map = function(a,f) {
       k++;
     }
     return r;
-  } else if (_.isPlainObject(a)) { // test 'map traits'
+  } else if (isObject(a)) { // test 'map traits'
     var r={};
     for (var k in a) {
       r[k]=f(a[k],k);
@@ -73,14 +85,14 @@ _$AI.map = function(a,f) {
 
 _$AI.filter = function(a,f) {
   if (a===undefined) return undefined; // test 'filter undef'
-  if (_.isArray(a)) { // test 'filter list'
+  if (isArray(a)) { // test 'filter list'
     var r=[];
     for (var k in a) {
       var v=a[k];
       if (f(v,k)) r.push(v);
     }
     return r;
-  } else if (_.isPlainObject(a)) { // test 'filter traits*'
+  } else if (isObject(a)) { // test 'filter traits*'
     var r={};
     for (var k in a) {
       var v=a[k];
@@ -93,7 +105,7 @@ _$AI.filter = function(a,f) {
 
 _$AI.reduce = function(a,f,accum) {
   if (a===undefined) return undefined; // test 'reduce undef'
-  if (_.isPlainObject(a)) { // test 'reduce traits*'
+  if (isObject(a)) { // test 'reduce traits*'
     if (undefined===accum) {
       var first=true;
       for (var k in a) {
@@ -111,7 +123,7 @@ _$AI.reduce = function(a,f,accum) {
     }
     return accum;
   } 
-  if (!_.isArray(a)) a=[a]; // test 'reduce value'
+  if (!isArray(a)) a=[a]; // test 'reduce value'
   var l=a.length;
   if (!l) return accum;
   var k=0;
@@ -136,11 +148,18 @@ _$AI.slice = function(a,start,count) {
   } else if (count!==undefined){
     end=start+count;
   }
-  if (_.isArray(a)) return a.slice(start,end);
-  if (_.isPlainObject(a)) throw new Error("Cannot use LIMIT/FIRST/LAST on traits.");
+  if (isArray(a)) return a.slice(start,end);
+  if (isObject(a)) throw new Error("Cannot use LIMIT/FIRST/LAST on traits.");
   if (start==0 && (count===undefined || end>0)) return a;
   if (start==-1 && (count===undefined || count<0)) return a;
   return undefined;
+}
+
+_$AI.element = function(a,index) {
+  if (isArray(a)) {
+    return a[index];
+  }
+  throw new Error("Attempt to extract an element from something not a list.");
 }
 
 _$AI.copy = _.clone;
@@ -162,7 +181,7 @@ _$AI.select = function(src,keys) {
   var result={};
   if (!isMergable(keys)) { // test 'select value'
     result[keys]=src[keys]
-  } if (Array.isArray(keys)) { // test 'select list'
+  } if (isArray(keys)) { // test 'select list'
     for (i in keys) result[keys[i]]=src[keys[i]];
   } else { // test 'select traits'
     for (i in keys) result[i]=src[i];

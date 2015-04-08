@@ -700,6 +700,13 @@ IterateStatement
    var iterate='while (!^{t2}.done) { ^{this}=^{t2}.value; ^{block}; ^{t2}=^{t1}.next(); }\n';
    return RV(setup+none+iterate,w); 
   }
+ / ITERATE Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
+   var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar()};
+   var setup='var ^{t1}=^{v}; var ^{t2}=^{t1}.next();\n';
+   var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
+   var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value); ^{t2}=^{t1}.next(); }\n';
+   return RV(setup+none+iterate,w); 
+  }
  / EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
      var w={b:b,j:tempvar(),v:v,n:n,k:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false)};
      var setup='var ^{j}=^{v};\nif (undefined===^{j}) ^{j}=[];';
@@ -1233,7 +1240,7 @@ OtherComprehension
          }
        }
        if (l.extract) { 
-         code='('+code+')[0]';
+         code='_$AI.element('+code+',0)';
        }
      }
    } 
@@ -1418,7 +1425,7 @@ VerbSentence
  }
 
 VerbClause
-= v:(VerbValue) _ o:ParameterList? _ VerbTerminal { 
+= v:(VerbValue) _ o:ParameterList?  { 
      composite=v[0]+v[1];
      if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'($'+(o?(','+o[1]):'')+')' }]; 
      return [{ base:v[0], verb:v[1], param:'('+(o?o[1]:'')+')' }]
@@ -1462,10 +1469,10 @@ NewObject
 //   return '_$AI.new("'+v+'",'+clause+')'; 
 // }
 // /
- = CREATE _ v:Value _ o:ParameterList? _ VerbTerminal { 
+ = CREATE _ v:Value _ o:ParameterList?  { 
    return '_$AI.new('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
- / NEW Sep _ v:Value _ o:ParameterList? _ VerbTerminal {
+ / NEW Sep _ v:Value _ o:ParameterList? {
    return 'new '+v+'('+(o?o[1]:'undefined')+')'; 
  }
 
