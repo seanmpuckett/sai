@@ -44,7 +44,8 @@ var isMergable=function(i) {
 
 var _$AI = {}
 
-_$AI.accumulate=function(iterable) {
+_$AI.collect=function(iterable) {
+  if (!isIterable(iterable)) return iterable;
   var a=[];
   var v=iterable.next();
   while (!v.done) {
@@ -57,7 +58,7 @@ _$AI.accumulate=function(iterable) {
 
 _$AI.sort=function(a,f) {
   if (isArray(a)) return a.slice(0).sort(f);
-  if (isIterable(a)) return _$AI.accumulate(a).sort(f);
+  if (isIterable(a)) return _$AI.collect(a).sort(f);
   if (isObject(a)) return _.values(a).sort(f);
   return a;
 };
@@ -79,7 +80,15 @@ _$AI.map = function(a,f) {
       r[k]=f(a[k],k);
     }
     return r;
-  } 
+  } else if (isIterable(a)) {
+    return function *(){
+      var v=a.next();
+      while (!v.done) {
+        yield f(v.value);
+        v=a.next();
+      }
+    }
+  }
   return f(a); // test 'map value'
 }
 
@@ -137,18 +146,63 @@ _$AI.reduce = function(a,f,accum) {
 
 _$AI.slice = function(a,start,count) {
   if (a===undefined) return undefined; 
+
   var end;
   if (start==0) {
     if (count>0) {
       end=count; // start=0, end=count
     } else {
       start=count; // start=-count, end=[end of array]
+      count=-start;
       end=undefined;
     }
   } else if (count!==undefined){
     end=start+count;
   }
+
   if (isArray(a)) return a.slice(start,end);
+
+  if (isIterable(a)) {
+    // return new iterable that slices the previous
+    // first n records limited
+    if (start===0) {
+      // everything; just pass thru
+      // needs test
+      if (end===undefined) {
+        //console.log("slice iterator everything "+start+','+end);
+        return a;
+      }
+      // nothing; return empty iterator
+      // needs test
+      if (end<=start) {
+        //console.log("slice iterator nothing "+start+','+end);
+        return function*(){};
+      }
+      // n records 
+      // test 'limit iterator'
+      //console.log("slice iterator count "+start+','+end);
+      return function*() {
+        var v=a.next();
+        while (!v.done && (start<end)) { start++; yield v.value; v=a.next(); };
+      }();
+    } else if (start>0) {
+      // offset n records 
+      // test 'limit iterator'
+      //console.log("slice iterator offset "+start+','+end);
+      return function*() {
+        var i=0,v=a.next();
+        while (!v.done && i<start) { i++; v=a.next(); }
+        while (!v.done && start<end) { start++; yield v.value; v=a.next(); }
+      }();
+    }
+    // from the end, so we must accumulate up to "count" records
+    // test 'limit iterator'
+    //console.log("slice iterator from end "+start+','+count);
+    var len=-start,buf=[],v=a.next();
+    while (!v.done) { buf.push(v.value); v=a.next(); if (buf.length>len) buf.shift(); }
+    return buf.slice(0,count);
+  }
+
   if (isObject(a)) throw new Error("Cannot use LIMIT/FIRST/LAST on traits.");
   if (start==0 && (count===undefined || end>0)) return a;
   if (start==-1 && (count===undefined || count<0)) return a;
@@ -158,6 +212,14 @@ _$AI.slice = function(a,start,count) {
 _$AI.element = function(a,index) {
   if (isArray(a)) {
     return a[index];
+  } else if (isIterable(a)) { // UNTESTED
+    a=_$AI.limit(a,index,1);
+    var v=a.next();
+    while (index--) {
+      if (v.done) return undefined;
+      v=a.next();
+    }
+    return v.value;
   }
   throw new Error("Attempt to extract an element from something not a list.");
 }
@@ -286,13 +348,13 @@ _$AI.expects = function(params,prototype,name) {
         // good
       } else {
         if (!params.isof) {
-          throw new Error("Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof params);
+          throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof params);
         } else {
-          throw new Error("Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+params.isa);
+          throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+params.isa);
         }
       }
     } else if (!params[j]) {
-      throw new Error("Expected parameter "+j+" in call to "+name);
+      throw new Error("SAI: Expected parameter "+j+" in call to "+name);
     } else if (type!==true) {
       var param=params[j];
       if (type===typeof param) {
@@ -301,9 +363,9 @@ _$AI.expects = function(params,prototype,name) {
         // good
       } else {
         if (!param.isof) {
-          throw new Error("Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof param);
+          throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof param);
         } else {
-          throw new Error("Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+param.isa);
+          throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+param.isa);
         }
       }
     }
@@ -427,14 +489,33 @@ SAI.GetParser = function() {
     try {
       parser=mainParser.parse(indentedSource,{bound:bound,globals:SAI.config.verbs,filename:fn});
     } catch (e) {
-      console.log('HEY WE GOT A PARSE ERROR IN YOUR SAI CODE at '+e.offset);
-      var beg=indentedSource.substring(e.offset-50,e.offset);
-      var end=indentedSource.substring(e.offset,e.offset+50);
-      var context="\n"+beg+'(HERE)'+end;
+      var info='\nSAI: Syntax error <HERE> in '+fn+'\n\n';
       
-      console.log(e);
-      console.log(context);
-      return false;
+      var context=indentedSource.substring(e.offset-100,e.offset);
+      context+='<HERE>';
+      context+=indentedSource.substring(e.offset,e.offset+100);
+      
+      // transforms parse-ready code back into indented
+      var ind=0,minind=0;
+      var lines=context.split('\n');
+      for (var i in lines) {
+        var line=lines[i];
+        if (line=='{') ind++;
+        if (line=='}') ind--;
+        if (ind<minind) minind=ind;
+      }
+      ind=-minind;
+      var newcontext='';
+      var dup=function(s,x) { var ret=''; while (x-->=0) ret+=s; return ret; }
+      for (var i in lines) {
+        var line=lines[i];
+        if (line=='{') ind++;
+        else if (line=='}') ind--;
+        else newcontext+=dup('  ',ind)+line+'\n';
+      }
+      
+      info+=newcontext+'\n\n'+e.message+'\n\n';
+      throw new Error(info);
     }
     //parser=Beautify(parser,{ indent_size: 2, preserve_newlines: false});
     //console.log(parser);
@@ -471,7 +552,7 @@ SAI.GetProtogen = function(name) {
     if (!load.success) {
       throw new Error('SAI.GetProtogen: Could not load object '+name+', reason given: '+load.info);
     }
-    var source=SAI.GetParser(load.source);
+    var source=SAI.GetParser(load.source,undefined,load.info);
     source='var __info="'+load.info+'";\n'+source;
     protogen=new Function('prototype','options','require','_$AI',source);
     if (!protogen) {

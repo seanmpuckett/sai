@@ -617,7 +617,7 @@ SetBlock
  = v:(SetLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
 SetTerm
- = local:LocalAdj? _ l:LValues _ FROM Sep v:VerbSentence {
+/* = local:LocalAdj? _ l:LValues _ &FROM Sep v:VerbSentence {
    local=local?'var ':'';
    if (l.length==1) return local+l[0]+'='+RV(v,{self:l[0]})+';\n';
    var code='var $_='+v+';\n';
@@ -626,7 +626,9 @@ SetTerm
    }
    return code;
  }
- / local:LocalAdj? _ l:LValues _ TO _ e:Expression {
+ */
+ 
+ = local:LocalAdj? _ l:LValues _ (TO/&FROM) _ e:Expression {
    local=local?'var ':'';
    if (l.length==1) return local+l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_=[].concat('+e+');\n';
@@ -1117,6 +1119,7 @@ Comprehension
  / SortComprehension 
  / KeysComprehension 
  / ValuesComprehension
+ / CollectComprehension
  / OtherComprehension
 
 
@@ -1128,6 +1131,11 @@ KeysComprehension
 ValuesComprehension
  = _ VALUES { // test 'values comp*'
      return ['_$AI.values(',')'];
+   }
+
+CollectComprehension
+ = _ COLLECT { // NOTEST
+     return ['_$AI.collect(',')'];
    }
 
 SortComprehension
@@ -1600,6 +1608,7 @@ ReservedWords
  / CASE
  / CHAIN
  / CREATE
+ / COLLECT
  / COPY
  / COUNT
  / DEC
@@ -1686,6 +1695,7 @@ BY = 'by'i
 CASE = 'case'i
 CATCH = 'catch'i
 CHAIN = 'chain'i
+COLLECT = 'collect'i
 COPY = 'copy'i
 CONTINUE = 'continue'i
 CONTRACT = 'contract'i

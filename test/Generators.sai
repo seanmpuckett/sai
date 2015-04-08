@@ -51,5 +51,36 @@ Execute task
     set c10 from @Counter 10,1,-2
     return c10 by . limit 1
     
-  
-  
+  @Match 'collect value', 1, task
+    return 1 collect
+    
+  @Match 'collect iterator', 'aa', task
+    set a from Twice 'a'; collect
+    return a[0]+a[1]
+    
+  @Match 'limit iterator 0-5', '01234', task
+    set a from @Counter 0,10; limit 5
+    set a to (self collect).join('')
+    return a
+
+  @Match 'limit iterator 2-5', '234', task
+    set a from @Counter 0,10; limit 2,3
+    set a to (self collect).join('')
+    return a
+
+  @Match 'limit iterator 0-5 short', '012', task
+    set a from @Counter 0,2; limit 5
+    set a to (self collect).join('')
+    return a
+
+  @Match 'limit iterator -5', '56789', task
+    set a from @Counter 0,9; limit -5
+    set a to (self collect).join('')
+    return a
+
+  @Match 'limit iterator -5,2', '56', task
+    set a from @Counter 0,9; limit -5,2
+    set a to (self collect).join('')
+    return a
+
+
