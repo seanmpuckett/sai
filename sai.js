@@ -49,8 +49,8 @@ var isCollection=function(i) {
 var _$AI = {}
 
 _$AI.sow=function(a) { // test 'sow *'
-  if (isArray(a)||isObject(a)) return function*(){ for (var i in a) yield a[i]; }();
   if (isIterable(a)) return a;
+  if (isArray(a)||isObject(a)) return function*(){ for (var i in a) yield a[i]; }();
   if (a===undefined) return undefined;
   return function*(){ yield a; }();
 }
@@ -257,25 +257,25 @@ _$AI.element = function(a,index) {
 
 _$AI.copy = _.clone;
 
-_$AI.overlay = function(l,r) { // needs test ------test 'overlay'
-  if (!isCollection(l)) throw new Error("SAI: Attempt to OVERLAY onto something that's not a collection/iterable.");
-  if (!isMergable(r)) throw new Error("SAI: Attempt to OVERLAY with something that's not a collection.");
+_$AI.overlay = function(l,r) {// test 'overlay'
+  if (!isMergable(l)) throw new Error("SAI: Attempt to OVERLAY onto something that's not a collection/iterable.");
+  if (!isMergable(r)) throw new Error("SAI: Attempt to OVERLAY with something that's not a collection/iterable.");
   if (!isIterable(l)) { // left side static
     l=_.clone(l); // no in-place modification
-    /* not supported
     if (isIterable(r)) {
+      // right side iterator
       return function*(){
         var v=r.next();
         for (var i in l) {
           if (!v.done) {
-            yield v.value;
+            yield (undefined===v.value) ? l[i] : v.value;
             v=r.next();
           } else {
             yield l[i];
           }
         }
       }();
-    } */
+    }
     // right side static - things were so much simpler then
     for (var i in r) {
       l[i]=r[i];
@@ -283,19 +283,18 @@ _$AI.overlay = function(l,r) { // needs test ------test 'overlay'
     return l;
   } else {
     // left side iterable
-    /* not supported
     if (isIterable(r)) {
       // right side iterable
       return function*(){
         var vl=l.next(),vr=r.next();
         while (!vr.done) {
-          yield vr.value;
-          vl=l.next(); vr=r.next();
+          yield (vr.value===undefined) ? vl.value : vr.value;
+          vl=l.next(); 
+          vr=r.next();
         }
         yield *l;
       }();
     }
-    */
     // right side static
     r=_.clone(r); // in case it is changed
     return function*(){
@@ -310,18 +309,76 @@ _$AI.overlay = function(l,r) { // needs test ------test 'overlay'
   throw new Error("SAI: unexpected code path in OVERLAY");
 }
 
-// get traits of the elements of src enumerated by keys
+// get only elements of src enumerated by keys
 _$AI.select = function(src,keys) {
-  if (!isMergable(src)) throw new Error("Attempt to SELECT with something that's not a list or traits.");
-  var result={};
-  if (!isMergable(keys)) { // test 'select value'
-    result[keys]=src[keys]
-  } if (isArray(keys)) { // test 'select list'
-    for (i in keys) result[keys[i]]=src[keys[i]];
-  } else { // test 'select traits'
-    for (i in keys) result[i]=src[i];
+  if (!isMergable(src)) throw new Error("SAI: Left argument to SELECT must be list/traits/iterable.");
+  if (!isMergable(keys)) {
+    if (keys===undefined) return undefined;
+    keys=[keys];
   }
-  // test 'select undefined'
+  if (isArray(src)) { // lhs array
+    if (isArray(keys)) { // test 'select list list' // console.log("path 1");
+      var j=0,result=[];
+      for (var i in keys) result[j++]=src[keys[i]];
+      return result;
+    } else if (isIterable(keys)) { // test 'select list iterable' // console.log("path 2");
+      src=_.clone(src);
+      return function*(){
+        for (var i of keys) yield src[i];
+      }();
+    } // test 'select list traits' // else rhs traits console.log("path 3");
+    var j=0,result=[];
+    for (var i in keys) result.push(src[i]);
+    return result;
+  } else if (isIterable(src)) { // lhs iterator
+    if (isIterable(keys)) { // test 'select iterable iterable' // rhs iterator console.log("path 4");
+      return function*(){
+        var buf=[],len=0;
+        for (v of keys) {
+          while (len<=v) {
+            var lv=src.next();
+            if (lv.done) return; // request for element that doesn't exist, terminate iteration
+            buf[len++]=lv.value;
+          }
+          yield buf[v];
+        }
+      }();
+    }
+    if (isArray(keys)) { // test 'select iterable list' // rhs list console.log("path 5");
+      keys=_.clone(keys);
+      return function*(){
+        var buf=[],len=0;
+        for (var i in keys) {
+          var v=keys[i];
+          while (len<=v) {
+            var lv=src.next();
+            if (lv.done) return; // request for element that doesn't exist, terminate iteration
+            buf[len++]=lv.value;
+          }
+          yield buf[v];
+        }
+      }();
+    } // test 'select iterable traits' // rhs traits console.log("path 6");
+    keys=_$AI.keys(keys).sort();
+    return function*(){
+      var i=0,j=0;
+      for (var v of src) if (i++==keys[j]) { yield v; j++; if (j>=keys.length) break;}
+    }();
+  } // else lhs traits
+  if (isIterable(keys)) { // test 'select traits iterable' // console.log("path 7");
+    src=_.clone(src);
+    return function*(){
+      for (var v of keys) {
+        yield src[v];
+      }
+    }();
+  } else if (isArray(keys)) { // test 'select traits list' console.log("path 8");
+    var result={};
+    for (var i in keys) result[keys[i]]=src[keys[i]];
+    return result;
+  } // rhs traits // test 'select traits traits
+  var result={};
+  for (var i in keys) result[i]=src[i];
   return result;
 }
 
