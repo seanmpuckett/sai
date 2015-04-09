@@ -5,9 +5,10 @@ multiple assignment???????
 comprehensions should be cognizant of generators
 expects as a verb
 source code lookup for exceptions or debugging
-"YOU GOT AN ERROR IN YOUR SAI CODE" needs to be more useful.
 
+weld - traits>list
 
+iterator reduce,overlay,select,merge,remove,keys,values
 
 
 

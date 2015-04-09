@@ -83,4 +83,26 @@ Execute task
     set a to (self collect).join('')
     return a
 
+  @Match 'sow undefined', undefined, task
+    return undefined sow
 
+  @Match 'sow value', 'pigs', task
+    set i to 'pigs' sow
+    return i.next().value
+
+  @Match 'sow list', 'pigs', task
+    set i to list cows,pigs; sow
+    i.next
+    return i.next().value
+    
+  @Match 'sow traits', 'pigs', task
+    set i to traits pasture cows, pens pigs; sow
+    i.next
+    return i.next().value
+    
+  @Match 'sow iterable', 8, task
+    set i from @Counter 10,0,-2
+    i.next
+    return i.next().value
+    
+  

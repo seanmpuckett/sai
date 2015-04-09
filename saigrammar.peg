@@ -1119,9 +1119,15 @@ Comprehension
  / SortComprehension 
  / KeysComprehension 
  / ValuesComprehension
+ / SowComprehension
  / CollectComprehension
  / OtherComprehension
 
+
+SowComprehension
+ = _ SOW { // test 'sow *'
+     return ['_$AI.sow(',')'];
+   }
 
 KeysComprehension
  = _ KEYS { // test 'keys comp*'
@@ -1134,7 +1140,7 @@ ValuesComprehension
    }
 
 CollectComprehension
- = _ COLLECT { // NOTEST
+ = _ COLLECT { 
      return ['_$AI.collect(',')'];
    }
 
@@ -1661,6 +1667,7 @@ ReservedWords
  / RSH
  / SELECT
  / SELF
+ / SOW
  / SWITCH
  / TASK
  / TRIAL
@@ -1768,6 +1775,7 @@ RSH = 'rsh'i
 SELECT = 'select'i
 SELF = 'self'i
 SET = 'set'i
+SOW = 'sow'i
 SUPER = 'super'i
 SWITCH = 'switch'i
 TASK = 'task'i

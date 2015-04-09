@@ -44,6 +44,13 @@ var isMergable=function(i) {
 
 var _$AI = {}
 
+_$AI.sow=function(a) { // test 'sow *'
+  if (isArray(a)||isObject(a)) return function*(){ for (var i in a) yield a[i]; }();
+  if (isIterable(a)) return a;
+  if (a===undefined) return undefined;
+  return function*(){ yield a; }();
+}
+
 _$AI.collect=function(iterable) {
   if (!isIterable(iterable)) return iterable;
   var a=[];
@@ -74,20 +81,20 @@ _$AI.map = function(a,f) {
       k++;
     }
     return r;
-  } else if (isObject(a)) { // test 'map traits'
-    var r={};
-    for (var k in a) {
-      r[k]=f(a[k],k);
-    }
-    return r;
-  } else if (isIterable(a)) {
+  } else if (isIterable(a)) { // test 'map iterable'
     return function *(){
       var v=a.next();
       while (!v.done) {
         yield f(v.value);
         v=a.next();
       }
+    }();
+  } else if (isObject(a)) { // test 'map traits'
+    var r={};
+    for (var k in a) {
+      r[k]=f(a[k],k);
     }
+    return r;
   }
   return f(a); // test 'map value'
 }
@@ -101,6 +108,15 @@ _$AI.filter = function(a,f) {
       if (f(v,k)) r.push(v);
     }
     return r;
+  } else if (isIterable(a)) { // test 'filter iterator'
+    return function *(){
+      var v=a.next();
+      while (!v.done) {
+        var val=v.value;
+        if (f(val)) yield val;
+        v=a.next();
+      }
+    }();
   } else if (isObject(a)) { // test 'filter traits*'
     var r={};
     for (var k in a) {
