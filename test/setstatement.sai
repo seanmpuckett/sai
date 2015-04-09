@@ -121,6 +121,19 @@ Execute task
     set a delete list b, d
     return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
 
+  @Test 'self delete value', task
+    set a to: a 1, b 2, c 3
+    set a delete 'b'
+    return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
+
+  @Test 'self delete iterable', task
+    set a to: a 1, b 2, c 3
+    set a delete (list b, d; sow)
+    return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
+
+
+
+
   @Match 'self default set', 2, task
     set a to 2
     set a default 1
@@ -162,6 +175,7 @@ Execute task
       b to 3
       c to 4
     return a=2 and b=3 and c=4
+  
   
   @Test 'merge list list', task
     set a to: 1,2,3

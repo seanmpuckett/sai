@@ -147,7 +147,13 @@ Execute task
   @Test 'keys comp traits', task
     set a to: a 1, b 2; keys
     return ~Array.isArray(a) and (a.length=2) and (a|0='a') and (a|1='b')
-    
+
+  @Test 'keys comp iterable', task
+    set a to (list a,b; sow) keys
+    return ~Array.isArray(a) and (a.length=2) and (a|0='0') and (a|1='1')
+
+
+
   @Test 'keys unary undefined', task
     set a to keys undefined
     return ~Array.isArray(a) and (a.length = 0)
@@ -179,6 +185,13 @@ Execute task
   @Test 'values comp traits', task
     set a to: a 1, b 2; values
     return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
+
+  @Test 'values comp iterable', task
+    set a to (list 1,2; sow) values
+    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
+
+
+
     
   @Test 'values unary undefined', task
     set a to values undefined

@@ -403,11 +403,13 @@ _$AI.delete = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   if (!isObject(dest)) throw new Error("Attempt to REMOVE from something that's not traits.");
   if (!isMergable(keys)) {
     delete dest[keys];
-  } if (Array.isArray(keys)) {
-    for (var i in keys) delete dest[keys[i]];
-  } else {
-    for (var i in keys) delete dest[i];
+  } 
+  if (isArray(keys)) {
+    for (var i in keys) { var v=keys[i]; if (v!==undefined) delete dest[keys[i]]; }
+  } else if (isIterable(keys)) {
+    for (var v of keys) { if (v!==undefined) delete dest[v]; }
   }
+  for (var i in keys) delete dest[i];
 }
 
 _$AI.deepFreeze = function(o) {
@@ -434,13 +436,14 @@ _$AI.compare = function(a,b) {
 
 _$AI.keys = function(a) {
   var result=[];
-  if (Array.isArray(a)) { // test 'keys list'
+  if (isArray(a)) { // test 'keys list'
     var len=a.length;
     for (var i = 0; i<len; result.push(i++));
-  } else if (typeof a === 'object' && a !== null) { // test 'keys traits'
-    for (var i in a) {
-      result.push(i);
-    }
+  } else if (isIterable(a)) {
+    var i=0;
+    for (var v of a) result.push(i++);
+  } else if (isObject(a)) {
+    for (var i in a) result.push(i);
   } 
   // test 'keys value' & 'keys undefined'
   return result;
@@ -448,17 +451,15 @@ _$AI.keys = function(a) {
 
 _$AI.values = function(a) {
   var result=[];
-  if (Array.isArray(a)) { // test 'values list'
-    var len=a.length;
-    for (var i = 0; i<len; result.push(a[i++]));
-  } else if (typeof a === 'object' && a !== null) { // test 'values traits'
-    for (var i in a) {
-      result.push(a[i]);
-    }
+  if (isArray(a)) { // test 'values list'
+    return _.clone(a);
+  } else if (isIterable(a)) { // test 'values iterable'
+    return _$AI.reap(a);
+  } else if (isObject(a)) { // test 'values traits'
+    for (var i in a) result.push(a[i]);
   } else if (a !== undefined) { // test 'values value'
     result.push(a);
-  }
-  // test 'values undefined'
+  } // test 'values undefined'
   return result;
 }
 
