@@ -168,10 +168,15 @@ Execute task
     set a to values: a 1, b 2
     return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
     
-  @Test 'overlay', task
+  @Test 'overlay static', task
     set a to traits a 1, b 2
     set b to a overlay traits b 3, c 4
     return b.a=1 and b.b=3 and b.c=4
+    
+  @Test 'overlay dynamic', task
+    set a to list 1,2,3,4; sow
+    set b to a overlay traits 1 'a', 3 'b'; reap
+    return b[0]=1 and b[1]='a' and b[2]=3 and b[3]='b'
     
   @Test 'select undefined', task
     set a to traits a 1, b 2, c 3

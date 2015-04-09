@@ -170,7 +170,27 @@ Execute task
       return accum+it
     return b is undefined
      
+  @Match 'gather 1 iterable into', 'aa', task
+    set b to list a; sow gather into 'a'
+       return accum+it
+    return b.next().value
+    
+  @Match 'gather 1 iterable no into', 'a', task
+    set b to list a; sow gather
+       return accum+it
+    return b.next().value
 
+  @Match 'gather 3 iterable into', 'abc', task
+    set b to list a,b,c; sow gather into ''
+       return accum+it
+    return b.next().value
+    
+  @Match 'gather 3 iterable no into', 'abc', task
+    set b to list a,b,c; sow gather
+       return accum+it
+    return b.next().value
+
+  
 
 
 

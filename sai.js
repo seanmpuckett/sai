@@ -33,9 +33,13 @@ var isObject=function(i) {
   return true;
 }
 
-var isArray=_.isArray;
+var isArray=Array.isArray;
 
 var isMergable=function(i) {
+  return isArray(i) || isObject(i) || isIterable(i);
+}
+
+var isCollection=function(i) {
   return isArray(i) || isObject(i);
 }
 
@@ -51,21 +55,16 @@ _$AI.sow=function(a) { // test 'sow *'
   return function*(){ yield a; }();
 }
 
-_$AI.collect=function(iterable) {
+_$AI.reap=function(iterable) {
   if (!isIterable(iterable)) return iterable;
   var a=[];
-  var v=iterable.next();
-  while (!v.done) {
-    a.push(v.value);
-    v=iterable.next();
-  }
-  //console.log("Accumulated "+a);
+  for (var val of iterable) a.push(val);
   return a;
 }
 
 _$AI.sort=function(a,f) {
   if (isArray(a)) return a.slice(0).sort(f);
-  if (isIterable(a)) return _$AI.collect(a).sort(f);
+  if (isIterable(a)) return _$AI.reap(a).sort(f);
   if (isObject(a)) return _.values(a).sort(f);
   return a;
 };
@@ -83,11 +82,7 @@ _$AI.map = function(a,f) {
     return r;
   } else if (isIterable(a)) { // test 'map iterable'
     return function *(){
-      var v=a.next();
-      while (!v.done) {
-        yield f(v.value);
-        v=a.next();
-      }
+      for (var val of a) yield f(val);
     }();
   } else if (isObject(a)) { // test 'map traits'
     var r={};
@@ -110,11 +105,8 @@ _$AI.filter = function(a,f) {
     return r;
   } else if (isIterable(a)) { // test 'filter iterator'
     return function *(){
-      var v=a.next();
-      while (!v.done) {
-        var val=v.value;
+      for (var val of a) {
         if (f(val)) yield val;
-        v=a.next();
       }
     }();
   } else if (isObject(a)) { // test 'filter traits*'
@@ -130,6 +122,33 @@ _$AI.filter = function(a,f) {
 
 _$AI.reduce = function(a,f,accum) {
   if (a===undefined) return undefined; // test 'reduce undef'
+  if (isArray(a)) {
+    var l=a.length;
+    if (!l) return accum;
+    var k=0;
+    if (undefined===accum) accum=a[k++];
+    while (k<l) {
+      accum=f(accum,a[k],k);
+      k++;
+    }
+    return accum;
+  }
+  if (isIterable(a)) {
+    return function*(){
+      var step=a.next();
+      if (step.done) { yield accum; return; } 
+      var k=0;
+      if (undefined===accum) {
+        accum=step.value;
+        step=a.next();
+      }
+      while (!step.done) {
+        accum=f(accum,step.value);
+        step=a.next();
+      }
+      yield accum;
+    }();
+  }
   if (isObject(a)) { // test 'reduce traits*'
     if (undefined===accum) {
       var first=true;
@@ -148,16 +167,8 @@ _$AI.reduce = function(a,f,accum) {
     }
     return accum;
   } 
-  if (!isArray(a)) a=[a]; // test 'reduce value'
-  var l=a.length;
-  if (!l) return accum;
-  var k=0;
-  if (undefined===accum) accum=a[k++];
-  while (k<l) {
-    accum=f(accum,a[k],k);
-    k++;
-  }
-  return accum;
+  // simple value; wrap it in an array and try again, yay tail call
+  return _$AI.reduce([a],f,accum);
 }
 
 _$AI.slice = function(a,start,count) {
@@ -182,15 +193,15 @@ _$AI.slice = function(a,start,count) {
     // return new iterable that slices the previous
     // first n records limited
     if (start===0) {
-      // everything; just pass thru
-      // needs test
       if (end===undefined) {
+        // everything; just pass thru
+        // untested
         //console.log("slice iterator everything "+start+','+end);
         return a;
       }
-      // nothing; return empty iterator
-      // needs test
       if (end<=start) {
+        // nothing; return empty iterator
+        // untested
         //console.log("slice iterator nothing "+start+','+end);
         return function*(){};
       }
@@ -199,7 +210,9 @@ _$AI.slice = function(a,start,count) {
       //console.log("slice iterator count "+start+','+end);
       return function*() {
         var v=a.next();
-        while (!v.done && (start<end)) { start++; yield v.value; v=a.next(); };
+        while (!v.done && (start<end)) { 
+          start++; yield v.value; v=a.next(); 
+        };
       }();
     } else if (start>0) {
       // offset n records 
@@ -215,10 +228,12 @@ _$AI.slice = function(a,start,count) {
     // test 'limit iterator'
     //console.log("slice iterator from end "+start+','+count);
     var len=-start,buf=[],v=a.next();
-    while (!v.done) { buf.push(v.value); v=a.next(); if (buf.length>len) buf.shift(); }
+    while (!v.done) { 
+      buf.push(v.value); v=a.next(); 
+      if (buf.length>len) buf.shift(); 
+    }
     return buf.slice(0,count);
   }
-
   if (isObject(a)) throw new Error("Cannot use LIMIT/FIRST/LAST on traits.");
   if (start==0 && (count===undefined || end>0)) return a;
   if (start==-1 && (count===undefined || count<0)) return a;
@@ -228,7 +243,7 @@ _$AI.slice = function(a,start,count) {
 _$AI.element = function(a,index) {
   if (isArray(a)) {
     return a[index];
-  } else if (isIterable(a)) { // UNTESTED
+  } else if (isIterable(a)) { // untested
     a=_$AI.limit(a,index,1);
     var v=a.next();
     while (index--) {
@@ -242,15 +257,57 @@ _$AI.element = function(a,index) {
 
 _$AI.copy = _.clone;
 
-_$AI.overlay = function(l,r) { // test 'overlay'
-  if (!isMergable(l)) throw new Error("Attempt to OVERLAY onto something that's not a list or traits.");
-  if (!isMergable(r)) throw new Error("Attempt to OVERLAY wih something that's not a list or traits.");
-  var result=l?_.clone(l):{};
-  for (var i in r) {
-    result[i]=r[i];
+_$AI.overlay = function(l,r) { // needs test ------test 'overlay'
+  if (!isCollection(l)) throw new Error("SAI: Attempt to OVERLAY onto something that's not a collection/iterable.");
+  if (!isMergable(r)) throw new Error("SAI: Attempt to OVERLAY with something that's not a collection.");
+  if (!isIterable(l)) { // left side static
+    l=_.clone(l); // no in-place modification
+    /* not supported
+    if (isIterable(r)) {
+      return function*(){
+        var v=r.next();
+        for (var i in l) {
+          if (!v.done) {
+            yield v.value;
+            v=r.next();
+          } else {
+            yield l[i];
+          }
+        }
+      }();
+    } */
+    // right side static - things were so much simpler then
+    for (var i in r) {
+      l[i]=r[i];
+    }
+    return l;
+  } else {
+    // left side iterable
+    /* not supported
+    if (isIterable(r)) {
+      // right side iterable
+      return function*(){
+        var vl=l.next(),vr=r.next();
+        while (!vr.done) {
+          yield vr.value;
+          vl=l.next(); vr=r.next();
+        }
+        yield *l;
+      }();
+    }
+    */
+    // right side static
+    r=_.clone(r); // in case it is changed
+    return function*(){
+      var i=0,v=l.next();
+      while (!v.done) {
+        var o=r[i++];
+        yield (o===undefined)?v.value:o;
+        v=l.next();
+      }
+    }();
   }
-  //console.log(result);
-  return result;
+  throw new Error("SAI: unexpected code path in OVERLAY");
 }
 
 // get traits of the elements of src enumerated by keys
@@ -268,15 +325,15 @@ _$AI.select = function(src,keys) {
   return result;
 }
 
-_$AI.merge = function(dest,keys) {
-  if (!isMergable(dest)) throw new Error("Attempt to MERGE into something that's not a list or traits.");
+_$AI.merge = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
+  if (!(isArray(dest)||isObject(dest))) throw new Error("Attempt to MERGE into something that's not a list or traits.");
   if (!isMergable(keys)) throw new Error("Attempt to MERGE from something that's not a list or traits.");
   for (i in keys) {
     dest[i]=keys[i];
   }
 }
 
-_$AI.remove = function(dest,keys) {
+_$AI.remove = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   if (!isObject(dest)) throw new Error("Attempt to REMOVE from something that's not traits.");
   if (!isMergable(keys)) {
     delete dest[keys];

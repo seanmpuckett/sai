@@ -1120,7 +1120,7 @@ Comprehension
  / KeysComprehension 
  / ValuesComprehension
  / SowComprehension
- / CollectComprehension
+ / ReapComprehension
  / OtherComprehension
 
 
@@ -1139,9 +1139,9 @@ ValuesComprehension
      return ['_$AI.values(',')'];
    }
 
-CollectComprehension
- = _ COLLECT { 
-     return ['_$AI.collect(',')'];
+ReapComprehension
+ = _ REAP { 
+     return ['_$AI.reap(',')'];
    }
 
 SortComprehension
@@ -1410,7 +1410,8 @@ RegexChar
 Keyword
  = v:Identifier ![.(\[|] { return v } 
  / StringLiteral 
-
+ / n:Number { return quoted(n.toString()); }
+ 
 Identifier
  = !ReservedWord v:IdentifierProto { return v; }
 
@@ -1614,7 +1615,6 @@ ReservedWords
  / CASE
  / CHAIN
  / CREATE
- / COLLECT
  / COPY
  / COUNT
  / DEC
@@ -1664,6 +1664,7 @@ ReservedWords
  / PLY
  / PROMISE
  / PROCESS
+ / REAP
  / RSH
  / SELECT
  / SELF
@@ -1702,7 +1703,6 @@ BY = 'by'i
 CASE = 'case'i
 CATCH = 'catch'i
 CHAIN = 'chain'i
-COLLECT = 'collect'i
 COPY = 'copy'i
 CONTINUE = 'continue'i
 CONTRACT = 'contract'i
@@ -1767,6 +1767,7 @@ FALSE = 'false'i
 PLY = 'ply'i
 PROMISE = 'promise'i
 PROCESS = 'process'i
+REAP = 'reap'i
 RESOLVE = 'resolve'i
 REJECT = 'reject'i
 REFERENCE = 'reference'i

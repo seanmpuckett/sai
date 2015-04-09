@@ -6,15 +6,18 @@ comprehensions should be cognizant of generators
 expects as a verb
 source code lookup for exceptions or debugging
 
+does "set a chain "
+
 weld - traits>list
 
-iterator reduce,overlay,select,merge,remove,keys,values
+iterator select,remove,keys,values
 
 
 
 TESTS TO WRITE
   what do highest/lowest/first/last do when given non-arrays?
   inheritance
+  chaining
   promise
   literal formats
   regex parsing
@@ -30,15 +33,16 @@ thing machine:
   state @Start
   queue empty
   Start task
-    state @Churn
+    then @Churn
   Churn 
     yield 'working'
     continue
   Post task
     @queue.push $
+    fetchthing task state bob $
   Pull task
     if @queue.length
       return @queue.shift
       
-    
+      
   
