@@ -167,8 +167,8 @@
     '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
     
     via: '^{1} = ^{2}(^{1})', // test 'self via'
-    update: '_$AI.merge(^{1},^{2})', // test 'self update'
-    delete: '_$AI.remove(^{1},^{2})', // test 'self delete*'
+    update: '_$AI.update(^{1},^{2})', // test 'self update'
+    delete: '_$AI.delete(^{1},^{2})', // test 'self delete*'
     default: 'if (undefined===^{1}) ^{1}=^{2}' // test 'self default*'
   };
 

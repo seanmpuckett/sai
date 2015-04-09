@@ -369,12 +369,12 @@ _$AI.select = function(src,keys) {
     src=_.clone(src);
     return function*(){
       for (var v of keys) {
-        yield src[v];
+        if (v!==undefined) yield src[v];
       }
     }();
   } else if (isArray(keys)) { // test 'select traits list' console.log("path 8");
     var result={};
-    for (var i in keys) result[keys[i]]=src[keys[i]];
+    for (var i in keys) { var v=keys[i]; result[v]=src[v]; }
     return result;
   } // rhs traits // test 'select traits traits
   var result={};
@@ -382,22 +382,31 @@ _$AI.select = function(src,keys) {
   return result;
 }
 
-_$AI.merge = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
+_$AI.update = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   if (!(isArray(dest)||isObject(dest))) throw new Error("Attempt to MERGE into something that's not a list or traits.");
   if (!isMergable(keys)) throw new Error("Attempt to MERGE from something that's not a list or traits.");
-  for (i in keys) {
-    dest[i]=keys[i];
+  if (isIterable(keys)) {
+    var i=0;
+    for (var v of keys) {
+      if (v!==undefined) dest[i]=v;
+      i++;
+    }
+  } else {
+    for (var i in keys) {
+      var v=keys[i];
+      if (v!==undefined) dest[i]=v;
+    }
   }
 }
 
-_$AI.remove = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
+_$AI.delete = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   if (!isObject(dest)) throw new Error("Attempt to REMOVE from something that's not traits.");
   if (!isMergable(keys)) {
     delete dest[keys];
   } if (Array.isArray(keys)) {
-    for (i in keys) delete dest[keys[i]];
+    for (var i in keys) delete dest[keys[i]];
   } else {
-    for (i in keys) delete dest[i];
+    for (var i in keys) delete dest[i];
   }
 }
 
@@ -818,10 +827,10 @@ SAI.Configure = function(config) {
     SAI.config.paths=config.paths;
   }
   if (config.verbs) {
-    _$AI.merge(SAI.config.verbs,config.verbs);
+    _$AI.update(SAI.config.verbs,config.verbs);
   }
   if (config.options) {
-    _$AI.merge(SAI.config.options,config.options);
+    _$AI.update(SAI.config.options,config.options);
   }
   if (config.Loader) {
     SAI.config.Loader=config.Loader;

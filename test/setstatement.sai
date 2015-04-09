@@ -163,3 +163,36 @@ Execute task
       c to 4
     return a=2 and b=3 and c=4
   
+  @Test 'merge list list', task
+    set a to: 1,2,3
+    set a update: undefined, 'a', undefined, 'b'
+    return a|0=1 and a|1='a' and a|2='3' and a|3='b'
+
+  @Test 'merge list traits', task
+    set a to: 1,2,3
+    set a update: 1 'a',3 'b'
+    return a|0=1 and a|1='a' and a|2='3' and a|3='b'
+
+  @Test 'merge list iterable', task
+    set a to: 1,2,3
+    set a update (: undefined, 'a', undefined, 'b'; sow)
+    return a|0=1 and a|1='a' and a|2='3' and a|3='b'
+
+
+  @Test 'merge traits list', task
+    set a to: a 1,b 2
+    set a update: 'a', 'b'
+    return a|0='a' and a|1='b' and a.a=1 and a.b=2
+
+  @Test 'merge traits traits', task
+    set a to: a 1, b 2
+    set a update: a 2,c 3
+    return a.a=2 and a.b=2 and a.c=3
+  
+  @Test 'merge traits iterable', task
+    set a to: a 1, b 2
+    set a update (: undefined, 'a', undefined, 'b'; sow)
+    return a.a=1 and a.b=2 and a|1='a' and a|3='b' and a|0 is undefined and a|2 is undefined
+
+
+
