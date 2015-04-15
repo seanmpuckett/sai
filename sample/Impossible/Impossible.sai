@@ -1,9 +1,9 @@
 // X and Y are two different integers, greater than 1, with sum less than 100. S and P are two mathematicians; S knows the sum X+Y, P knows the product X*Y, and both know the information in these two sentences. The following conversation occurs.
 //
-// P says "I cannot find these numbers."
-// S says "I was sure that you could not find them. I cannot find them either."
-// P says "Then, I found these numbers."
-// S says "If you could find them, then I also found them."
+// 1) P says "I cannot find these numbers."
+// 2) S says "I was sure that you could not find them. I cannot find them either."
+// 3) P says "Then, I found these numbers."
+// 4) S says "If you could find them, then I also found them."
 
 // What are these numbers?
 
@@ -14,23 +14,29 @@ object Impossible 1.0.0
 
 Instantiate task
 
-  set trials to process
-    count 2 to ~MAX as a
-      count a+1 to ~MAX-a as b
-        yield: x a, y b
+  set pairs to process
+    count 2 to ~MAX as x
+      count x+1 to ~MAX-x as y
+        yield: x x, y y, s x+y, p x*y
 
-  set PA1 to empty
-  set SNA1 to empty
-  set PA2 to empty
-  set SA2 to empty
+  // scratch pads
+  set PGood to empty
+  set SBad to empty
+  set PStillGood to empty
+  set SGood to empty
   
-  set SNA1 to chain trials() 
-    thru
-      set PA1[.x*.y] to (self default 0) + 1
-    has PA1[.x*.y]=1
-    
-  debug SNA1 reap
-  
+  debug chain pairs() reap
+    thru 
+      set PGood[.p] to (self default 0)+1
+    thru 
+      if PGood[.p]=1
+        set SBad[.s] to true
+    has not SBad[.s] 
+    thru 
+      set PStillGood[.p] to (self default 0)+1
+    has PStillGood[.p]=1
+    thru 
+      set SGood[.s] to (self default 0)+1
+    has SGood[.s]=1
 
   debug @Instantiate.toString()
-      
