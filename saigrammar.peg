@@ -446,9 +446,15 @@ TaskClause
 = x:Expects? Optional? _ o:MultiOutput? _ b:Block {
   return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function'});
 }
+/ x:Expects? Optional? _ o:MultiOutput? _ ';'? _ b:Expression {
+  return TaskClauseFormatter({expects:x,as:o,block:'return '+b+';',kind:'function'});
+}
 
 IteratorClause
 = x:Expects? Optional? _ o:MultiOutput? _ b:Block {
+  return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function*'});
+}
+/ x:Expects? Optional? _ o:MultiOutput? _ ';'? _ b:Expression {
   return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function*'});
 }
 
@@ -685,6 +691,12 @@ ReturnStatement
  / r:(ResolveReject) Sep k:Expression?   { 
    return r+'('+k+');\n' ;
   }
+ / YIELDING Sep k:Expression { 
+   return 'yield *'+'('+k+');\n' ;
+  }
+ / YIELD Sep k:Expression { 
+   return 'yield '+'('+k+');\n' ;
+  }
 
 ResolveReject
  = RESOLVE { return '$_resolve' }
@@ -831,8 +843,6 @@ VerbValue
     }
     return [stem,verb];
   }
- / YIELDING { return ['','yield* ']; }
- / YIELD { return ['','yield ']; }
  
 
 LStem
@@ -1157,11 +1167,11 @@ SortComprehension
 MapComprehension
  = _ THRU _ x:Logical _ {
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
-     return ['_$AI.map(' , ','+block+')']; 
+     return ['_$AI.map(' , ','+block+' )']; 
   }
  / _ THRU _ o:IterateOutput? b:Block _ {
-     var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['_$AI.map(' , ','+block+')']; 
+     var block=RV('function(^{this},^{key}){'+b+'; return ^{this};}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
+     return ['_$AI.map(' , ','+block+' )']; 
   }
  / _ THRU _ USING _ x:Value _ {
    return ['_$AI.map(' , ','+x+')' ];
@@ -1379,6 +1389,8 @@ Value
  / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
  / FROM Sep v:VerbSentence _ { return v }
+ / YIELDING Sep v:Value _ { return 'yield *'+v; }
+ / YIELD Sep v:Value _ { return 'yield'+v; }
  / '?' v:RValueSafe _ { return v }
  / v:RValue _ { return v }
  / VerbChain 
@@ -1387,7 +1399,7 @@ Value
  / '(' _ v:Expression _ o:Output? ')' _ { 
    if (o) {
      addLocal(o);
-     return RV('(@out@='+v+')',{out:o}); 
+     return RV('(^{out}='+v+')',{out:o}); 
    } else {
      return '('+v+')'; 
    }

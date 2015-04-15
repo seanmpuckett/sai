@@ -14,6 +14,14 @@ Execute task
       return true
     return from t
     
+  @Test 'from exp', task
+    set t to task true
+    return from t
+    
+  @Test 'from exp;', task
+    set t to task; true
+    return from t
+    
   @Test '()', task
     set t to task
       return true
@@ -22,6 +30,10 @@ Execute task
   @Test 'from $', task
     set t to task
       return $
+    return from t true
+    
+  @Test 'from $ exp', task
+    set t to task $
     return from t true
     
   @Test '(true)', task
@@ -49,14 +61,34 @@ Execute task
       return a
     return from t true
     
+  @Test 'as a exp', task
+    set t to task as a a
+    return from t true
+    
+  @Test 'as a; exp', task
+    set t to task as a; a
+    return from t true
+    
   @Test '1,2,3', task
     set t to task as a,b,c
       return a+b+c
     return 6 = t(1,2,3)
 
+  @Test '1,2,3 exp', task
+    set t to task as a,b,c a+b+c
+    return 6 = t(1,2,3)
+
+  @Test '1,2,3; exp', task
+    set t to task as a,b,c; a+b+c
+    return 6 = t(1,2,3)
+
   @Test 'a 1, b 2, c 3', task
     set t to task expects $a,$b,$c
       return $a+$b+$c
+    return 6 = t(:a 1, b 2, c 3)
+
+  @Test 'a 1, b 2, c 3; exp', task
+    set t to task expects $a,$b,$c; $a+$b+$c
     return 6 = t(:a 1, b 2, c 3)
 
   @Test 'expects a', task
@@ -70,6 +102,11 @@ Execute task
   @Test 'expects type Simple', task
     set t to task expects $a 'Simple'
       return $a.a
+    set o to create 'Simple'
+    return from t: a o
+    
+  @Test 'expects type Simple;', task
+    set t to task expects $a 'Simple' $a.a
     set o to create 'Simple'
     return from t: a o
     

@@ -33,6 +33,14 @@ var isObject=function(i) {
   return true;
 }
 
+var isMap=function(i) {
+  return (i instanceof Map);
+}
+
+var isSet=function(i) {
+  return (i instanceof Set);
+}
+
 var isArray=Array.isArray;
 
 var isMergable=function(i) {

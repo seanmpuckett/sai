@@ -12,6 +12,14 @@ A notable exception is the application of a sorting operator to traits (e.g. an 
 
 _Critical note: comprehensions **do not modify** collections they are applied to, instead returning an altered copy. If you want a comprehension result to replace its source data, specifically make that assignment yourself._
 
+#### Collection Data Types
+
+SAI comprehension operators natively understand **Arrays**, **Plain Objects** and **ES6 Iterators**. Support is forthcoming for the ES6 collection types **Map** and **Set**.
+
+The behaviour of comprehensions differes subtly according to the types of collections given. Please check the reference documentation for specifics.
+
+#### Sample Data
+
 We’ll be working with the following set of data to make our examples clearer.
 
 	set friends to:
@@ -46,7 +54,7 @@ Filtration comprehensions test each element of a collection and return a new col
 
 	friends #dog #cat
 
-_Note: multiple-tag comprehensions are tested with a logical **and**; all conditions must be fulfilled for the row to be included in the result.
+\_Note: multiple-tag comprehensions are tested with a logical **and**; all conditions must be fulfilled for the row to be included in the result.
 
 #### HAS _expression_
 
@@ -86,7 +94,7 @@ If an expression isn’t enough, **has** can accept a block of code.  Like the `
 
 Keyword **has** can reference a block of code directly, which makes the **it** magic value available within that block, or be given the name of a task (or a task definition).
 
-**Who can rent a car?
+\*\*Who can rent a car?
 
 	friends has
 	  return .age >= rentAge[.province]
@@ -145,7 +153,7 @@ A surprise for you: **\<=\>** is a SAI-specific comparison operator useful for s
 
 Because of the way the **or** operator shortcuts evaluation when it finds the first truthy value, you can string together multiple **\<=\>** comparison operators without using **if**.
 
-#### BY USING 
+#### BY USING
 
 If you’ll recall, **has using** provides the ability to use a named function for your sorting facilitator, and **by using** allows the same thing.
 
@@ -153,9 +161,9 @@ If you’ll recall, **has using** provides the ability to use a named function f
 
 	set ProvinceAge to task as a, b
 	 return a.province <=> b.province or a.age <=> b.age
-	 
+	
 	 ... later ...
-	 
+	
 	friends by using ProvinceAge
 
 #### HIGHEST / LOWEST
@@ -281,9 +289,9 @@ The addition of **using** lets you call an external function. _Note that the **u
 
 	set ageTotal to task as accumulator, row
 	  return accumulator + row.age
-	 
+	
 	 ... later ...
-	 
+	
 	friends gather into 0 using ageTotal 
 
 #### LIMIT
@@ -315,4 +323,3 @@ The **first** and **last** terminal operators take either the first or last item
 **Last friend in the list**
 
 	friends last
-

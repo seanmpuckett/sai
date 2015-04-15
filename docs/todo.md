@@ -10,7 +10,6 @@ does "set a chain "
 
 weld - traits>list
 
-iterator delete,keys,values
 
 
 
