@@ -39,4 +39,3 @@ Instantiate task
       set SGood[.s] to (self default 0)+1
     has SGood[.s]=1
 
-  debug @Instantiate.toString()

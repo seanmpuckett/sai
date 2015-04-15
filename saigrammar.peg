@@ -924,8 +924,8 @@ Call
 }
  
 Root
- = DOT v:IdentifierProto { return [[ 'it', ''],[ 'attribute', v ]] }
- / DOT { return [[ 'it', '']] }
+ = DOT !DOT v:IdentifierProto { return [[ 'it', ''],[ 'attribute', v ]] }
+ / DOT !DOT { return [[ 'it', '']] }
  / '|' v:SimpleValue { return [['it',''],['index',v]] }
 
 Index
