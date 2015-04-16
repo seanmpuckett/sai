@@ -1,44 +1,147 @@
-// X and Y are two different integers, greater than 1, with sum less than 100. S and P are two mathematicians; S knows the sum X+Y, P knows the product X*Y, and both know the information in these two sentences. The following conversation occurs.
+// SAI "Sums and Products" a.k.a. "Impossible Puzzle" solver
+//
+// X and Y are two different integers, greater than 1, with sum less than 100.
+// S and P are two mathematicians; S knows the sum X+Y, P knows the product X*Y, 
+// and both know the information in these two sentences. 
+//
+// The following conversation occurs.
 //
 // 1) P says "I cannot find these numbers."
 // 2) S says "I was sure that you could not find them. I cannot find them either."
 // 3) P says "Then, I found these numbers."
 // 4) S says "If you could find them, then I also found them."
-
+//
 // What are these numbers?
+//
+//
+// This solution based in part on sample Python code in 
+// http://en.wikipedia.org/wiki/Impossible_Puzzle
+//
+
+
+
+// Declare a global variable
 
 reference:
   MAX 100
 
+
+// Object declaration
+
 object Impossible 1.0.0
+
+
+// Object 'method' which runs once on object instantiation.
 
 Instantiate task
 
-  set pairs to process
+
+  // Define an iterable process yielding all solutions permitted.
+  // It would be easy to optimize the loops, but this doing it this
+  // way allows the conditions to be included in one expression.
+  
+  set Pairs to process
     count 1 to ~MAX as x
       count 1 to ~MAX as y
         if 1<x and x<y and x+y<100
           yield: x x, y y, s x+y, p x*y
 
-  set PGood to empty
-  set SBad to empty
-  set PStillGood to empty
-  set SGood to empty
+
+  // Working storage.
+  // EMPTY means an array with no elements.
   
-  debug "Mathemetician's \"Impossible\" puzzle solver."
-  debug chain pairs() reap
+  set pgood to empty
+  set sbad to empty
+  set pgood2 to empty
+  set sgood to empty
+
+
+  // Banner
+  
+  debug 'Mathemetician\'s "Impossible" puzzle solver.'
+
+
+  // Print calculated result
+  //
+  // CHAIN is the special keyword here, allowing an indented series of operations 
+  // to be applied to a value, in this case a list of values reaped from Pairs(). 
+  // 
+  // Because the algorithm uses tabular grouping, it won't work as a 100% lazy iterator.
+  // It's still cleaner and more obvious algorithmically to abstract away the
+  // solution generator.
+  
+  debug chain Pairs() reap
+    
+
+    // Notice the indent level has changed, we're now in the "chain"
+    // 
+    // Phase 1 -- establish P's knowledge
+    // count how many rows have a given product as a solution (PGood)
+    // 
+    // THRU is a mapping operator, but in this case since we don't return a value
+    // it passes the original value onward no matter what the code does.
+    // In this case we're counting solutions by product (.p) in the pgood array.
+    //
+    // the DEFAULT operator is used to ensure that uninitialized array elements
+    // get a starting value of 0.
+
     thru 
-      set PGood[.p] to (self default 0)+1
+      set pgood[.p] to (self default 0)+1
+    
+
+    // Phase 2 -- if P could have known, S knows it isn't the answer.
+    // remove trivial solutions for .p (product) from the solutions for s. (sum)
+    //
+    // Using THRU again as a means to run code without altering the flow of data
+    // If pgood indicates a trivial solution, then flag that solution as bad  
+    
     thru 
-      if PGood[.p]=1
-        set SBad[.s] to true
-    has not SBad[.s] 
+      if pgood[.p]=1
+        set sbad[.s] to true
+
+    // HAS is a filtration operator, if the expression is true, the row is kept.
+    // We keep all solutions that are not marked as bad.
+    
+    has not sbad[.s] 
+    
+
+    // phase 3 -- Since S didn't know either, P can eliminate non-trivial solutions
+    // Filter for a new list of solutions where there is only one answer for .p
+    //
+    // The remaining patterns should be familiar, just THRU and HAS
+
     thru 
-      set PStillGood[.p] to (self default 0)+1
-    has PStillGood[.p]=1
+      set pgood2[.p] to (self default 0)+1
+
+    has pgood2[.p]=1
+    
+
+    // phase 4 -- Since P now knows, S can eliminate non-trivial solutions 
+    // Filter for a new list of solutions where there is only one answer for .s
+
     thru 
-      set SGood[.s] to (self default 0)+1
-    has SGood[.s]=1
+      set sgood[.s] to (self default 0)+1
+
+    has sgood[.s]=1
+    
+
+    // phase 5 -- Nicely format remaining solution(s)
+    //
+    // Now we're using THRU as a transformation tool, and since we're using it
+    // on one line instead of as an indented block of code, we are just supplying
+    // an expression to be evaluated; in this case a string literal with the
+    // ${} string composition tool.
+     
     thru 'Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.s}, product=${.p}'
+    
+    
+    // JOIN is not a keyword, it's a member method on lists. CHAIN knows how to
+    // apply object methods, and is smart enough to handle situations where the methd
+    // doesn't return a usable "this" by passing forward the previous "this".
+    //
+    // Here we're turning a list into a single string with elements delimited 
+    // by newlines. And as this is the last indented clause in the chain,
+    // the result is the final value that is given to DEBUG to display.
+    
     join '\n'
 
