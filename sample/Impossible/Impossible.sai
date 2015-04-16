@@ -15,16 +15,17 @@ object Impossible 1.0.0
 Instantiate task
 
   set pairs to process
-    count 2 to ~MAX as x
-      count x+1 to ~MAX-x as y
-        yield: x x, y y, s x+y, p x*y
+    count 1 to ~MAX as x
+      count 1 to ~MAX as y
+        if 1<x and x<y and x+y<100
+          yield: x x, y y, s x+y, p x*y
 
-  // scratch pads
   set PGood to empty
   set SBad to empty
   set PStillGood to empty
   set SGood to empty
   
+  debug "Mathemetician's \"Impossible\" puzzle solver."
   debug chain pairs() reap
     thru 
       set PGood[.p] to (self default 0)+1
@@ -38,4 +39,6 @@ Instantiate task
     thru 
       set SGood[.s] to (self default 0)+1
     has SGood[.s]=1
+    thru 'Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.s}, product=${.p}'
+    join '\n'
 
