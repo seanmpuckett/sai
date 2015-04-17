@@ -70,43 +70,146 @@ Execute task
     return b[0]=1 and b[1]=2 and b[2]=3 and b.length=3
   
     
-  @Test 'thru undef', task
+  @Test 'thru inline undef', task
     set b to undefined thru it
     return b is undefined
     
-  @Test 'thru value', task
+  @Test 'thru inline value', task
     set b to 1 thru it+1
     return b=2
     
-  @Test 'thru list', task
+  @Test 'thru inline list', task
     set b to: 1, 2, 3; thru it+1
     return b[0]=2 and b[1]=3 and b[2]=4 and b.length=3
     
-  @Test 'thru traits', task
+  @Test 'thru inline traits', task
     set b to: a 1, b 2, c 3; thru it+1
     return b.a=2 and b.b=3 and b.c=4
    
-  @Match 'thru iterator', 5, task
+  @Match 'thru inline iterator', 5, task
      set b to: 1,3,5; sow thru it+2
      b.next
      return b.next().value
      
-  @Match 'inspect list', '2', task
+  @Test 'thru block', task
+    set b to: a 1, b 2, c 3; thru 
+      return it+1
+    return b.a=2 and b.b=3 and b.c=4
+   
+  @Test 'thru using', task
+    set c to task
+      return $+1
+    set b to: a 1, b 2, c 3; thru using c
+    return b.a=2 and b.b=3 and b.c=4
+   
+  @Test 'audit value', task
+    set b to 1 audit it+1
+    return b=1
+    
+  @Test 'audit list', task
+    set b to: 1, 2, 3; audit it+1
+    return b[0]=1 and b[1]=2 and b[2]=3 and b.length=3
+    
+  @Test 'audit inline traits', task
+    set d to 0
+    set c to task
+      set d + $
+    set b to: a 1, b 2, c 3; audit from c it
+    return b.a=1 and b.b=2 and b.c=3 and d=6
+   
+  @Test 'audit block traits', task
+    set d to 0
+    set b to: a 1, b 2, c 3; audit 
+      set d + it
+    return b.a=1 and b.b=2 and b.c=3 and d=6
+   
+  @Test 'audit using traits', task
+    set d to 0
+    set c to task
+      set d + $
+    set b to: a 1, b 2, c 3; audit using c
+    return b.a=1 and b.b=2 and b.c=3 and d=6
+   
+  @Match 'audit iterator', 3, task
+     set b to: 1,3,5; sow audit it+2
+     b.next
+     return b.next().value
+     
+  @Match 'observe list', '2', task
     set a to false
     set Setter to task
       set a to $
-    set b to: 1,2; inspect from Setter it.length
+    set b to: 1,2; observe from Setter it.length
     unless b.length=2 and b|0=1 and b|1=2
       return false
     return a
     
-  @Test 'all inline', task
+  @Test 'observe block', task
+    set b to 0
+    set a to 1 observe
+      set b to it+1
+    return b=2 and a=1
+  
+  @Test 'observe inline', task
+    set a to 0
+    set b to task
+       set a to $+1
+    set c to 1 observe from b it
+    return c=1 and a=2
+  
+  @Test 'observe using', task
+    set a to 0
+    set b to task
+       set a to $+1
+    set c to 1 observe using b
+    return c=1 and a=2
+  
+  
+  // the exception is the correct case
+  @Test 'observe iterator', task
+    try
+      set b to: 1,2,3; sow observe 
+        debug it.length
+    catch
+      return true
+    return false
+    
+  @Match 'choate value block', '1', task
+    return 2 choate
+      return 1
+  
+  @Match 'choate value inline', '1', task
+    return 2 choate 1
+  
+  @Test 'choate block', task
+    set b to: 2; choate
+       it.unshift 1
+    if b.length=2 and b|0=1 and b|1=2
+      return true
+    return false
+    
+  @Test 'choate inline 1', task
     set Unshifter to task as l,v
       l.unshift v
       return l
-    set b to: 2; all from Unshifter it, 1
+    set b to: 2; choate from Unshifter it, 1
     if b.length=2 and b|0=1 and b|1=2
       return true
+    return false
+    
+  @Test 'choate inline 2', task
+    set b to: 2, 1; choate from it.reverse
+    if b.length=2 and b|0=1 and b|1=2
+      return true
+    return false
+    
+  @Test 'choate using', task
+    set rev to task
+      return from $.reverse
+    set b to: 2, 1; choate using rev
+    if b.length=2 and b|0=1 and b|1=2
+      return true
+    return false
     
   @Match 'gather no list into', 'a', task
     set b to empty gather into 'a'

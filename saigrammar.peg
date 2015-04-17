@@ -1136,6 +1136,7 @@ ListQualify
 
 Comprehension
  = MapComprehension 
+ / AuditComprehension
  / ReduceComprehension 
  / FilterComprehension 
  / SortComprehension 
@@ -1143,7 +1144,8 @@ Comprehension
  / ValuesComprehension
  / SowComprehension
  / ReapComprehension
- / AllComprehension
+ / ChoateComprehension
+ / ObserveComprehension
  / OtherComprehension
 
 
@@ -1178,16 +1180,29 @@ SortComprehension
   }
 
 MapComprehension
- = _ THRU _ x:Logical _ {
+ = _ THRU _ x:Logical _ { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
- / _ THRU _ o:IterateOutput? b:Block _ {
+ / _ THRU _ o:IterateOutput? b:Block _ { // test 'thru block'
      var block=RV('function(^{this},^{key}){'+b+'; return ^{this};}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
- / _ THRU _ USING _ x:Value _ {
+ / _ THRU _ USING _ x:Value _ { // test 'thru using'
    return ['_$AI.map(' , ','+x+')' ];
+  }
+
+AuditComprehension
+ = _ AUDIT _ x:Logical _ { // test 'audit inline *'
+     var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
+     return ['_$AI.audit(' , ','+block+' )']; 
+  }
+ / _ AUDIT _ o:IterateOutput? b:Block _ { // test 'audit block*'
+     var block=RV('function(^{this},^{key}){'+b+' }',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
+     return ['_$AI.audit(' , ','+block+' )']; 
+  }
+ / _ AUDIT _ USING _ x:Value _ { // test 'audit using*'
+   return ['_$AI.audit(' , ','+x+')' ];
   }
 
 ReduceComprehension
@@ -1222,22 +1237,31 @@ FilterComprehension
   }
 
 
-AllComprehension
- = _ INSPECT Sep x:Logical _ {
-     var block=RV('function(^{this}){ '+x+'; return ^{this}; }',{this:'$_v'});
-     return [ block+'(' , ')']; 
-  }
- / _ ALL Sep x:Logical _ {
+ChoateComprehension
+ = _ CHOATE Sep x:Logical _ { // test 'choate inline*'
      var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
-     return [ block+'(' , ')']; 
+     return [ '_$AI.choate(' , ','+block+')']; 
   }
- / _ (ALL/INSPECT) Sep o:IterateOutput? b:Block _ {
-     var block=RV('function(^{this}){'+b+' return ^{this}; }',{this:o?o[0]:'$_v'});
-     return [ block+'(' , ')']; 
+ / _ CHOATE Sep o:IterateOutput? b:Block _ { // test 'choate block*'
+     var block=RV('function(^{this}){'+b+'; return ^{this}; }',{this:o?o[0]:'$_v'});
+     return [ '_$AI.choate(' , ','+block+')']; 
   }
-  /// _ ALL Sep USING _ x:Value _ {
-  //  return [x+'(' , ')' ];
-  //}
+ / _ CHOATE Sep USING _ x:Value _ { // test 'choate using'
+     return [ '_$AI.choate(' , ','+x+')']; 
+  }
+  
+ObserveComprehension
+ = _ OBSERVE Sep x:Logical _ { // test 'observe inline'
+     var block=RV('function(^{this}){ '+x+'; }',{this:'$_v'});
+     return [ '_$AI.observe(' , ','+block+')']; 
+  }
+ / _ OBSERVE Sep o:IterateOutput? b:Block _ { // test 'observe block'
+     var block=RV('function(^{this}){'+b+'; }',{this:o?o[0]:'$_v'});
+     return [ '_$AI.observe(' , ','+block+')']; 
+  }
+ / _ OBSERVE Sep USING _ x:Value _ { // test 'observe using'
+     return [ '_$AI.observe(' , ','+x+')']; 
+  }
 
 
 
@@ -1641,17 +1665,18 @@ ReservedWord
 ReservedWords
  = SET
  / ACCUM
- / ALL
  / ANDB 
  / AND
  / ARRAY
  / AS 
  / ASCENDING / ASC
+ / AUDIT
  / BLANK
  / BREAK
  / BY
  / CASE
  / CHAIN
+ / CHOATE
  / CREATE
  / COPY
  / COUNT
@@ -1678,7 +1703,6 @@ ReservedWords
  / INITIALIZED
  / INHERIT
  / INTO
- / INSPECT
  / IN
  / ISNT
  / IS
@@ -1696,6 +1720,7 @@ ReservedWords
  / NOT
  / NUMBER
  / OBJECT
+ / OBSERVE
  / OPTIONAL
  / ORB
  / ORPHAN
@@ -1731,19 +1756,20 @@ ReservedWords
  / YIELD
  
 ACCUM = 'accum'i
-ALL = 'all'i
 AND = 'and'i
 ANDB = 'andb'i
 ARRAY = 'array'i
 AS = 'as'i
 ASC = 'asc'i
 ASCENDING = 'ascending'i
+AUDIT = 'audit'i
 BLANK = 'blank'i
 BREAK = 'break'i
 BY = 'by'i
 CASE = 'case'i
 CATCH = 'catch'i
 CHAIN = 'chain'i
+CHOATE = 'choate'i
 COPY = 'copy'i
 CONTINUE = 'continue'i
 CONTRACT = 'contract'i
@@ -1776,7 +1802,6 @@ HIGHEST = 'highest'i
 IF = 'if'i
 INITIALIZED = 'initialized'i
 INTO = 'into'i
-INSPECT = 'inspect'i
 IN = 'in'i
 INC = 'inc'i
 INHERIT = 'inherit'i
@@ -1799,6 +1824,7 @@ NOT = 'not'i
 NOTB = 'notb'i
 NUMBER = 'number'i
 OBJECT = 'object'i
+OBSERVE = 'observe'i
 ON  = 'on'i 
 OPTIONAL = 'optional'i
 ORPHAN = 'orphan'i

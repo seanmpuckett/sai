@@ -77,6 +77,31 @@ _$AI.sort=function(a,f) {
   return a;
 };
 
+_$AI.choate = function(a,f) { // test 'choate *'
+  return f(a);
+}
+
+_$AI.observe = function(a,f) {
+  if (isIterable(a)) throw new Error('SAI: Cannot observe an iterator.'); // test 'observe iterator'
+  f(a); // test 'observe *'
+  return a;
+}
+
+_$AI.audit = function(a,f) {
+  if (isArray(a)) { 
+    var k=0,l=a.length;
+    while (k<l) { f(a[k],k); k++; }
+  } else if (isIterable(a)) { 
+    return function *(){
+      for (var val of a) { f(val); yield val; }
+    }(); // n.b. does not fall through to final return
+  } else if (isObject(a)) { 
+    var r={};
+    for (var k in a) f(a[k],k);
+  }
+  return a;
+}
+
 _$AI.map = function(a,f) {
   if (a===undefined) return undefined; // test 'map undef'
   if (isArray(a)) { // test 'map list'
@@ -408,16 +433,16 @@ _$AI.update = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
 }
 
 _$AI.delete = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
-  if (!isObject(dest)) throw new Error("Attempt to REMOVE from something that's not traits.");
+  if (!isObject(dest)) throw new Error("SAI: Attempt to REMOVE from something that's not traits.");
   if (!isMergable(keys)) {
     delete dest[keys];
-  } 
-  if (isArray(keys)) {
+  } else if (isArray(keys)) {
     for (var i in keys) { var v=keys[i]; if (v!==undefined) delete dest[keys[i]]; }
   } else if (isIterable(keys)) {
     for (var v of keys) { if (v!==undefined) delete dest[v]; }
+  } else {
+    for (var i in keys) delete dest[i];
   }
-  for (var i in keys) delete dest[i];
 }
 
 _$AI.deepFreeze = function(o) {

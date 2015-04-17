@@ -61,10 +61,6 @@ Instantiate task
   set sgood to empty
 
 
-  set a to chain list 1,2,3
-    all from Countem it "hey"
-
-
   // Banner
   
   debug 'Mathemetician\'s "Impossible" puzzle solver.'
@@ -84,33 +80,34 @@ Instantiate task
     
     // Notice the indent level has changed, we're now in the "chain"
     // 
-    // INSPECT is a chain operator that receives the current object without
+    // OBSERVE is a chain operator that receives the current object without
     // any iteration. It allows you to inspect the object without changing it. 
+    // Because this is the first link in the chain, we get the value declared at
+    // the start of the chain, in this case the result of 'Candidates() reap',
+    // which is an array.
 
-    inspect Countem(it, 'Initial')
+    observe Countem(it, 'Initial')
 
 
     // Phase 1 -- establish P's knowledge
     // count how many rows have a given product as a solution (PGood)
     // 
-    // THRU is a map-like operator, but in this case since we don't RETURN a value
-    // it passes the original value onward no matter what the code does.
+    // AUDIT is similar to observe, but is triggered for every item in a container
     // In this case we're counting solutions by product (.p) in the pgood array.
     //
     // the DEFAULT operator is used to ensure that uninitialized array elements
     // get a starting value of 0.
 
-    thru 
+    audit 
       set pgood[.p] to (self default 0)+1
     
 
     // Phase 2 -- if P could have known, S knows it isn't the answer.
     // remove trivial solutions for .p (product) from the solutions for s. (sum)
     //
-    // Using THRU again as a means to run code without altering the flow of data.
     // If pgood indicates a trivial solution for P, then flag S's solution as bad  
     
-    thru 
+    audit 
       if pgood[.p]=1
         set sbad[.s] to true
 
@@ -119,42 +116,44 @@ Instantiate task
     
     has not sbad[.s] 
 
-    inspect Countem(it, 'Phase 2')
+    observe Countem(it, 'Phase 2')
+
 
     // phase 3 -- Since S didn't know either, P can eliminate non-trivial solutions
     // Filter for a new list of solutions where there is only one answer for .p
     //
-    // The remaining patterns should be familiar, just THRU and HAS
+    // The remaining patterns should be familiar.
 
-    thru 
+    audit 
       set pgood2[.p] to (self default 0)+1
 
     has pgood2[.p]=1
     
-    inspect Countem(it, 'Phase 3')
+    observe Countem(it, 'Phase 3')
+
 
     // phase 4 -- Since P now knows, S can eliminate non-trivial solutions 
     // Filter for a new list of solutions where there is only one answer for .s
 
-    thru 
+    audit 
       set sgood[.s] to (self default 0)+1
 
     has sgood[.s]=1
     
-    inspect Countem(it, 'Results')
+    observe Countem(it, 'Results')
 
 
     // phase 5 -- Nicely format remaining solution(s)
     //
-    // Now we're using THRU as a transformation tool, and since we're using it
-    // on one line instead of as an indented block of code, we are just supplying
+    // THRU is a map-like operator used as a transformation tool. Used on one
+    // line instead of as an indented block of code, we just supply
     // an expression to be evaluated; in this case a string literal with the
-    // ${} string composition tool.
+    // that uses the ${} string composition tool.
      
     thru 'Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.s}, product=${.p}'
     
     
-    // JOIN is not a keyword, it's a member method on lists. CHAIN knows how to
+    // JOIN is not a keyword, it's a member method of Array. CHAIN knows how to
     // apply object methods, and is smart enough to handle situations where the methd
     // doesn't return a usable "this" by passing forward the previous "this".
     //
@@ -164,8 +163,5 @@ Instantiate task
     
     join '\n'
 
-  
-// NB It would certainly be possible to code the chain without the use of external storage
-// by use of the GATHER keyword, but then we'd have dealing with lists-of-lists, which
-// would be more algorithmically opaque. Better, I think, to be clear at the expense
-// of being clever.
+
+  debug @Instantiate.toString()

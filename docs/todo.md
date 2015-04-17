@@ -30,7 +30,7 @@ TESTS TO WRITE
   literal formats
   regex parsing
   multiple assignment / SET variations
-  inspect/all/merge/select/overlay/delete all combinations
+  merge/select/overlay/delete all combinations
   
   
   
