@@ -91,7 +91,22 @@ Execute task
      b.next
      return b.next().value
      
+  @Match 'inspect list', '2', task
+    set a to false
+    set Setter to task
+      set a to $
+    set b to: 1,2; inspect from Setter it.length
+    unless b.length=2 and b|0=1 and b|1=2
+      return false
+    return a
     
+  @Test 'all inline', task
+    set Unshifter to task as l,v
+      l.unshift v
+      return l
+    set b to: 2; all from Unshifter it, 1
+    if b.length=2 and b|0=1 and b|1=2
+      return true
     
   @Match 'gather no list into', 'a', task
     set b to empty gather into 'a'

@@ -14,10 +14,9 @@
 // What are these numbers?
 //
 //
-// This solution based in part on sample Python code in 
+// This solution based in part on sample Python and Scala code in 
 // http://en.wikipedia.org/wiki/Impossible_Puzzle
 //
-
 
 
 // Declare a global variable
@@ -36,15 +35,21 @@ object Impossible 1.0.0
 Instantiate task
 
 
-  // Define an iterable process yielding all solutions permitted.
+  // Define an iterable process yielding candidate solutions.
   // It would be easy to optimize the loops, but this doing it this
   // way allows the conditions to be included in one expression.
   
-  set Pairs to process
+  set Candidates to process
     count 1 to ~MAX as x
       count 1 to ~MAX as y
         if 1<x and x<y and x+y<100
           yield: x x, y y, s x+y, p x*y
+
+
+  // simple instrument to count the length of an array
+
+  set Countem to task as obj, label
+    debug '${label} candidate count: ${obj.length}'
 
 
   // Working storage.
@@ -56,6 +61,10 @@ Instantiate task
   set sgood to empty
 
 
+  set a to chain list 1,2,3
+    all from Countem it "hey"
+
+
   // Banner
   
   debug 'Mathemetician\'s "Impossible" puzzle solver.'
@@ -64,21 +73,27 @@ Instantiate task
   // Print calculated result
   //
   // CHAIN is the special keyword here, allowing an indented series of operations 
-  // to be applied to a value, in this case a list of values reaped from Pairs(). 
+  // to be applied, in this case to an array of values reaped from Pairs(). 
   // 
-  // Because the algorithm uses tabular grouping, it won't work as a 100% lazy iterator.
-  // It's still cleaner and more obvious algorithmically to abstract away the
-  // solution generator.
+  // Because the algorithm uses tabular accumulation, it won't work as a lazy iterator.
+  // Nevertheless, it's clearer and more maintainable to abstract away the
+  // candidate generator into a process.
   
-  debug chain Pairs() reap
+  debug chain Candidates() reap
     
-
+    
     // Notice the indent level has changed, we're now in the "chain"
     // 
+    // INSPECT is a chain operator that receives the current object without
+    // any iteration. It allows you to inspect the object without changing it. 
+
+    inspect Countem(it, 'Initial')
+
+
     // Phase 1 -- establish P's knowledge
     // count how many rows have a given product as a solution (PGood)
     // 
-    // THRU is a mapping operator, but in this case since we don't return a value
+    // THRU is a map-like operator, but in this case since we don't RETURN a value
     // it passes the original value onward no matter what the code does.
     // In this case we're counting solutions by product (.p) in the pgood array.
     //
@@ -92,18 +107,19 @@ Instantiate task
     // Phase 2 -- if P could have known, S knows it isn't the answer.
     // remove trivial solutions for .p (product) from the solutions for s. (sum)
     //
-    // Using THRU again as a means to run code without altering the flow of data
-    // If pgood indicates a trivial solution, then flag that solution as bad  
+    // Using THRU again as a means to run code without altering the flow of data.
+    // If pgood indicates a trivial solution for P, then flag S's solution as bad  
     
     thru 
       if pgood[.p]=1
         set sbad[.s] to true
 
-    // HAS is a filtration operator, if the expression is true, the row is kept.
-    // We keep all solutions that are not marked as bad.
+    // HAS is a filtration operator: if the expression is true, the row is kept.
+    // We keep all solutions that are not marked bad.
     
     has not sbad[.s] 
-    
+
+    inspect Countem(it, 'Phase 2')
 
     // phase 3 -- Since S didn't know either, P can eliminate non-trivial solutions
     // Filter for a new list of solutions where there is only one answer for .p
@@ -115,6 +131,7 @@ Instantiate task
 
     has pgood2[.p]=1
     
+    inspect Countem(it, 'Phase 3')
 
     // phase 4 -- Since P now knows, S can eliminate non-trivial solutions 
     // Filter for a new list of solutions where there is only one answer for .s
@@ -124,6 +141,8 @@ Instantiate task
 
     has sgood[.s]=1
     
+    inspect Countem(it, 'Results')
+
 
     // phase 5 -- Nicely format remaining solution(s)
     //
@@ -145,3 +164,8 @@ Instantiate task
     
     join '\n'
 
+  
+// NB It would certainly be possible to code the chain without the use of external storage
+// by use of the GATHER keyword, but then we'd have dealing with lists-of-lists, which
+// would be more algorithmically opaque. Better, I think, to be clear at the expense
+// of being clever.

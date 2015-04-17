@@ -9,7 +9,16 @@ source code lookup for exceptions or debugging
 does "set a chain "
 
 weld - traits>list
+reverse
 
+switch a
+  case 1, 2, 3
+  
+
+
+
+
+expect a, 
 
 
 
@@ -21,8 +30,13 @@ TESTS TO WRITE
   literal formats
   regex parsing
   multiple assignment / SET variations
-  merge/select/overlay/delete all combinations
+  inspect/all/merge/select/overlay/delete all combinations
   
+  
+  
+  a=task
+  
+  task as x; x+1
   
   
   

@@ -304,19 +304,29 @@
   }
 
   function VerbCat(v,test) {
+//       console.log("VerbCat");
+//       console.log(v);
      if (v.left) {
        return v.left+v.base+v.right;
+//     } else if (v.call) {
+//       if (test) {
+//         return RV('((undefined===($_c=^{verb}(($_d=^{base}),^{param})))?$_d:$_c)',v);
+//       } else {
+//         return v.verb+'('+v.base+(v.param?(','+v.param):'')+')';
+//       }
      } else {
        if (test) {
-         return RV('((undefined===($_c=($_d=^{base})^{verb}^{param}))?$_d:$_c)',v);
+         return RV('((undefined===($_c=($_d=^{base})^{verb}(^{param})))?$_d:$_c)',v);
        } else {
-         return v.base+v.verb+v.param;
+         return v.base+v.verb+'('+v.param+')';
        }
      }
   }
  
   function AssembleVerb(v) {
      if (v.length==1) {
+//       console.log("AV 1");
+//       console.log(v[0]);
        return VerbCat(v[0]);
      }
      FunctionChain=true;
@@ -483,8 +493,6 @@ Optional
  = OPTIONAL _ is:(i:ExpectsParameter COMMA _ {return i})* i:ExpectsParameter { is.push(i); return is; }
  / OPTIONAL _ t:Term _ { return [[['','_root'],t]] }
  
- 
- 
 Block
  = _ EOLs INDENT EOLs v:Lines DEDENT { return v }
  / _ '..' _ v:Line &EOLs { return v+';' }
@@ -506,12 +514,15 @@ Line
  / TryStatement
  / ThrowStatement
  / LocalStatement
+ / MiscStatement
  / VerbStatement
+ 
 
 
 
 
-
+MiscStatement
+ = ORPHAN _ { return 'var $=this;\n' }
 
 BreakStatement
  = BREAK _ { return 'break;\n'; }
@@ -845,6 +856,7 @@ VerbValue
   }
  
 
+
 LStem
  = RStem
  ///ItStem / RootedStem / PropertyStem / ParameterStem / LocalStem 
@@ -1131,6 +1143,7 @@ Comprehension
  / ValuesComprehension
  / SowComprehension
  / ReapComprehension
+ / AllComprehension
  / OtherComprehension
 
 
@@ -1208,6 +1221,23 @@ FilterComprehension
     return ['_$AI.filter(' , ','+x+')' ];
   }
 
+
+AllComprehension
+ = _ INSPECT Sep x:Logical _ {
+     var block=RV('function(^{this}){ '+x+'; return ^{this}; }',{this:'$_v'});
+     return [ block+'(' , ')']; 
+  }
+ / _ ALL Sep x:Logical _ {
+     var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
+     return [ block+'(' , ')']; 
+  }
+ / _ (ALL/INSPECT) Sep o:IterateOutput? b:Block _ {
+     var block=RV('function(^{this}){'+b+' return ^{this}; }',{this:o?o[0]:'$_v'});
+     return [ block+'(' , ')']; 
+  }
+  /// _ ALL Sep USING _ x:Value _ {
+  //  return [x+'(' , ')' ];
+  //}
 
 
 
@@ -1455,22 +1485,17 @@ VerbSentence
 VerbClause
 = v:(VerbValue) _ o:ParameterList?  { 
      composite=v[0]+v[1];
-     if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'($'+(o?(','+o[1]):'')+')' }]; 
-     return [{ base:v[0], verb:v[1], param:'('+(o?o[1]:'')+')' }]
+     if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'$'+(o?(','+o[1]):'') }]; 
+     return [{ base:v[0], verb:v[1], param:(o?o[1]:'') }]
   }
  / v:(VerbValue) _ { 
      composite=v[0]+v[1];
-     if (composite=='^{super}') return { base:'^{super}', verb:'.call', param:'($)' }; 
-     return [{ base:v[0], verb:v[1], param:'()' }]
+     if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'$' }]; 
+     return [{ base:v[0], verb:v[1], param:'' }]
    }
 
 
 VerbChain
-// = CHAIN _ FROM _ v:VerbClause _ c:VerbChainBlock {
-//   c[0].base=v;
-//   return AssembleVerb(c);
-// }
-// /
  = CHAIN _ v:Expression _ c:VerbChainBlock {
    c[0].base=v;
    return AssembleVerb(c);
@@ -1487,7 +1512,7 @@ VerbChainLine
      return {left:c[0], right: c[1]}
   }
  / i:Identifier _ o:ParameterList? _ EOLs {
-     return {verb:'.'+i, param:'('+(o?o[1]:'')+')'}; 
+     return {verb:'.'+i, param:(o?o[1]:'')}; 
   }
 
 NewObject
@@ -1616,6 +1641,7 @@ ReservedWord
 ReservedWords
  = SET
  / ACCUM
+ / ALL
  / ANDB 
  / AND
  / ARRAY
@@ -1652,6 +1678,7 @@ ReservedWords
  / INITIALIZED
  / INHERIT
  / INTO
+ / INSPECT
  / IN
  / ISNT
  / IS
@@ -1671,6 +1698,7 @@ ReservedWords
  / OBJECT
  / OPTIONAL
  / ORB
+ / ORPHAN
  / OR
  / OVERLAY
  / PLY
@@ -1703,6 +1731,7 @@ ReservedWords
  / YIELD
  
 ACCUM = 'accum'i
+ALL = 'all'i
 AND = 'and'i
 ANDB = 'andb'i
 ARRAY = 'array'i
@@ -1747,6 +1776,7 @@ HIGHEST = 'highest'i
 IF = 'if'i
 INITIALIZED = 'initialized'i
 INTO = 'into'i
+INSPECT = 'inspect'i
 IN = 'in'i
 INC = 'inc'i
 INHERIT = 'inherit'i
@@ -1771,6 +1801,7 @@ NUMBER = 'number'i
 OBJECT = 'object'i
 ON  = 'on'i 
 OPTIONAL = 'optional'i
+ORPHAN = 'orphan'i
 OR = 'or'i
 ORB = 'orb'i
 OVERLAY = 'overlay'i
