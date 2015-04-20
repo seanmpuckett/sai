@@ -87,8 +87,13 @@ Execute task
     return not a
     
   @Test 'self nand', task
-    set a to false
+    set a to true
     set a nand false
+    return a
+    
+  @Test 'self nor', task
+    set a to false
+    set a nor false
     return a
     
   @Match 'self ?<', 5, task
@@ -132,6 +137,16 @@ Execute task
     return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
 
 
+  @Match 'from', 1, task
+    set b to task
+      return 1
+    set a from b
+    return a
+
+  @Match 'chain', 1, task
+    set a chain 1
+      audit it
+    return a
 
 
   @Match 'self default set', 2, task

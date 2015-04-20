@@ -2,19 +2,10 @@
   
 es6 check
 multiple assignment???????
-comprehensions should be cognizant of generators
 expects as a verb
 source code lookup for exceptions or debugging
-
-does "set a chain "
-
 weld - traits>list
-reverse
-
-switch a
-  case 1, 2, 3
   
-
 
 
 
@@ -29,16 +20,15 @@ TESTS TO WRITE
   promise
   literal formats
   regex parsing
+  break
+  continue
   multiple assignment / SET variations
-  merge/select/overlay/delete all combinations
   
   
   
-  a=task
   
-  task as x; x+1
-  
-  
+set thing to machine:
+  then @Churn
   
   
   

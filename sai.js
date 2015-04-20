@@ -77,7 +77,7 @@ _$AI.sort=function(a,f) {
   return a;
 };
 
-_$AI.choate = function(a,f) { // test 'choate *'
+_$AI.alter = function(a,f) { // test 'alter *'
   return f(a);
 }
 

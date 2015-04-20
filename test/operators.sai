@@ -91,6 +91,9 @@ Execute task
   @Test 'nand', task
     return (0 nand 0) and (0 nand 1) and (1 nand 0) and not (1 nand 1) 
 
+  @Test 'nor', task
+    return (0 nor 0) and not (0 nor 1) and not (1 nor 0) and not (1 nor 1) 
+
   @Test '=', task
     return 7 = 7
 
@@ -334,4 +337,21 @@ Execute task
 
   @Match 'isa', 'Operators', task
     return @isa
+    
+  @Match 'chain comp', 2, task
+    return chain 2
+      by it
+      
+  @Match 'chain method', 1, task
+    set a to: 2, 1;
+    set b chain a
+      sort
+    return b[0]
+      
+  @Match 'chain persist', 2, task
+    set a to: 1, 2;
+    return chain a
+      reverse
+      first
+  
     

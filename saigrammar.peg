@@ -162,6 +162,7 @@
     or: '^{1} = ^{1} || ^{2}', // test 'self or'
     xor: '^{1} = _$AI.xor(^{1},^{2})',  // test 'self xor'
     nand: '^{1} = (!((^{1})&&(^{2})))', // test 'self nand'
+    nor: '^{1} = (!((^{1})||(^{2})))', // test 'self nor'
 
     '?>': '^{1} = Math.max(^{1},^{2})', // test 'self ?>'
     '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
@@ -303,7 +304,7 @@
 
   }
 
-  function VerbCat(v,test) {
+  function VerbCat(v) {
 //       console.log("VerbCat");
 //       console.log(v);
      if (v.left) {
@@ -315,7 +316,7 @@
 //         return v.verb+'('+v.base+(v.param?(','+v.param):'')+')';
 //       }
      } else {
-       if (test) {
+       if (v.test) {
          return RV('((undefined===($_c=($_d=^{base})^{verb}(^{param})))?$_d:$_c)',v);
        } else {
          return v.base+v.verb+'('+v.param+')';
@@ -333,7 +334,8 @@
      var base=v[0].base;
      for (var i in v) {
        v[i].base=base;
-       base=VerbCat(v[i],true);
+       v[i].test=true;
+       base=VerbCat(v[i]);
      }
      return base;
   }
@@ -443,33 +445,33 @@ Task
   } 
 
 TaskEvent
- = v:Identifier _ TASK _ x:Expects? Optional? _ w:MultiOutput? _ { 
+ = v:Identifier _ TASK _ x:Expects? _ w:MultiOutput? _ { 
    return  {name:v,expects:x,as:w,kind:'function'};
  } 
- / v:Identifier _ PROCESS _ x:Expects? Optional? _ w:MultiOutput? _ { 
+ / v:Identifier _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
    return  {name:v,expects:x,as:w,kind:'function*'};
  } 
 
 
 
 TaskClause
-= x:Expects? Optional? _ o:MultiOutput? _ b:Block {
+= x:Expects? _ o:MultiOutput? _ b:Block {
   return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function'});
 }
-/ x:Expects? Optional? _ o:MultiOutput? _ ';'? _ b:Expression {
+/ x:Expects? _ o:MultiOutput? _ ';'? _ b:Expression {
   return TaskClauseFormatter({expects:x,as:o,block:'return '+b+';',kind:'function'});
 }
 
 IteratorClause
-= x:Expects? Optional? _ o:MultiOutput? _ b:Block {
+= x:Expects? _ o:MultiOutput? _ b:Block {
   return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function*'});
 }
-/ x:Expects? Optional? _ o:MultiOutput? _ ';'? _ b:Expression {
+/ x:Expects? _ o:MultiOutput? _ ';'? _ b:Expression {
   return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function*'});
 }
 
 PromiseClause
-= x:Expects? Optional? _ o:MultiOutput? _ b:Block {
+= x:Expects? _ o:MultiOutput? _ b:Block {
   return TaskClauseFormatter({
     expects:x,
     as:o,
@@ -488,10 +490,6 @@ ExpectsParameter
 Expects 
  = EXPECTS _ is:(i:ExpectsParameter COMMA _ {return i})* i:ExpectsParameter { is.push(i); return is; }
  / EXPECTS _ t:Term _ { return [[['','_root'],t]] }
- 
-Optional
- = OPTIONAL _ is:(i:ExpectsParameter COMMA _ {return i})* i:ExpectsParameter { is.push(i); return is; }
- / OPTIONAL _ t:Term _ { return [[['','_root'],t]] }
  
 Block
  = _ EOLs INDENT EOLs v:Lines DEDENT { return v }
@@ -534,7 +532,10 @@ SwitchStatement // test 'switch*'
    addLocal(o);
    var r=RV('switch (^{output}=('+s+')) {\n',{output:o});
    for (var i in c) {
-     r+='case ('+c[i][0]+'): '+c[i][1]+' break; \n';
+     for (var j in c[i][0]) {
+       r+='case ('+c[i][0][j]+'): ';
+     }
+     r+=c[i][1]+' break; \n';
    }
    if (d) r+='default: '+d+' break; \n';
    r+='}\n';
@@ -545,7 +546,8 @@ SwitchClause
  = SWITCH _ e:Expression { return e; }
 
 CaseClause
- = CASE _ e:Expression b:Block { return [e,b]; }
+ = CASE _ e:Items _ b:Block { return [e,b]; }
+
  
 DefaultClause
  = DEFAULT _ b:Block { return b; }
@@ -645,7 +647,7 @@ SetTerm
  }
  */
  
- = local:LocalAdj? _ l:LValues _ (TO/&FROM) _ e:Expression {
+ = local:LocalAdj? _ l:LValues _ (TO/&FROM/&CHAIN) _ e:Expression {
    local=local?'var ':'';
    if (l.length==1) return local+l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_=[].concat('+e+');\n';
@@ -683,7 +685,7 @@ Itselfop // test 'self*'
  = '+' / '-' 
  / '**' / '*' / '/' / '%' / '<<' / '>>' / '>>>'
  / ANDB / ORB / XORB
- / AND / OR / XOR / NAND
+ / AND / OR / XOR / NAND / NOR
  / '?>' / '?<'
  / UPDATE / DELETE
  / VIA / DEFAULT
@@ -1127,7 +1129,7 @@ Expression
 
 
 ListQualify
- = v:Logical _ c:(c:Comprehension {return c})* _ {
+ = v:Logical _ c:(c:Comprehension _ {return c})* {
    for (var i in c) {
      v=c[i][0]+v+c[i][1];
    }
@@ -1144,69 +1146,77 @@ Comprehension
  / ValuesComprehension
  / SowComprehension
  / ReapComprehension
- / ChoateComprehension
+ / AlterComprehension
  / ObserveComprehension
  / OtherComprehension
 
 
 SowComprehension
- = _ SOW { // test 'sow *'
+ = SOW { // test 'sow *'
      return ['_$AI.sow(',')'];
    }
 
 KeysComprehension
- = _ KEYS { // test 'keys comp*'
+ = KEYS { // test 'keys comp*'
      return ['_$AI.keys(',')'];
    }
 
 ValuesComprehension
- = _ VALUES { // test 'values comp*'
+ = VALUES { // test 'values comp*'
      return ['_$AI.values(',')'];
    }
 
 ReapComprehension
- = _ REAP { 
+ = REAP { 
      return ['_$AI.reap(',')'];
    }
 
 SortComprehension
- = _ BY _ o:IterateOutput? b:Block _ {
+ = BY Sep x:SortComprehension2 { return x }
+SortComprehension2
+ = o:IterateOutput? b:Block {
     if (!o) o=['$a','$b'];
     var block=RV('function('+o[0]+','+o[1]+'){'+b+'}');
     return ['_$AI.sort(' , ','+block+')']; 
   }
- / _ BY _ USING _ x:Value _ {
+ / USING Sep x:Value {
    return ['_$AI.sort(' , ','+x+')' ];
   }
 
 MapComprehension
- = _ THRU _ x:Logical _ { // test 'thru inline *'
+ = THRU Sep x:MapComprehension2 { return x }
+MapComprehension2
+ = x:Logical { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
- / _ THRU _ o:IterateOutput? b:Block _ { // test 'thru block'
+ / o:IterateOutput? b:Block { // test 'thru block'
      var block=RV('function(^{this},^{key}){'+b+'; return ^{this};}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
- / _ THRU _ USING _ x:Value _ { // test 'thru using'
+ / USING Sep x:Value { // test 'thru using'
    return ['_$AI.map(' , ','+x+')' ];
   }
 
 AuditComprehension
- = _ AUDIT _ x:Logical _ { // test 'audit inline *'
+ = AUDIT Sep x:AuditComprehension2 { return x }
+AuditComprehension2
+ = x:Logical { // test 'audit inline *'
      var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
      return ['_$AI.audit(' , ','+block+' )']; 
   }
- / _ AUDIT _ o:IterateOutput? b:Block _ { // test 'audit block*'
+ / o:IterateOutput? b:Block { // test 'audit block*'
      var block=RV('function(^{this},^{key}){'+b+' }',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.audit(' , ','+block+' )']; 
   }
- / _ AUDIT _ USING _ x:Value _ { // test 'audit using*'
+ / USING Sep x:Value { // test 'audit using*'
    return ['_$AI.audit(' , ','+x+')' ];
   }
 
 ReduceComprehension
- = _ GATHER _ into:IntoClause? o:IterateOutput? b:Block _ {
+ = GATHER Sep x:ReduceComprehension2 { return x }
+ReduceComprehension2
+ = into:IntoClause? o:IterateOutput? b:Block {
     if (!o) o=[];
     if (!o[0]) o[0]='$accum';
     if (!o[1]) o[1]='$_v';
@@ -1219,7 +1229,7 @@ ReduceComprehension
       return ['_$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
-  / _ GATHER _ into:IntoClause? _ USING _ x:Value _  {
+  / into:IntoClause? USING Sep x:Value  {
     if (into===null) {
       return ['_$AI.reduce(' , ','+x+')' ];
     } else {
@@ -1228,38 +1238,44 @@ ReduceComprehension
   }
 
 FilterComprehension
- = _ HAS _ o:IterateOutput? b:Block _ {
+ = HAS Sep x:FilterComprehension2 { return x }
+FilterComprehension2
+ = o:IterateOutput? b:Block {
      var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.filter(' , ','+block+')']; 
   }
-  / _ HAS  _ USING _ x:Value _ {
+  / USING Sep x:Value {
     return ['_$AI.filter(' , ','+x+')' ];
   }
 
 
-ChoateComprehension
- = _ CHOATE Sep x:Logical _ { // test 'choate inline*'
+AlterComprehension
+ = ALTER Sep x:AlterComprehension2 { return x }
+AlterComprehension2
+ = x:Logical { // test 'alter inline*'
      var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
-     return [ '_$AI.choate(' , ','+block+')']; 
+     return [ '_$AI.alter(' , ','+block+')']; 
   }
- / _ CHOATE Sep o:IterateOutput? b:Block _ { // test 'choate block*'
+ / o:IterateOutput? b:Block { // test 'alter block*'
      var block=RV('function(^{this}){'+b+'; return ^{this}; }',{this:o?o[0]:'$_v'});
-     return [ '_$AI.choate(' , ','+block+')']; 
+     return [ '_$AI.alter(' , ','+block+')']; 
   }
- / _ CHOATE Sep USING _ x:Value _ { // test 'choate using'
-     return [ '_$AI.choate(' , ','+x+')']; 
+ / USING Sep x:Value { // test 'alter using'
+     return [ '_$AI.alter(' , ','+x+')']; 
   }
   
 ObserveComprehension
- = _ OBSERVE Sep x:Logical _ { // test 'observe inline'
+ = OBSERVE Sep x:ObserveComprehension2 { return x }
+ObserveComprehension2
+ = x:Logical { // test 'observe inline'
      var block=RV('function(^{this}){ '+x+'; }',{this:'$_v'});
      return [ '_$AI.observe(' , ','+block+')']; 
   }
- / _ OBSERVE Sep o:IterateOutput? b:Block _ { // test 'observe block'
+ / o:IterateOutput? b:Block { // test 'observe block'
      var block=RV('function(^{this}){'+b+'; }',{this:o?o[0]:'$_v'});
      return [ '_$AI.observe(' , ','+block+')']; 
   }
- / _ OBSERVE Sep USING _ x:Value _ { // test 'observe using'
+ / USING Sep x:Value { // test 'observe using'
      return [ '_$AI.observe(' , ','+x+')']; 
   }
 
@@ -1342,8 +1358,8 @@ Criteria
  = HAS _ v:Logical _ { return ['having',v] }
 
 Sequence
- = BY _ v:Logical d:SortDirection? _ { return ['by',[v,d?d:1]] }
- / BY _ d:SortDirection? _ { return ['by',[null,d?d:1]] }
+ = BY _ d:SortDirection _ { return ['by',[null,d?d:1]] }
+ / BY _ v:Logical d:SortDirection? _ { return ['by',[v,d?d:1]] }
  / HIGHEST _ v:Logical _ { return ['by',[v,-1],'limit',{extract:true,sort:1}]}
  / LOWEST _ v:Logical _ { return ['by',[v,1],'limit',{extract:true,sort:1}]}
 
@@ -1358,6 +1374,7 @@ Logical
  / l:Comparison _ VIA _ f:VerbValue { return '('+f[0]+f[1]+')('+l+')' } // test 'via'
  / c:Comparison _ XOR _ l:Logical  { return '(_$AI.xor('+c+','+l+'))' } // test 'xor' 
  / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
+ / l:Comparison _ NOR _ f:Logical { return '(!('+l+' || '+f+'))' } // test 'nor'
  / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { 
      return RV('((^{c})?(^{l}):(^{r}))',{c:c,l:l,r:r}); 
    } 
@@ -1536,7 +1553,7 @@ VerbChainLine
      return {left:c[0], right: c[1]}
   }
  / i:Identifier _ o:ParameterList? _ EOLs {
-     return {verb:'.'+i, param:(o?o[1]:'')}; 
+     return {verb:'.'+i, param:(o?o[1]:''), test:true}; 
   }
 
 NewObject
@@ -1665,6 +1682,7 @@ ReservedWord
 ReservedWords
  = SET
  / ACCUM
+ / ALTER
  / ANDB 
  / AND
  / ARRAY
@@ -1676,16 +1694,13 @@ ReservedWords
  / BY
  / CASE
  / CHAIN
- / CHOATE
  / CREATE
  / COPY
- / COUNT
  / DEC
  / DEFAULT
  / DELETE
  / DESCENDING / DESC
  / DOWN
- / EACH 
  / EMPTY
  / ERROR
  / EXISTS
@@ -1693,7 +1708,6 @@ ReservedWords
  / FALSE
  / FIELDS
  / FIRST 
- / FOR
  / FROM
  / GATHER
  / GET
@@ -1701,12 +1715,9 @@ ReservedWords
  / HIGHEST 
  / INC
  / INITIALIZED
- / INHERIT
  / INTO
- / IN
  / ISNT
  / IS
- / ITERATE
  / KEYS
  / LAST
  / LIMIT
@@ -1716,17 +1727,15 @@ ReservedWords
  / LSH
  / NAND
  / NEW
+ / NOR
  / NOTB
  / NOT
  / NUMBER
- / OBJECT
  / OBSERVE
- / OPTIONAL
  / ORB
  / ORPHAN
  / OR
  / OVERLAY
- / PLY
  / PROMISE
  / PROCESS
  / REAP
@@ -1734,7 +1743,6 @@ ReservedWords
  / SELECT
  / SELF
  / SOW
- / SWITCH
  / TASK
  / TRIAL
  / THROW
@@ -1748,14 +1756,13 @@ ReservedWords
  / USING
  / VALUES
  / VIA
- / WHILE
- / WITH
  / XORB
  / XOR
  / YIELDING
  / YIELD
  
 ACCUM = 'accum'i
+ALTER = 'alter'i
 AND = 'and'i
 ANDB = 'andb'i
 ARRAY = 'array'i
@@ -1769,7 +1776,6 @@ BY = 'by'i
 CASE = 'case'i
 CATCH = 'catch'i
 CHAIN = 'chain'i
-CHOATE = 'choate'i
 COPY = 'copy'i
 CONTINUE = 'continue'i
 CONTRACT = 'contract'i
@@ -1792,7 +1798,6 @@ EXPECTS = 'expects'i
 FINALLY = 'finally'i
 FIELDS = 'fields'i
 FIRST = 'first'i
-FOR = 'for'i
 FROM = 'from'i
 GATHER = 'gather'i
 GET = 'get'i
@@ -1802,7 +1807,6 @@ HIGHEST = 'highest'i
 IF = 'if'i
 INITIALIZED = 'initialized'i
 INTO = 'into'i
-IN = 'in'i
 INC = 'inc'i
 INHERIT = 'inherit'i
 ISNT = 'isnt'i
@@ -1820,13 +1824,12 @@ LOWEST = 'lowest'i
 MOD = 'mod'i
 NAND = 'nand'i
 NEW = 'new'i
+NOR = 'nor'i
 NOT = 'not'i
 NOTB = 'notb'i
 NUMBER = 'number'i
 OBJECT = 'object'i
 OBSERVE = 'observe'i
-ON  = 'on'i 
-OPTIONAL = 'optional'i
 ORPHAN = 'orphan'i
 OR = 'or'i
 ORB = 'orb'i

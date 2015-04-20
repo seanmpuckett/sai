@@ -124,6 +124,20 @@ Execute task
         return false
     return false
     
+  @Test 'switch multicase', task
+    switch 2
+      case 1
+        return false
+      case 0,3,2
+        switch 1
+          case 1,2
+            return true
+          default
+            return false
+      default
+        return false
+    return false
+    
   @Test 'switch default', task
     switch 2
       case 1
@@ -199,4 +213,3 @@ Execute task
       return error.message
     return false
     
-  

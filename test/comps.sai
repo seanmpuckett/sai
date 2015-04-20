@@ -174,39 +174,40 @@ Execute task
       return true
     return false
     
-  @Match 'choate value block', '1', task
-    return 2 choate
+    
+  @Match 'alter value block', '1', task
+    return 2 alter
       return 1
   
-  @Match 'choate value inline', '1', task
-    return 2 choate 1
+  @Match 'alter value inline', '1', task
+    return 2 alter 1
   
-  @Test 'choate block', task
-    set b to: 2; choate
+  @Test 'alter block', task
+    set b to: 2; alter
        it.unshift 1
     if b.length=2 and b|0=1 and b|1=2
       return true
     return false
     
-  @Test 'choate inline 1', task
+  @Test 'alter inline 1', task
     set Unshifter to task as l,v
       l.unshift v
       return l
-    set b to: 2; choate from Unshifter it, 1
+    set b to: 2; alter from Unshifter it, 1
     if b.length=2 and b|0=1 and b|1=2
       return true
     return false
     
-  @Test 'choate inline 2', task
-    set b to: 2, 1; choate from it.reverse
+  @Test 'alter inline 2', task
+    set b to: 2, 1; alter from it.reverse
     if b.length=2 and b|0=1 and b|1=2
       return true
     return false
     
-  @Test 'choate using', task
+  @Test 'alter using', task
     set rev to task
       return from $.reverse
-    set b to: 2, 1; choate using rev
+    set b to: 2, 1; alter using rev
     if b.length=2 and b|0=1 and b|1=2
       return true
     return false

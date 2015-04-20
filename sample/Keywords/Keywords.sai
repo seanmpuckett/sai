@@ -1,0 +1,92 @@
+object Keywords 1.0.0
+
+Instantiate task
+
+  set fruit to list Apple, Banana, Citron
+
+  set friends to:
+   :name 'Sara', age 23, #cat, province 'ON'
+   :name 'John', age 19, #cat, #dog, province 'ON'
+   :name 'Ellie', age 22, province 'QC'
+   :name 'Marshal', age 21, #dog, province 'ON'
+   :name 'Doug', age 18, province 'ON'
+   :name 'Ann', age 23, #cat, province 'QC'
+   :name 'Harry', age 31, province 'QC'
+   :name 'Jenna', age 28, #dog, province 'ON'
+
+  set
+    width to 10
+    height to 5
+    angle to 45o
+
+  // ACCUM
+  debug '\nACCUM'
+  debug friends gather into 0
+    set accum + .age
+
+  // ALTER
+  debug '\nALTER'
+  debug 4 alter 5*it+2 alter it/7
+  
+  debug friends by .age alter
+    set .length to 3
+    
+  set ExtractFirst to task
+    return $[0]
+  debug friends #cat alter using ExtractFirst
+
+  // AND
+  debug '\nAND'
+  debug 1 and 2
+  debug true and 'Fred'
+  
+  // ANDB
+  debug '\nANDB'
+  debug 5 andb 11
+  
+  // ARRAY
+  debug '\nARRAY'
+  debug array 1+1, 2*3, 'Fred'
+  
+  debug array
+    width * ~Math.cos(angle)
+    height * ~Math.sin(angle)
+    
+  debug array
+    1, 1, 2, 5
+    14, 42, 132, 429
+    1430, 4862
+    
+  debug array 5, 3, 2, 7, 4; has it%2
+  
+  debug array
+    array 1, 2, 3;, array 4, 5, 6
+    array
+      7, 8, 9
+  
+  // AS
+  debug '\nAS'
+  set six to (1+2 as three)+3
+  debug array three, six
+  
+  set tally to blank
+  set AddRow to task as item, quantity
+    set tally|item to (self default 0) + quantity
+  AddRow 'socks', 3
+  AddRow 'pants', 6
+  debug tally 
+  
+  // ASCENDING
+  debug '\nASCENDING'
+  debug list Bob, Carol, Ted, Alice; by ascending
+  
+  // AUDIT
+  debug '\nAUDIT'
+  set b to chain fruit
+    observe debug('Pre-sort')
+    audit debug('Fruit #${key+1} is ${it}') 
+    by desc
+    observe debug('Post-sort')
+    audit debug('Fruit #${key+1} is ${it}') 
+  debug b
+  
