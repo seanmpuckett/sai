@@ -1,7 +1,5 @@
 
-## Keyword samples
-
-Sample code for each keyword.
+## Keyword Reference
 
 Uses the following data:
 
@@ -26,6 +24,7 @@ Uses the following data:
 And these syntactic indicators:
 
 	... - repeating pattern
+	A/B/C - alternatives
 	() - optional syntax or component
 	
 	\[block] - an indented block of code
@@ -37,7 +36,7 @@ And these syntactic indicators:
 
 ### ACCUM
 
-A magic variable active only within a **gather** clause or code block. Represents the static value that accumulates changes during gather’s iteration over a data set.
+A magic variable active only within a **gather** clause or code block. Represents the static value that accumulates changes during **gather** iteration over a data set.
 
 	debug friends gather into 0
 	  set accum + .age
@@ -303,9 +302,7 @@ Because sort order is by default ascending, this keyword is never truly needed e
 	  [block]
 	[expr] audit using [function]
 
-A non-mutating comprehension, audit is used to pass all values in a collection into an expression, code block or method. Audit doesn’t alter the collection, it just ‘pipes’ all values and keys/indices.
-
-_Note: **audit** cannot be used with true iterators, as an iterator cannot be examined without exhausting it._
+A non-mutating chainable comprehension, audit is used to pass all values in a collection into an expression, code block or method. Audit doesn’t alter the collection, it just ‘pipes’ all values and keys/indices.
  
 	set b to chain fruit 
 	  observe debug('Pre-sort')
@@ -325,109 +322,329 @@ _Note: **audit** cannot be used with true iterators, as an iterator cannot be ex
 > Fruit #2 is Apple
 > [ 'Citron', 'Banana', 'Apple’ ] 
 
-Neither **observe** nor **audit** alter chained data in any way. This example shows how one could add instrumentation to a process in a light-weight fashion.
+This example shows how one could add instrumentation to a process in a light-weight fashion.
+
+Neither **observe** nor **audit** alter the chained data. _A side effect of this is that **observe** can’t be used with true iterators as it’s impossible to statically observe an iterator without draining it. _
+
+### BLANK
+
+	blank
+
+The keyword **blank** creates a plain object with no traits. It is the SAI equivalent of Javascript’s `{}`.
+
+	set player to blank
+	set player.age to 21
+	debug player
+
+> { age: 21 }
 
 
+### BREAK
+
+	[loop/iterator]
+	  [code]
+	  break
+	 
+	switch
+	  case [expr]
+	    break
+	  default
+	    break
+
+To exit a loop, iterator or switch case before its natural end, use the **break** keyword. 
+
+	count 5
+	  debug it
+	  if it=2 
+	    debug 'Nevermind...'
+	    break
+
+> 1
+> 2
+> Nevermind…
 
 
-BLANK = 'blank'i
-BREAK = 'break'i
-BY = 'by'i
-CASE = 'case'i
-CATCH = 'catch'i
-CHAIN = 'chain'i
-COPY = 'copy'i
-CONTINUE = 'continue'i
+### BY
+
+	[expr] by [expr] (ASC/ASCENDING/DESC/DESCENDING)
+	[expr] by ASC/ASCENDING/DESC/DESCENDING
+	[expr] by ( as [first ident], [second ident] )
+	  [block]
+	[expr] by using [function]
+
+To sort a collection, use the **by** comprehension. 
+
+\<\> example needed
+
+
+### CASE
+
+	switch [trial expr]
+	  case [match expr] (, [match expr] (, ...) )
+	    [code]
+	  case [match expr]
+	    [code]
+	  ...
+
+Use one or more **case** clauses within a **switch** statement to specify one or more matching expressions to be tested against with the trial expression.
+
+\<\> example needed
+
+
+### CATCH
+
+	try
+	  [code]
+	catch ( as [error ident] )
+	  [code]
+	finally
+	  [code]
+
+The **catch** clause heads a section of code that executes if and only if any code within the **try** clause throws an exception. The exception thrown is caught and placed in the **error** magic variable (or the variable named in the **as** clause).
+
+\<\>
+
+
+### CHAIN
+
+	chain [expr]
+	  [comprehension/method] 
+	  [comprehension/method]
+	  ...
+
+The **chain** clause allows you to compose (string together) a series of operations that will each be applied in turn to a value, object, collection or iterator.
+
+\<\>
+
+
+### COPY
+
+	copy [expr]
+
+Use the **copy** unary operator to create a _shallow copy_ of the expression it precedes.  
+
+\<\>
+
+
+### CONTINUE 
+
+	[iterator/loop]
+	  [code]
+	  continue
+
+In a loop or otherwise iterating block of code, **continue** short-cuts the remaining code in the block, causing the loop to continue its next iteration immediately.
+
+\<\>
+
+
+### CONTRACT
+
 CONTRACT = 'contract'i
+
+
+### COUNT
+
 COUNT = 'count'i
+
+
+### CREATE
+
 CREATE = 'create'i
-DEC = 'dec'i
-DEFAULT = 'default'i
-DELETE = 'delete'i
-DESC = 'desc'i
-DESCENDING = 'descending'i
-DOWN = 'down'i
-EACH = 'each'i
-ELSE = 'else'i 
-EMPTY = 'empty'i
-END = 'end'i
-EQ = 'eq'i 
-ERROR = 'error'i
-EXISTS = 'exists'i
-EXPECTS = 'expects'i
-FINALLY = 'finally'i
-FIELDS = 'fields'i
-FIRST = 'first'i
-FROM = 'from'i
-GATHER = 'gather'i
-GET = 'get'i
-GIVEN = 'given'i
-HAS = 'has'i
-HIGHEST = 'highest'i
-IF = 'if'i
-INITIALIZED = 'initialized'i
-INTO = 'into'i
-INC = 'inc'i
-INHERIT = 'inherit'i
-ISNT = 'isnt'i
-IS = 'is'i
-ITERATE = 'iterate'i
-IT = 'it'i 
-KEYS = 'keys'i
-KEY = 'key'i
-LAST = 'last'i
-LIMIT = 'limit'i
-LIST = 'list'i
-LSH = 'lsh'i
-LOCAL = 'local'i
-LOWEST = 'lowest'i
-MOD = 'mod'i
-NAND = 'nand'i
-NEW = 'new'i
-NOR = 'nor'i
-NOT = 'not'i
-NOTB = 'notb'i
-NUMBER = 'number'i
-OBJECT = 'object'i
-OBSERVE = 'observe'i
-ORPHAN = 'orphan'i
-OR = 'or'i
-ORB = 'orb'i
-OVERLAY = 'overlay'i
-TRUE = 'true'i
-FALSE = 'false'i
-PLY = 'ply'i
-PROMISE = 'promise'i
-PROCESS = 'process'i
-REAP = 'reap'i
-RESOLVE = 'resolve'i
-REJECT = 'reject'i
-REFERENCE = 'reference'i
-RETURN = 'return'i
-RSH = 'rsh'i
-SELECT = 'select'i
-SELF = 'self'i
-SET = 'set'i
-SOW = 'sow'i
-SUPER = 'super'i
-SWITCH = 'switch'i
-TASK = 'task'i
-THROW = 'throw'i
-THRU = 'thru'i
-TRAITS = 'traits'i
-TRIAL = 'trial'i
-TRY = 'try'i
-TO = 'to'i
-TYPEOF = 'typeof'i
-UNLESS = 'unless'i 
-UNDEFINED = 'undefined'i
-UPDATE = 'update'i
-USING = 'using'i
-VALUES = 'values'i
-VIA = 'via'i
-WHILE = 'while'i
-WITH = 'with'i
-XOR  = 'xor'i
-XORB  = 'xorb'i
-YIELDING = 'yielding'i
-YIELD = 'yield'i
+
+
+
+### DEC 
+
+
+### DEFAULT 
+
+### DELETE
+
+### DESCENDING and DESC
+
+### DOWN
+
+### EACH
+
+### ELSE
+
+### EMPTY
+
+### END
+
+### ERROR
+
+### EXISTS
+
+
+### EXPECTS
+
+### FALSE
+
+### FINALLY
+
+### FIELDS
+
+### FIRST
+
+### FROM
+
+### GET
+
+### GIVEN
+
+### HAS
+
+### HIGHEST
+
+### IF
+
+### INITIALIZED
+
+### INTO
+
+### INC
+
+### INHERIT
+
+### ISNT
+
+### IS
+
+### ITERATE
+
+### IT
+
+### KEYS
+
+### KEY
+
+### LAST
+
+### LIMIT
+
+### LIST
+
+### LOCAL
+
+### LOWEST
+
+### NAND
+
+### NEW
+
+### NOR
+
+### NOT
+
+### NOTB
+
+### NUMBER
+
+### OBJECT
+
+### OBSERVE
+
+### ORPHAN
+
+	orphan
+
+Compiles to `@=this` which in effect detaches a function defined within an object-owned function from that object. It causes the @ scoping prefix within the function to refer to the context of the function call instead of the context of the function definition.
+
+### OR
+
+### ORB
+
+### OVERLAY
+
+### TRUE
+
+### PLY
+
+### PROMISE
+
+### PROCESS
+
+### REAP
+
+### RESOLVE
+
+### REJECT
+
+### REFERENCE
+
+### RETURN
+
+### SELECT
+
+### SELF
+
+### SET
+
+### SOW
+
+### SUPER
+
+### SWITCH
+
+### TASK
+
+### THROW
+
+### THRU
+
+### TRAITS
+
+### TRIAL
+
+### TRY
+
+### TO
+
+### TYPEOF
+
+### UNLESS
+
+### UNDEFINED
+
+### UPDATE
+
+### USING
+
+### VALUES
+
+### VIA
+
+### WHILE
+
+### WITH
+
+### XOR
+
+### XORB
+
+### YIELD
+
+### YIELDING
+
+### Mathematical Operators
+
+\+ - \* / %
+?\> ?\< 
+\<=\>
+
+\>\>\> \>\> \<\<
+andb orb xorb
+
+### Logical Operators
+
+not
+and
+or
+nand
+nor
+xor
+
+### 
+
+### Unary Operators

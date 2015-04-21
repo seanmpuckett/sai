@@ -102,15 +102,15 @@ Instantiate task
     friends thru
       return it overlay: name from .name.toUpperCase
 
-    `GATHER\nTotal ages (block)
-    friends gather into 0 
+    `INTO\nTotal ages (block)
+    friends into 0 
       set accum + .age
 
     `Total ages (task)
-    friends gather into 0 using AgeTotal  
+    friends into 0 using AgeTotal  
 
     `Count friends in each province
-    friends gather into blank
+    friends into blank
       set accum[.province] to (self default 0) + 1
 
     `Five youngest friends

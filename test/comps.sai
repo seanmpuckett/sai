@@ -212,100 +212,100 @@ Execute task
       return true
     return false
     
-  @Match 'gather no list into', 'a', task
-    set b to empty gather into 'a'
+  @Match 'into no list', 'a', task
+    set b to empty into 'a'
        return accum+it
     return b
     
-  @Test 'gather no list no into', task
-    set b to empty gather
+  @Test 'into no list it', task
+    set b to empty into it
        return accum+it
     return b is undefined
 
-  @Match 'gather 1 list into', 'aa', task
-    set b to list a; gather into 'a'
+  @Match 'into 1 list into', 'aa', task
+    set b to list a; into 'a'
        return accum+it
     return b
     
-  @Match 'gather 1 list no into', 'a', task
-    set b to list a; gather
+  @Match 'into 1 list it', 'a', task
+    set b to list a; into it
        return accum+it
     return b
 
-  @Match 'gather 3 list into', 'abc', task
-    set b to list a,b,c; gather into ''
+  @Match 'into 3 list ', 'abc', task
+    set b to list a,b,c; into ''
        return accum+it
     return b
     
-  @Match 'gather 3 list no into', 'abc', task
-    set b to list a,b,c; gather
+  @Match 'into 3 list it', 'abc', task
+    set b to list a,b,c; into it
        return accum+it
     return b
 
-  @Match 'gather no traits into', 'a', task
-    set b to blank gather into 'a'
+  @Match 'into no traits', 'a', task
+    set b to blank into 'a'
        return accum+key+it
     return b
 
-  @Test 'gather no traits no into', task
-    set b to blank gather 
+  @Test 'into no traits it', task
+    set b to blank into it 
        return accum+key+it
     return b is undefined
 
-  @Match 'gather 1 trait into', 'a1', task
-    set b to: a 1; gather into ''
+  @Match 'into 1 trait', 'a1', task
+    set b to: a 1; into ''
        return accum+key+it
     return b
 
-  // GIGO result expected because gather can't intuit key+it value
-  @Match 'gather 1 traits no into', '1', task
-    set b to: a 1; gather 
+  // GIGO result expected because into can't intuit key+it value
+  @Match 'into 1 traits it', '1', task
+    set b to: a 1; into it 
        return accum+key+it
     return b
 
-  @Match 'gather 3 traits into', 'a1b2c3', task
-    set b to: a 1, b 2, c 3; gather into ''
+  @Match '3 traits into', 'a1b2c3', task
+    set b to: a 1, b 2, c 3;  into ''
        return accum+key+it
     return b
 
-  // GIGO result expected because gather can't intuit key+it value
-  @Match 'gather 3 traits no into', '1b2c3', task
-    set b to: a 1, b 2, c 3; gather 
+  // GIGO result expected because into can't intuit key+it value
+  @Match 'into 3 traits it', '1b2c3', task
+    set b to: a 1, b 2, c 3; into it 
        return accum+key+it
     return b
 
-  @Match 'gather value no into', 'a', task
-    set b to 'a' gather
+  @Match 'into value it', 'a', task
+    set b to 'a' into it
       return accum+it
     return b
     
-  @Match 'gather value into', 'ba', task
-    set b to 'a' gather into 'b'
+  @Match 'into value ', 'ba', task
+    set b to 'a' into 'b'
       return accum+it
     return b
     
-  @Test 'gather undefined', task
-    set b to undefined gather
+  @Test 'into undefined it', task
+    set b to undefined into it
       return accum+it
     return b is undefined
      
-  @Match 'gather 1 iterable into', 'aa', task
-    set b to list a; sow gather into 'a'
+  @Match 'into 1 iterable ', 'aa', task
+    set b to list a; sow into 'a'
        return accum+it
     return b.next().value
     
-  @Match 'gather 1 iterable no into', 'a', task
-    set b to list a; sow gather
+  @Match 'into 1 iterable it', 'a', task
+    set b to list a; sow into it
        return accum+it
     return b.next().value
 
-  @Match 'gather 3 iterable into', 'abc', task
-    set b to list a,b,c; sow gather into ''
+  @Match 'into 3 iterable', 'abc', task
+    set b to list a,b,c; sow into ''
        return accum+it
     return b.next().value
     
-  @Match 'gather 3 iterable no into', 'abc', task
-    set b to list a,b,c; sow gather
+  @Match 'into 3 iterable it', 'abc', task
+    set b to list a,b,c; sow into it
        return accum+it
     return b.next().value
 
@@ -344,12 +344,12 @@ Execute task
       return from $name.toUpperCase
     ... first
     
-  @Match 'gather task', 185, task
-    return friends gather into 0 using task as acc,val
+  @Match 'into task', 185, task
+    return friends into 0 using task as acc,val
       return acc+val.age
     
   @Match 'age total into', 185, task
-    return friends gather into 0
+    return friends into 0
       set accum + .age
   
   @Match '#cat count', 3, task

@@ -252,26 +252,26 @@ The **keys** and **values** unary operators can also be used as comprehensions. 
 
 Reduction is similar to mapping in that all of the elements of a collection are visited in turn, however the goal is typically to summarize, collate or total those elements, not transform them individually
 
-Javascript features the array method `Array.prototype.reduce` which performs the reduction function, and SAI extends its applicability with the **gather** compherension keyword.
+Javascript features the array method `Array.prototype.reduce` which performs the reduction function, and SAI extends its applicability with the **into** compherension keyword.
 
-#### GATHER _block_
+#### INTO _block_
 
-The **gather** comprehension only has a long-form which takes a block of code.
+The **into** comprehension only has a long-form which takes a block of code.
 
 In addition to the item itself (**it**) and the item key (**key**) available in other comprehensions, an accumulator variable (**accum**) is also used in the block. Each time the block is processed, **accum** has the same value it had last time.
 
-Below, the **accum** variable is initialized by `into 0`, and then each row in the collection is visited and we add `.age` to it. This totals the age of every friend.
+Below, the **accum** variable is initialized by the value following **into**: `0`, and then each row in the collection is visited and we add `.age` to it. This totals the age of every friend.
 
 **Total ages (block)**
 
-	friends gather into 0
+	friends into 0
 	  set accum + .age
 
 A more complex example.  See if you can suss out how it works.
 
 **Count friends in each province**
 
-	friends gather into blank
+	friends into blank
 	  set accum[.province] to (self default 0) + 1
 
 Here’s a hint: **self** is a _magic variable_ used only in **set** statements. It is initialized to the previous value of the variable being changed by **set**. 
@@ -280,9 +280,9 @@ Another hint: **default** is an operator that evaluates to its right hand value 
 
 Last hint: **blank** initializes an object with no traits; it is the SAI equivalent of Javascript’s `{}`.  The comparable word for arrays/lists with no elements is **empty**; in Javascript you’d write `[]`.
 
-#### GATHER USING
+#### INTO USING
 
-The addition of **using** lets you call an external function. _Note that the **using** clause appears after the **into** clause._ Be aware that the function must always `return` the accumulator so the value can be preserved across function calls.  (The block version of **gather** takes care of this for you.)
+The addition of **using** lets you call an external function.  Be aware that the function must always `return` the accumulator so the value can be preserved across function calls.  (The block version of **into** takes care of this for you.)
 
 
 **Total ages (task)**
@@ -292,7 +292,7 @@ The addition of **using** lets you call an external function. _Note that the **u
 	
 	 ... later ...
 	
-	friends gather into 0 using ageTotal 
+	friends into 0 using ageTotal 
 
 #### LIMIT
 

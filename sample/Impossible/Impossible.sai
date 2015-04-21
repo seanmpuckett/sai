@@ -164,4 +164,6 @@ Instantiate task
     join '\n'
 
 
+  // print the generated code for this method
+
   debug @Instantiate.toString()

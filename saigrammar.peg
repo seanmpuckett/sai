@@ -1214,23 +1214,23 @@ AuditComprehension2
   }
 
 ReduceComprehension
- = GATHER Sep x:ReduceComprehension2 { return x }
+ = INTO Sep x:ReduceComprehension2 { return x }
 ReduceComprehension2
- = into:IntoClause? o:IterateOutput? b:Block {
+ = into:IntoClause o:IterateOutput? b:Block {
     if (!o) o=[];
     if (!o[0]) o[0]='$accum';
     if (!o[1]) o[1]='$_v';
     if (!o[2]) o[2]='$_k';
     b+='return ^{accum};\n';
     var block=RV('function(^{accum},^{this},^{key}){'+b+'}',{accum:o[0],this:o[1],key:o[2]});
-    if (into===null) {
+    if (into=='it') {
       return ['_$AI.reduce(' , ','+block+')' ];
     } else {
       return ['_$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
-  / into:IntoClause? USING Sep x:Value  {
-    if (into===null) {
+  / into:IntoClause USING Sep x:Value  {
+    if (into=='it') {
       return ['_$AI.reduce(' , ','+x+')' ];
     } else {
       return ['_$AI.reduce(' , ','+x+','+into+')' ];
@@ -1512,7 +1512,8 @@ Literal
  / StringLiteral
 
 IntoClause
- = INTO Sep r:Expression _ { return r }
+ = IT Sep { return 'it' }
+ / r:Expression 
 
 
 ////////////////////////////////////////////////////////// VERBS
@@ -1709,7 +1710,6 @@ ReservedWords
  / FIELDS
  / FIRST 
  / FROM
- / GATHER
  / GET
  / HAS 
  / HIGHEST 
@@ -1791,7 +1791,6 @@ EACH = 'each'i
 ELSE = 'else'i 
 EMPTY = 'empty'i
 END = 'end'i
-EQ = 'eq'i 
 ERROR = 'error'i
 EXISTS = 'exists'i
 EXPECTS = 'expects'i
@@ -1799,7 +1798,6 @@ FINALLY = 'finally'i
 FIELDS = 'fields'i
 FIRST = 'first'i
 FROM = 'from'i
-GATHER = 'gather'i
 GET = 'get'i
 GIVEN = 'given'i
 HAS = 'has'i
