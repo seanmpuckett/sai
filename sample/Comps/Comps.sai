@@ -102,9 +102,8 @@ Instantiate task
     friends thru
       return it overlay: name from .name.toUpperCase
 
-    `INTO\nTotal ages (block)
-    friends into 0 
-      set accum + .age
+    `INTO\nTotal ages (inline)
+    friends into 0 accum + .age
 
     `Total ages (task)
     friends into 0 using AgeTotal  

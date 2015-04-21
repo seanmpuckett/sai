@@ -1229,6 +1229,14 @@ ReduceComprehension2
       return ['_$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
+ / into:IntoClause b:Logical {
+    var block=RV('function(^{accum},^{this},^{key}){ return '+b+';}',{accum:'$accum',this:'$_v',key:'$_k'});
+    if (into=='it') {
+      return ['_$AI.reduce(' , ','+block+')' ];
+    } else {
+      return ['_$AI.reduce(' , ','+block+','+into+')' ];
+    }
+  }
   / into:IntoClause USING Sep x:Value  {
     if (into=='it') {
       return ['_$AI.reduce(' , ','+x+')' ];
@@ -1496,7 +1504,7 @@ Keyword
  / n:Number { return quoted(n.toString()); }
  
 Identifier
- = !ReservedWord v:IdentifierProto { return v; }
+ = !ReservedWord v:IdentifierProto { return v; }  
 
 JSIdentifier
  = v1:[a-zA-Z_] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
@@ -1819,7 +1827,6 @@ LIST = 'list'i
 LSH = 'lsh'i
 LOCAL = 'local'i
 LOWEST = 'lowest'i
-MOD = 'mod'i
 NAND = 'nand'i
 NEW = 'new'i
 NOR = 'nor'i

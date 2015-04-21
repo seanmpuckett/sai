@@ -309,6 +309,14 @@ Execute task
        return accum+it
     return b.next().value
 
+  @Match 'into 3 iterable inline ', 'abc', task
+    set b to list a,b,c; sow into '' accum+it
+    return b.next().value
+    
+  @Match 'into 3 iterable inline it', 'abc', task
+    set b to list a,b,c; sow into it accum+it
+    return b.next().value
+
   
 
 

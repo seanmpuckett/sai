@@ -254,18 +254,21 @@ Reduction is similar to mapping in that all of the elements of a collection are 
 
 Javascript features the array method `Array.prototype.reduce` which performs the reduction function, and SAI extends its applicability with the **into** compherension keyword.
 
-#### INTO _block_
+#### INTO (inline)
 
-The **into** comprehension only has a long-form which takes a block of code.
 
-In addition to the item itself (**it**) and the item key (**key**) available in other comprehensions, an accumulator variable (**accum**) is also used in the block. Each time the block is processed, **accum** has the same value it had last time.
+In addition to the item (**it**) and the item key (**key**) available in other comprehensions, an accumulator variable (**accum**) is used when evaluating **into** expressions. The value of the expression becomes the value of **accum** the next time the expression is evaluated.
 
-Below, the **accum** variable is initialized by the value following **into**: `0`, and then each row in the collection is visited and we add `.age` to it. This totals the age of every friend.
+The **accum** variable is initialized by the value following **into** — in the example below `0` — and then each row in the collection is visited and we add `.age` to it. This adds up the ages of every friend.
 
-**Total ages (block)**
+**Total ages (inline)**
 
-	friends into 0
-	  set accum + .age
+	friends into 0 accum + .age
+
+
+#### INTO (block)
+
+The **into** comprehension, like other comprehensions, has an inline version with an expression, and a long-form which takes a block of code.
 
 A more complex example.  See if you can suss out how it works.
 
@@ -282,7 +285,7 @@ Last hint: **blank** initializes an object with no traits; it is the SAI equival
 
 #### INTO USING
 
-The addition of **using** lets you call an external function.  Be aware that the function must always `return` the accumulator so the value can be preserved across function calls.  (The block version of **into** takes care of this for you.)
+The addition of **using** lets you call an external function.  The function must always `return` the value you wish to be used as the accumulator so the value can be preserved across function calls.  (The block version of **into** takes care of this for you.)
 
 
 **Total ages (task)**
