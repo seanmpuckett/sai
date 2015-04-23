@@ -217,14 +217,14 @@
     Lists={};
   }
     
-  function GetExpectsTester(x,functionname) {
+  function GetExpectsTester(x,name) {
     var l =[];
     for (var i in x) {
       var t=x[i][1] || 'true';
       var p='"'+x[i][0][1]+'":'+x[i][1];
       l.push(p);
     }
-    return '_$AI.expects(p,{'+l.join(',')+'},"'+functionname+'");\n';
+    return '_$AI.expectsThrow(p,{'+l.join(',')+'},'+quoted(name)+');\n';
   }
   
   
@@ -507,7 +507,6 @@ Line
  / ReturnStatement
  / IterateStatement
  / WithStatement
- / BreakStatement
  / SwitchStatement
  / TryStatement
  / ThrowStatement
@@ -520,11 +519,10 @@ Line
 
 
 MiscStatement
- = ORPHAN _ { return 'var $=this;\n' }
-
-BreakStatement
  = BREAK _ { return 'break;\n'; }
  / CONTINUE _ { return 'continue;\n' }
+ / ORPHAN _ { return 'var $=this;\n' }
+
 
 SwitchStatement // test 'switch*'
  = s:SwitchClause o:Output? EOLs INDENT c:(EOLs c:CaseClause {return c})+ d:(EOLs d:DefaultClause {return d})? EOLs DEDENT {
@@ -543,14 +541,14 @@ SwitchStatement // test 'switch*'
  }
 
 SwitchClause
- = SWITCH _ e:Expression { return e; }
+ = SWITCH Sep e:Expression { return e; }
 
 CaseClause
- = CASE _ e:Items _ b:Block { return [e,b]; }
+ = CASE Sep e:Items _ b:Block { return [e,b]; }
 
- 
 DefaultClause
- = DEFAULT _ b:Block { return b; }
+ = DEFAULT Sep b:Block { return b; }
+
 
 
 ThrowStatement // maybe get an accurate line number in here someday?!
@@ -636,17 +634,6 @@ SetBlock
  = v:(SetLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
 SetTerm
-/* = local:LocalAdj? _ l:LValues _ &FROM Sep v:VerbSentence {
-   local=local?'var ':'';
-   if (l.length==1) return local+l[0]+'='+RV(v,{self:l[0]})+';\n';
-   var code='var $_='+v+';\n';
-   for (var i in l) {
-     code+=local+l[i]+'=$_['+i+'];\n';
-   }
-   return code;
- }
- */
- 
  = local:LocalAdj? _ l:LValues _ (TO/&FROM/&CHAIN) _ e:Expression {
    local=local?'var ':'';
    if (l.length==1) return local+l[0]+'='+RV(e,{self:l[0]})+';\n';
@@ -697,12 +684,11 @@ VerbStatement
  / v:VerbChain { return v+';\n'; }
  
 ReturnStatement
- = END { return 'return;\n'}
- / RETURN Sep k:Expression  { 
-   return 'return '+k+';\n' 
+ = RETURN k:(Sep k:Expression { return k })?  { 
+   return 'return '+(k?k:'')+';\n' 
   }
  / r:(ResolveReject) Sep k:Expression?   { 
-   return r+'('+k+');\n' ;
+   return r+'('+(k?k:'')+');\n' ;
   }
  / YIELDING Sep k:Expression { 
    return 'yield *'+'('+k+');\n' ;
@@ -1436,12 +1422,17 @@ AdditionOp
 
 Multiplication 
  = l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
- / l:Value _ '**' _ r:Multiplication { return 'Math.pow('+l+','+r+')' } // test '**'
+ / l:Value _ '**' _ r:Multiplication { // test '**'
+   return 'Math.pow('+l+','+r+')' 
+} 
  / l:Value _ OVERLAY Sep r:Multiplication { // test 'overlay *'
    return '_$AI.overlay('+l+','+r+')' 
  }
  / l:Value _ SELECT Sep r:Multiplication { // test 'select *'
    return '_$AI.select('+l+','+r+')' 
+ }
+ / l:Value _ EXPECTS Sep r:Multiplication { 
+   return '_$AI.expects('+l+','+r+')' 
  }
  / v:Value _ { return v }
 
@@ -1798,7 +1789,6 @@ DOWN = 'down'i
 EACH = 'each'i
 ELSE = 'else'i 
 EMPTY = 'empty'i
-END = 'end'i
 ERROR = 'error'i
 EXISTS = 'exists'i
 EXPECTS = 'expects'i

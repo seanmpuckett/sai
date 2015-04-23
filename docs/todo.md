@@ -7,6 +7,11 @@ source code lookup for exceptions or debugging
 weld - traits>list
   
 
+weld
+ return key,value
+
+
+chain as a line starter
 
 
 expect a, 

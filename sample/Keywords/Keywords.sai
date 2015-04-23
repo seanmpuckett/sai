@@ -37,7 +37,11 @@ Instantiate task
 
   // AND
   debug '\nAND'
-  debug 1 and 2
+  debug 1 and 0
+  debug 1 and false
+  debug 0 and 1
+  debug false and 1
+  debug 1 and 1
   debug true and 'Fred'
   
   // ANDB
@@ -89,4 +93,61 @@ Instantiate task
     observe debug('Post-sort')
     audit debug('Fruit #${key+1} is ${it}') 
   debug b
+  
+  // BY
+  debug '\nBY'
+  debug (friends by .name thru .name).join(', ')
+  set result to friends by .name.length by .age
+  debug (result thru '${.name}: ${.age}').join('\n')
+  set result to friends by
+   return a.province <=> b.province or a.age <=> b.age
+  debug (result thru '${.name}: ${.province}, ${.age}').join('\n')
+
+  // ERROR
+  debug '\nERROR'
+  try
+    noFunction
+  catch
+   debug error
+  
+  // FIELDS
+  debug '\nFIELDS'
+  debug fields
+    str 16, dex 34, mag 14
+    con 42, wil 21, cun 45
+  debug fields x 5, y 4, z 3; thru it*2
+  
+  // NAND
+  debug '\nNAND'
+  debug 0 nand 0
+  debug 1 nand 0
+  debug 0 nand 1
+  debug 1 nand 1
+  
+  // NOR
+  debug '\nNOR'
+  debug 0 nor 0
+  debug 1 nor 0
+  debug 0 nor 1
+  debug 1 nor 1
+  
+  // NOT
+  debug '\nNOT'
+  debug not 0
+  debug not false
+  debug not 'Sam'
+  debug not empty
+  
+  // XOR
+  debug '\nXOR'
+  debug 'Fred' xor 'Daphne'
+  debug 'Shaggy' xor 0
+  debug 0 xor 'Scooby'
+  debug 0 xor 0
+  
+  // XORB
+  debug '\nXORB'
+  debug 3 xorb 6
+  
+  
   

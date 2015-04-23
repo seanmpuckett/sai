@@ -511,7 +511,8 @@ _$AI.number = function(x) {
   return isNaN(n)?0:n;
 }
 
-_$AI.expects = function(params,prototype,name) {
+_$AI.expects = function(params,prototype) {
+  var result=[];
   for (var j in prototype) {
     type=prototype[j];
     if (j==='_root') {
@@ -521,13 +522,16 @@ _$AI.expects = function(params,prototype,name) {
         // good
       } else {
         if (!params.isof) {
-          throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof params);
+          result.push({trait:j,expects:type,is:typeof params});
+          //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof params);
         } else {
-          throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+params.isa);
+          result.push({trait:j,expects:type,is:params.isa});
+          //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+params.isa);
         }
       }
     } else if (!params[j]) {
-      throw new Error("SAI: Expected parameter "+j+" in call to "+name);
+      result.push({trait:j,expects:type,is:'undefined'});
+      //throw new Error("SAI: Expected parameter "+j+" in call to "+name);
     } else if (type!==true) {
       var param=params[j];
       if (type===typeof param) {
@@ -536,16 +540,28 @@ _$AI.expects = function(params,prototype,name) {
         // good
       } else {
         if (!param.isof) {
-          throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof param);
+          result.push({trait:j,expects:type,is:typeof param});
+          //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof param);
         } else {
-          throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+param.isa);
+          result.push({trait:j,expects:type,is:param.isa});
+          //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+param.isa);
         }
       }
     }
   }
+  return result;
 }
 
-
+_$AI.expectsThrow = function(params,prototype,name) {
+  var x=_$AI.expects(params,prototype);
+  if (!x.length) return;
+  var err=[];
+  for (var i in x) {
+    var j=x[i];
+    err.push(j.trait+" should be "+j.expects+", but it's "+j.is);
+  }
+  throw new Error('SAI: parameter exception in '+name+'\n'+err.join('\n'));
+}
 
 
 
@@ -791,7 +807,7 @@ SAI.GetPrototype = function(name,bindings) {
     
     Object.defineProperty(proto,"isa",{enumerable: false, value:proto.isa}); // lock it down
     if (SAI.isa[proto.isa]) {
-      throw new Error("Object defined by '"+name+"' has a duplicate .isa type identifier '"+proto.isa+"',  identical to "+SAI.isa[proto.isa]);
+      throw new Error("SAI: Object defined by '"+name+"' has a duplicate .isa type identifier '"+proto.isa+"',  identical to "+SAI.isa[proto.isa]);
     }
     
     SAI.isa[proto.isa]=name;
@@ -809,7 +825,7 @@ SAI.GetPrototype = function(name,bindings) {
       for (var i in proto.__contracts) {
         var l=proto.__contracts[i];
         if (!proto[l]) {
-          throw new Error("Contractually required task '"+l+"' does not exist in object '"+proto.isa+"'.");
+          throw new Error("SAI: Contractually required task '"+l+"' does not exist in object '"+proto.isa+"'.");
         } else {
           //console.log("Contract test: "+proto.isa+" does indeed have a "+l+" property.");
         }
