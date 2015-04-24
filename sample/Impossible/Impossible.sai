@@ -147,7 +147,7 @@ Instantiate task
     //
     // THRU is a map-like operator used as a transformation tool. Used on one
     // line instead of as an indented block of code, we just supply
-    // an expression to be evaluated; in this case a string literal with the
+    // an expression to be evaluated; in this case a string literal 
     // that uses the ${} string composition tool.
      
     thru 'Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.s}, product=${.p}'

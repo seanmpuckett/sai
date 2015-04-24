@@ -1,3 +1,6 @@
+// sample code from Keywords documentation 
+// (maybe not all of it, and not in order)
+
 object Keywords 1.0.0
 
 Instantiate task
@@ -117,6 +120,7 @@ Instantiate task
     con 42, wil 21, cun 45
   debug fields x 5, y 4, z 3; thru it*2
   
+  
   // NAND
   debug '\nNAND'
   debug 0 nand 0
@@ -149,5 +153,51 @@ Instantiate task
   debug '\nXORB'
   debug 3 xorb 6
   
+  // LOWEST
+  debug '\nLOWEST'
+  debug friends lowest .age
   
+  // KEYS
+  debug '\nKEYS'
+  debug keys fruit
+  debug friends first keys
+  
+  // ISNT
+  debug '\nISNT'
+  debug 1 != true
+  debug 1 isnt true
+  
+  // IS
+  debug '\nIS'
+  debug 0 = false
+  debug 0 is false
+  
+  // INITIALIZED
+  debug '\nINITIALIZED'
+  debug friends into blank
+    (accum|.province initialized empty).push .name
+
+  // INTO
+  debug '\nINTO'
+  debug friends into 0 accum + .age  
+  debug friends into blank
+    set accum[.province] to (self default 0)+1
+  set ageTotal to task as accumulator, row
+    return accumulator+row.age
+  debug friends into 0 using ageTotal
+
+  
+  // HIGHEST
+  debug '\nHIGHEST'
+  debug friends highest .age
+
+  // VALUES
+  debug '\nVALUES'
+  debug values fruit
+  debug friends first values
+  
+  // SELECT
+  debug '\nSELECT'
+  debug fruit select: 2, 0
+  debug friends #cat thru it select list name, age
   
