@@ -15,6 +15,7 @@ Instantiate task
 
 
   set tests to list
+    Literals
     Syntax
     Inheritance
     Generators

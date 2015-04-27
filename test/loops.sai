@@ -176,6 +176,81 @@ Execute task
       return true
     return false
     
+
+    
+  @Test 'count up break', task
+    count 10
+      break
+      return false
+    return true
+    
+  @Test 'count up continue', task
+    count 10
+      continue
+      return false
+    return true
+    
+  @Test 'count down break', task
+    count down 10
+      break
+      return false
+    return true
+    
+  @Test 'count down continue', task
+    count down 10
+      continue
+      return false
+    return true
+    
+  @Test 'ply break', task
+    ply: 1,2,3,4
+      break
+      return false
+    return true
+    
+  @Test 'ply continue', task
+    ply: 1,2,3,4
+      continue
+      return false
+    return true
+    
+  @Test 'each break', task
+    each: 1,2,3,4
+      break
+      return false
+    return true
+    
+  @Test 'each continue', task
+    each: 1,2,3,4
+      continue
+      return false
+    return true
+    
+  @Test 'iterate break', task
+    iterate (:1,2,3,4) sow
+      break
+      return false
+    return true
+    
+  @Test 'iterate continue', task
+    iterate (:1,2,3,4) sow
+      continue
+      return false
+    return true
+    
+  @Test 'while break', task
+    while 1
+      break
+      return false
+    return true
+    
+  @Test 'while continue', task
+    set a to 1
+    while a
+      dec a
+      continue
+      return false
+    return true
     
   
       

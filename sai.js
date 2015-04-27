@@ -8,7 +8,8 @@ var _ = require('lodash');
 var SAIconfig = {
   verbs: {
     debug: 'console.log',
-    require: 'require'
+    require: 'require',
+    assert: '_$AI.assert'
   },
   paths: [__dirname+'/'],
   options: {
@@ -55,6 +56,13 @@ var isCollection=function(i) {
 /// TOOLKIT
 
 var _$AI = {}
+
+_$AI.assert=function(test,msg) {
+  if (!test) {
+    if (!msg) msg='';
+    throw new Error("SAI: failed assertion "+msg);
+  }
+}
 
 _$AI.sow=function(a) { // test 'sow *'
   if (isIterable(a)) return a;

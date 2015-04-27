@@ -213,3 +213,12 @@ Execute task
       return error.message
     return false
     
+
+
+  @Test 'assert', task
+    try 
+      assert false
+      return false
+    catch
+      return true
+    return false

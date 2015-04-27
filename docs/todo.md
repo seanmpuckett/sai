@@ -1,20 +1,12 @@
 
-  
+
+
 es6 check
 multiple assignment???????
-expects as a verb
 source code lookup for exceptions or debugging
-weld - traits>list
-  
-
-weld
- return key,value
-
-
 chain as a line starter
 
 
-expect a, 
 
 
 
@@ -23,10 +15,7 @@ TESTS TO WRITE
   inheritance
   chaining
   promise
-  literal formats
   regex parsing
-  break
-  continue
   multiple assignment / SET variations
   
   

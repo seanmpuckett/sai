@@ -199,7 +199,7 @@ Execute task
 
   @Test 'merge list traits', task
     set a to: 1,2,3
-    set a update: 1 'a',3 'b'
+    set a update: '1' 'a','3' 'b'
     return a|0=1 and a|1='a' and a|2='3' and a|3='b'
 
   @Test 'merge list iterable', task

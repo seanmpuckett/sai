@@ -216,7 +216,7 @@ Format of comments in SAI source files.
 ### \: (declare structure) _literal_ / _clause_
 
 
-	
+ 
 \<\>
 
 ### \; (end structure) _literal_
@@ -282,6 +282,14 @@ Evaluates to **true** if lexpr is numerically greater or equal to rexpr, **false
 \<\>
 
 
+### ? (safe fetch) _operator_
+
+	.. ? [expr]
+
+Adds extra type-checking to an expression ensuring that it will not throw an exception if roots are undefined; instead just returning **undefined**.
+
+	
+
 ### ?\< (minimum) _operator_
 
 	.. [lexpr] ?< [rexpr]
@@ -342,7 +350,7 @@ Signifies the start of a string literal that will occupy the rest of the source 
 
 	.. [value]|[value]
 	.. |[value]
-
+  
 A cleaner way of doing indirect lookups when only using a single value or variable. Without a leading identifier, refers to the **it** value.
 
 \<\>
@@ -576,6 +584,13 @@ Because sort order is by default ascending, this keyword is never truly needed e
 > [ 'Alice', 'Bob', 'Carol', 'Ted' ]
 
 
+### ASSERT _verb_
+
+	assert [expr], [expr]
+
+If the first expression is _falsy_, throw an exception with the second expression as a message.
+
+
 ### AUDIT _comprehension_
 
 	[expr] audit [expr]
@@ -734,6 +749,7 @@ Calculate list of ages by province (using named task)\*\* 
 	  ...
 
 Use one or more **case** clauses within a **switch** statement to specify one or more matching expressions to be tested against with the trial expression. 
+
 
 	switch keystroke
 	  case 'n', 'N'
@@ -999,6 +1015,16 @@ Specifies a block of code that will be executed if the condition leading to the 
 A literal value indicating an empty list/array. The equivalent of Javascript’s `[]`, **empty** creates an Array with no elements.
 
 
+### ENUM _modifier_
+
+	fields [identifier] enum, ( [identifier] enum, ... )
+
+When declaring a set of fields, specifies a value 1 higher than the value of the previous definition. If there is no previous definition, 1.
+
+	debug fields a enum, b enum, c 10, d enum
+	> { a: 1, b: 2, c:10, d: 11}
+
+
 ### ERROR _magic variable_
 
 	.. error
@@ -1074,7 +1100,7 @@ An exception handling clause identifying a block of code that is executed whethe
 
 Used to specify the creation of a plain object with a set of key/value pairs. (Contrast with **traits**.)  In general, the **colon** structure constructor will figure out what you want, but when you want to be specific about creating a plain object with of keyed values & expressions, use **fields**. Compare with **list**, **array** and **traits**.
 
-The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **expr** is any valid literal, variable, object or expression.
+The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **expr** is any valid literal, variable, object or expression.
 
 Fields may be specified on one line:
 
@@ -1347,7 +1373,7 @@ Returns **true** if the two expressions are in any way distinguishable. More rig
 	> true
 
 
-### IS _operator_
+### is _operator_
 
 	.. [expr] is [expr]
 
@@ -1360,13 +1386,23 @@ Returns **true** if the two expressions are completely indistinguishable.  More 
 	> false
 
 
-### ITERATE \_statement
+### isNaN _operator_
+
+	.. isNaN \[expr]
+
+Returns true if the expression is the **NaN** flag.  Note there is no other way to test for NaN than by using **isNaN**. Note also that capitalization matters.
+
+\<\>
+
+
+### iterate _statement_
 
 	iterate [iterable expression] (as [term ident])
 	  [block]
 
+\<\>
 
-### IT _magic variable_
+### it _mvar_
 
 	.. it
 
@@ -1435,7 +1471,7 @@ Returns the keys (or indices) of a collection’s elements.
 	> [ 'name', 'age', 'cat', 'province']
 
 
-### KEY _magic variable_
+### KEY _mvar_
 
 	.. key
 
@@ -1541,6 +1577,15 @@ Returns the collection element with the lowest value of the expression. Prepares
 	> { name: 'Doug', age: 18, province: 'ON' }
 
 
+### NaN _literal_
+
+	.. NaN
+
+NaN (capitalization matters) means Not a Number.
+
+\<\>
+
+
 ### NAND _operator_
 
 	.. [expr] nand [expr]
@@ -1610,6 +1655,15 @@ Attempts to convert the following expression into a numeric value. If it cannot,
 	debug number 'ralph'
 	> 12
 	> 0
+
+
+### NULL _literal_
+
+	.. null
+
+An empty value.
+
+\<\>
 
 
 ### OBJECT _declaration_
@@ -1901,7 +1955,7 @@ Pass each element of a collection through an expression, code block, or previous
 
 Used to specify the creation of a plain object with a set of key/term pairs. (Contrast with **fields**.)  When you want to be specific about creating a plain object from a set of of keyed values & literal terms, use **traits**. 
 
-The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **term** is any valid term (see **list** for a description of valid terms).
+The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **term** is any valid term (see **list** for a description of valid terms).
 
 See **fields** for examples.
 
@@ -2065,7 +2119,7 @@ If both expressions are _truthy_, or both expressions are _falsy_, return `false
 	> Scooby
 	> false
 
-
+ 
 ### XORB _operator_
 
 	.. [expr] xorb [expr]

@@ -70,6 +70,7 @@
     firstfetch: { // [0]+key+[1]
       this: [ '$' , '' ],
       local: [ '' , '' ], 
+      arguments: [ 'arguments','' ],
       parameters: [ 'p','' ],
       it: [ '^{this}','' ],
       key: [ '^{key}','' ],
@@ -193,6 +194,7 @@
       } else {
         if (build.length) result.push(quoted(build));
         build='';
+        if (!result.length) result.push(quoted(''));
         result.push(c[1]);
       }
     }
@@ -338,6 +340,21 @@
        base=VerbCat(v[i]);
      }
      return base;
+  }
+  
+  function EnumCheck(v) {
+    var start=1;
+    for (var i in v) {
+      if (v[i][1]==='enum') {
+        v[i][1]=start++;
+      } else {
+        var n=parseInt(v[i][1],10);
+        if (!isNaN(n)) {
+          start=n+1;
+        }
+      }
+    }
+    return v;
   }
   
   
@@ -710,7 +727,7 @@ IterateStatement
    var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar(),this:(o?o[0]:false)};
    var setup='var ^{t1}=^{v}; var ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
-   var iterate='while (!^{t2}.done) { ^{this}=^{t2}.value; ^{block}; ^{t2}=^{t1}.next(); }\n';
+   var iterate='for (;!^{t2}.done; ^{t2}=^{t1}.next()) { ^{this}=^{t2}.value; ^{block}; }\n';
    return RV(setup+none+iterate,w); 
   }
  / ITERATE Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
@@ -736,7 +753,7 @@ IterateStatement
  / PLY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
      var w={b:b,i:i,j:tempvar(),v:v,n:n,k:tempvar(),l:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
      var setup='var ^{list}=^{v};\nif (undefined===^{list}) ^{list}=[]; ';
-     var iterate='var ^{l}=^{list}.length; if (^{l}) { var ^{this},^{key}=0; while (^{key}<^{l}) { ^{this}=^{list}[^{key}];\n^{b}\n^{key}++; } } '+(n?'else { ^{n} }':'')+'\n';
+     var iterate='var ^{l}=^{list}.length; if (^{l}) { var ^{this},^{key}=0; for (;^{key}<^{l};^{key}++) { ^{this}=^{list}[^{key}];\n^{b}\n} } '+(n?'else { ^{n} }':'')+'\n';
      return RV(setup+iterate,w); 
   }
  / PLY Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
@@ -759,7 +776,7 @@ IterateStatement
      var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false)};
      var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
      var alternate=none ? 'if (^{key}>=^{dest}) { ^{none} } else ' : '';
-     var iterate='while (^{key}<^{dest}) { ^{block} ^{key}++; }\n';
+     var iterate='for (; ^{key}<^{dest}; ^{key}++) { ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
   }
   / WHILE Sep v:Expression b:Block {
@@ -850,7 +867,7 @@ LStem
  ///ItStem / RootedStem / PropertyStem / ParameterStem / LocalStem 
 
 RStem
- = ItStem / SuperStem / RootedStem / PropertyStem / ParameterStem / LocalStem / GlobalStem / ParenStem
+ = ItStem / SuperStem / RootedStem / PropertyStem / ParameterStem / LocalStem / GlobalStem / ParenStem 
 
 
 
@@ -900,7 +917,7 @@ ItStem
  }
  
 ParenStem
- = x:(Parenthetic) y:(Attribute/Index/Call)+ {
+ = x:(Parenthetic/LiteralElm) y:(Attribute/Index/Call)* {
     var stem=x;
     for (var i in y) stem=stem.concat(y[i]);
     return stem 
@@ -942,8 +959,12 @@ Local
 }
 
 Parameter
- = '$' v:IdentifierProto { return [[ 'parameters','' ],['attribute',v]] }
+ = '$$' { return [['arguments','']]}
+ / '$' v:IdentifierProto { return [[ 'parameters','' ],['attribute',v]] }
  / '$' { return [[ 'parameters','' ]]}
+
+LiteralElm
+ = v:Literal { return [['literal',v]]}
 
 Global
  = '~' v:JSIdentifier { return [['global',v]] }
@@ -1001,8 +1022,8 @@ NestedDefinition
  / _ LIST _ EOLs INDENT EOLs v:TermBlock DEDENT { return ['literal','['+v.join(',')+']'] }
  / _ TRAITS _ v:Traits _ SEMI? _ { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal','{'+w.join(',')+'}'] }
  / _ TRAITS _ EOLs INDENT EOLs v:TraitBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal', '{'+w.join(',')+'}'] }
- / _ (COLON/FIELDS) _ v:Fields _ SEMI? _ { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal','{'+w.join(',')+'}'] }
- / _ (COLON/FIELDS) _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal', '{'+w.join(',')+'}'] }
+ / _ (COLON/FIELDS) _ v:Fields _ SEMI? _ { v=EnumCheck(v); var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal','{'+w.join(',')+'}'] }
+ / _ (COLON/FIELDS) _ EOLs INDENT EOLs v:FieldBlock DEDENT { v=EnumCheck(v); var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal', '{'+w.join(',')+'}'] }
  / _ (COLON/ARRAY) _ v:Items _ SEMI? _ { return ['literal','['+v.join(',')+']'] }
  / _ (COLON/ARRAY) _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['literal','['+v.join(',')+']'] }
 
@@ -1059,13 +1080,15 @@ ItemBlock
 
 Trait
  = HASH k:Keyword _ { return [[k,true]] }
- / k:Keyword _ v:Term _ { return [[k,v]] }
+ / k:Keyword Sep v:Term _ { return [[k,v]] }
  
 TraitSep
  = v:Trait _ COMMA _ { return v }
 
 Traits
- = v:(TraitSep)* t:(Trait) { var r=[]; for (var i in v) r=r.concat(v[i]); r=r.concat(t);  return r; }
+ = v:(TraitSep)* t:(Trait) { 
+   var r=[]; for (var i in v) r=r.concat(v[i]); r=r.concat(t);  return r; 
+}
  
 TraitLine
  = v:Traits EOLs { return v }
@@ -1077,7 +1100,7 @@ TraitBlock
 
 Field
  = HASH k:Keyword _ { return [[k,true]] }
- / k:Keyword _ v:Expression _ { return [[k,v]] }
+ / k:Keyword Sep v:(Expression/ENUM) _ { return [[k,v]] }
  
 FieldSep
  = v:Field _ COMMA _ { return v }
@@ -1450,6 +1473,7 @@ Value
  / NOTB Sep v:Value _ { return '(~('+v+'))' } // test 'unary binary not' 
  / NOT Sep v:Value _ { return '(!('+v+'))' } // test 'unary not'
  / TYPEOF Sep v:Value _ { return 'typeof ('+v+')'; }
+ / ISNAN Sep v:Value _ { return 'isNaN('+v+')'; }
  / NUMBER Sep v:Value { return '(_$AI.number('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
  / COPY Sep v:Value _ { return '_$AI.copy('+v+')'; } // test 'copy'
@@ -1463,6 +1487,7 @@ Value
  / YIELD Sep v:Value _ { return 'yield'+v; }
  / '?' v:RValueSafe _ { return v }
  / v:RValue _ { return v }
+ //// v:Literal _ { return v }
  / VerbChain 
  / v:NestedDefinition { return v[1] }
  / o:NewObject _ { return o }
@@ -1474,7 +1499,6 @@ Value
      return '('+v+')'; 
    }
   }
- / v:Literal _ { return v }
  / x:Regex _ { return x }
 
 Regex
@@ -1492,7 +1516,7 @@ RegexChar
 Keyword
  = v:Identifier ![.(\[|] { return v } 
  / StringLiteral 
- / n:Number { return quoted(n.toString()); }
+ // n:Number { return quoted(n.toString()); }
  
 Identifier
  = !ReservedWord v:IdentifierProto { return v; }  
@@ -1504,12 +1528,14 @@ IdentifierProto
  = v1:[a-zA-Z] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
 
 Literal
- = TRUE 
+ = Number 
+ / StringLiteral
+ / TRUE 
  / FALSE
  / UNDEFINED 
- / Number 
- / StringLiteral
-
+ / NULL
+ / NaN { return 'NaN' }
+ 
 IntoClause
  = IT Sep { return 'it' }
  / r:Expression 
@@ -1587,12 +1613,13 @@ NumericLiteral
  = Scientific
  / Real
  / Integer
+ / NaN
 
 Scientific
  = r:(Real/Integer) 'e' x:Integer { return r+'e'+x }
  
 Real
- = w:Integer DOT f:Integer { return Number(w+'.'+f) }
+ = w:Integer DOT f:Fraction { return Number(w+'.'+f) }
 
 Integer 
  = PositiveInteger
@@ -1601,6 +1628,9 @@ Integer
 
 PositiveInteger
  = v:[0-9]+ { return parseInt(v.join('')) } 
+
+Fraction
+ = v:[0-9]+ { return v.join('') } 
 
 SimpleStringLiteral
  = '\'' v:(EscapedChar/StringTickChar)* '\'' { return assembleLiteral(v) }
@@ -1702,6 +1732,7 @@ ReservedWords
  / DESCENDING / DESC
  / DOWN
  / EMPTY
+ / ENUM
  / ERROR
  / EXISTS
  / EXPECTS
@@ -1716,6 +1747,7 @@ ReservedWords
  / INITIALIZED
  / INTO
  / ISNT
+ / ISNAN
  / IS
  / KEYS
  / LAST
@@ -1724,12 +1756,14 @@ ReservedWords
  / LOCAL
  / LOWEST 
  / LSH
+ / NaN
  / NAND
  / NEW
  / NOR
  / NOTB
  / NOT
  / NUMBER
+ / NULL
  / OBSERVE
  / ORB
  / ORPHAN
@@ -1760,112 +1794,116 @@ ReservedWords
  / YIELDING
  / YIELD
  
-ACCUM = 'accum'i
-ALTER = 'alter'i
-AND = 'and'i
-ANDB = 'andb'i
-ARRAY = 'array'i
-AS = 'as'i
-ASC = 'asc'i
-ASCENDING = 'ascending'i
-AUDIT = 'audit'i
-BLANK = 'blank'i
-BREAK = 'break'i
-BY = 'by'i
-CASE = 'case'i
-CATCH = 'catch'i
-CHAIN = 'chain'i
-COPY = 'copy'i
-CONTINUE = 'continue'i
-CONTRACT = 'contract'i
-COUNT = 'count'i
-CREATE = 'create'i
-DEC = 'dec'i
-DEFAULT = 'default'i
-DELETE = 'delete'i
-DESC = 'desc'i
-DESCENDING = 'descending'i
-DOWN = 'down'i
-EACH = 'each'i
-ELSE = 'else'i 
-EMPTY = 'empty'i
-ERROR = 'error'i
-EXISTS = 'exists'i
-EXPECTS = 'expects'i
-FINALLY = 'finally'i
-FIELDS = 'fields'i
-FIRST = 'first'i
-FROM = 'from'i
-GET = 'get'i
-GIVEN = 'given'i
-HAS = 'has'i
-HIGHEST = 'highest'i
-IF = 'if'i
-INITIALIZED = 'initialized'i
-INTO = 'into'i
-INC = 'inc'i
-INHERIT = 'inherit'i
-ISNT = 'isnt'i
-IS = 'is'i
-ITERATE = 'iterate'i
-IT = 'it'i 
-KEYS = 'keys'i
-KEY = 'key'i
-LAST = 'last'i
-LIMIT = 'limit'i
-LIST = 'list'i
-LSH = 'lsh'i
-LOCAL = 'local'i
-LOWEST = 'lowest'i
-NAND = 'nand'i
-NEW = 'new'i
-NOR = 'nor'i
-NOT = 'not'i
-NOTB = 'notb'i
-NUMBER = 'number'i
-OBJECT = 'object'i
-OBSERVE = 'observe'i
-ORPHAN = 'orphan'i
-OR = 'or'i
-ORB = 'orb'i
-OVERLAY = 'overlay'i
-TRUE = 'true'i
-FALSE = 'false'i
-PLY = 'ply'i
-PROMISE = 'promise'i
-PROCESS = 'process'i
-REAP = 'reap'i
-RESOLVE = 'resolve'i
-REJECT = 'reject'i
-REFERENCE = 'reference'i
-RETURN = 'return'i
-RSH = 'rsh'i
-SELECT = 'select'i
-SELF = 'self'i
-SET = 'set'i
-SOW = 'sow'i
-SUPER = 'super'i
-SWITCH = 'switch'i
-TASK = 'task'i
-THROW = 'throw'i
-THRU = 'thru'i
-TRAITS = 'traits'i
-TRIAL = 'trial'i
-TRY = 'try'i
-TO = 'to'i
-TYPEOF = 'typeof'i
-UNLESS = 'unless'i 
-UNDEFINED = 'undefined'i
-UPDATE = 'update'i
-USING = 'using'i
-VALUES = 'values'i
-VIA = 'via'i
-WHILE = 'while'i
-WITH = 'with'i
-XOR  = 'xor'i
-XORB  = 'xorb'i
-YIELDING = 'yielding'i
-YIELD = 'yield'i
+ACCUM = 'accum'
+ALTER = 'alter'
+AND = 'and'
+ANDB = 'andb'
+ARRAY = 'array'
+AS = 'as'
+ASC = 'asc'
+ASCENDING = 'ascending'
+AUDIT = 'audit'
+BLANK = 'blank'
+BREAK = 'break'
+BY = 'by'
+CASE = 'case'
+CATCH = 'catch'
+CHAIN = 'chain'
+COPY = 'copy'
+CONTINUE = 'continue'
+CONTRACT = 'contract'
+COUNT = 'count'
+CREATE = 'create'
+DEC = 'dec'
+DEFAULT = 'default'
+DELETE = 'delete'
+DESC = 'desc'
+DESCENDING = 'descending'
+DOWN = 'down'
+EACH = 'each'
+ELSE = 'else'
+EMPTY = 'empty'
+ENUM = 'enum'
+ERROR = 'error'
+EXISTS = 'exists'
+EXPECTS = 'expects'
+FINALLY = 'finally'
+FIELDS = 'fields'
+FIRST = 'first'
+FROM = 'from'
+GET = 'get'
+GIVEN = 'given'
+HAS = 'has'
+HIGHEST = 'highest'
+IF = 'if'
+INITIALIZED = 'initialized'
+INTO = 'into'
+INC = 'inc'
+INHERIT = 'inherit'
+ISNT = 'isnt'
+ISNAN = 'isNaN'
+IS = 'is'
+ITERATE = 'iterate'
+IT = 'it'
+KEYS = 'keys'
+KEY = 'key'
+LAST = 'last'
+LIMIT = 'limit'
+LIST = 'list'
+LSH = 'lsh'
+LOCAL = 'local'
+LOWEST = 'lowest'
+NaN = 'NaN'
+NAND = 'nand'
+NEW = 'new'
+NOR = 'nor'
+NOT = 'not'
+NOTB = 'notb'
+NUMBER = 'number'
+NULL = 'null'
+OBJECT = 'object'
+OBSERVE = 'observe'
+ORPHAN = 'orphan'
+OR = 'or'
+ORB = 'orb'
+OVERLAY = 'overlay'
+TRUE = 'true'
+FALSE = 'false'
+PLY = 'ply'
+PROMISE = 'promise'
+PROCESS = 'process'
+REAP = 'reap'
+RESOLVE = 'resolve'
+REJECT = 'reject'
+REFERENCE = 'reference'
+RETURN = 'return'
+RSH = 'rsh'
+SELECT = 'select'
+SELF = 'self'
+SET = 'set'
+SOW = 'sow'
+SUPER = 'super'
+SWITCH = 'switch'
+TASK = 'task'
+THROW = 'throw'
+THRU = 'thru'
+TRAITS = 'traits'
+TRIAL = 'trial'
+TRY = 'try'
+TO = 'to'
+TYPEOF = 'typeof'
+UNLESS = 'unless'
+UNDEFINED = 'undefined'
+UPDATE = 'update'
+USING = 'using'
+VALUES = 'values'
+VIA = 'via'
+WHILE = 'while'
+WITH = 'with'
+XOR  = 'xor'
+XORB  = 'xorb'
+YIELDING = 'yielding'
+YIELD = 'yield'
 
 BANG = '!'
 DOT = '.'
