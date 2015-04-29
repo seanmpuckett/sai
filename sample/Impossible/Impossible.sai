@@ -37,7 +37,10 @@ Instantiate task
 
   // Define an iterable process yielding candidate solutions.
   // It would be easy to optimize the loops, but this doing it this
-  // way allows the conditions to be included in one expression.
+  // way allows the conditions to be specified in one expression.
+  //
+  // What is being YIELDed for each valid candidate is a plain
+  // object with named traits for x, y, s (sum) and p (product).
   
   set Candidates to process
     count 1 to ~MAX as x
@@ -62,14 +65,15 @@ Instantiate task
 
 
   // Banner
+  // Backtick specifies a string that runs to EOL.
   
-  debug 'Mathemetician\'s "Impossible" puzzle solver.'
+  debug `Mathemetician's "Impossible" puzzle solver.
 
 
   // Print calculated result
   //
   // CHAIN is the special keyword here, allowing an indented series of operations 
-  // to be applied, in this case to an array of values reaped from Pairs(). 
+  // to be applied, in this case to an array of values reaped from Candidates(). 
   // 
   // Because the algorithm uses tabular accumulation, it won't work as a lazy iterator.
   // Nevertheless, it's clearer and more maintainable to abstract away the
@@ -150,7 +154,7 @@ Instantiate task
     // an expression to be evaluated; in this case a string literal 
     // that uses the ${} string composition tool.
      
-    thru 'Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.s}, product=${.p}'
+    thru `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.s}, product=${.p}
     
     
     // JOIN is not a keyword, it's a member method of Array. CHAIN knows how to
@@ -163,7 +167,3 @@ Instantiate task
     
     join '\n'
 
-
-  // print the generated code for this method
-
-  debug @Instantiate.toString()

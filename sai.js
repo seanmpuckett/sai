@@ -619,10 +619,10 @@ var dedenter=function(src) {
     var line=lines[i];
     var depth=0;
     while (line[depth]==' ') depth++;
-    if (depth==line.length) { // empty line
+    if (depth==line.length || line.substr(depth,2)=='//') { // empty line
       out.push('');
     } else {
-      line=line.substring(depth);
+      line=line.substr(depth);
       if (depth==indent[0]) { // same depth
         out.push(line);
       } else if (depth>indent[0]) { // indenting
@@ -682,7 +682,6 @@ SAI.GetParser = function() {
   //console.log (mainParser.parse.toString());
   return function(source,bound,fn) {
     source+='\n\n';
-    source=dedenter(source.replace(/\/\/[^\r\n]*$/gm, ''));
     var dedentedSource=dedenter(source);
     var parser;
     try {
