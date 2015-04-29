@@ -49,6 +49,11 @@ Execute task
   @Test 'function Fn() exp', task
     return Fn(true) and true
     
+  @Test 'chain 1', task
+    set a to: 1,2,3
+    chain a
+      reverse
+    return a|0=3
     
-
+    
 

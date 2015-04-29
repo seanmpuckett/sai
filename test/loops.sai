@@ -252,6 +252,16 @@ Execute task
       return false
     return true
     
-  
+  @Test 'iterate map', task
+    set a to new ~Map
+    a.set 'a',1
+    a.set 'b',2
+    a.set 'c',3
+    set b to: '',''
+    iterate a
+      set b|0 + |0
+      set b|1 + |1
+    return b|1='123' and b|0='abc'
+      
       
       

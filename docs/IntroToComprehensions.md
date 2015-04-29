@@ -54,11 +54,11 @@ Filtration comprehensions test each element of a collection and return a new col
 
 	friends #dog #cat
 
-\_Note: multiple-tag comprehensions are tested with a logical **and**; all conditions must be fulfilled for the row to be included in the result.
+_Note: multiple-tag comprehensions are tested with a logical **and**; all conditions must be fulfilled for the row to be included in the result._
 
 #### HAS _expression_
 
-The comprehension operator **has** indicates an expression based filter using the **it** _magical value_ to represent the item currently under examination. Since **it** is in play, the associated **dot** scoping prefix is also active within the expression for easy access to item fields. In the first example below, both lines produce the same code and result. 
+The comprehension operator **has** indicates an expression based filter using the **it** _magical value_ to represent the item currently under examination. Since **it** is in play, the associated **dot** scoping prefix is also active _within the expression_ for easy access to item fields. In the first example below, both lines produce the same code and result. 
 
 **Who is 21 or over?**
 
@@ -94,14 +94,14 @@ If an expression isn’t enough, **has** can accept a block of code.  Like the `
 
 Keyword **has** can reference a block of code directly, which makes the **it** magic value available within that block, or be given the name of a task (or a task definition).
 
-\*\*Who can rent a car?
+**Who can rent a car?**
 
 	friends has
 	  return .age >= rentAge[.province]
 
 #### HAS USING
 
-You can integrate function calls into a composed comprehension by adding the **using** keyword immediately following the comprehension keyword itself.
+You can integrate function calls into a comprehension by adding the **using** keyword immediately following the comprehension keyword itself.
 
 **Who can rent a car? (named task)**
 
@@ -112,7 +112,7 @@ You can integrate function calls into a composed comprehension by adding the **u
 	
 	friends has using CanRent
 
-In composed comprehensions, the **using** keyword signals that the following expression is a function that should be called. 
+In comprehensions, the **using** keyword signals that the following expression is a function that should be called. 
 
 In this usage, **has using** is almost exactly like Javascript’s `Array.prototype.filter` method, though with a much broader range of applicability.
 
@@ -151,7 +151,7 @@ When using **by** with a block of code, the magic variables change. You are give
 
 A surprise for you: **\<=\>** is a SAI-specific comparison operator useful for sorting numeric and string values. It returns -1 if the value to the left is less than the right, 1 if it is greater, and 0 if they’re equal. 
 
-Because of the way the **or** operator shortcuts evaluation when it finds the first truthy value, you can string together multiple **\<=\>** comparison operators without using **if**.
+Because of the way the **or** operator shortcuts evaluation when it finds the first truthy (in this case, non-zero) value, you can string together multiple **\<=\>** comparison operators without using **if**.
 
 #### BY USING
 
@@ -196,7 +196,7 @@ The **thru** operator passes each value in a collection “through” an express
 
 	friends thru .name by .
 
-_Here we use **.** (dot) alone as a synonym for **it**. It’s there but you don’t have to use it (rimshot)._
+_Here we use **.** (dot) alone as a synonym for **it**._
 
 **Summary of cat-fanciers**
 
@@ -255,7 +255,6 @@ Reduction is similar to mapping in that all of the elements of a collection are 
 Javascript features the array method `Array.prototype.reduce` which performs the reduction function, and SAI extends its applicability with the **into** compherension keyword.
 
 #### INTO (inline)
-
 
 In addition to the item (**it**) and the item key (**key**) available in other comprehensions, an accumulator variable (**accum**) is used when evaluating **into** expressions. The value of the expression becomes the value of **accum** the next time the expression is evaluated.
 

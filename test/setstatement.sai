@@ -224,4 +224,3 @@ Execute task
     return a.a=1 and a.b=2 and a|1='a' and a|3='b' and a|0 is undefined and a|2 is undefined
 
 
-

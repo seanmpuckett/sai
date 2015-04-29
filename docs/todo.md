@@ -4,8 +4,7 @@
 es6 check
 multiple assignment???????
 source code lookup for exceptions or debugging
-chain as a line starter
-
+more character escapes
 
 
 
@@ -13,10 +12,8 @@ chain as a line starter
 TESTS TO WRITE
   what do highest/lowest/first/last do when given non-arrays?
   inheritance
-  chaining
+  Map and Set iterables
   promise
-  regex parsing
-  multiple assignment / SET variations
   
   
   

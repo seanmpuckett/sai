@@ -201,3 +201,10 @@ Instantiate task
   debug fruit select: 2, 0
   debug friends #cat thru it select list name, age
   
+  // CHAIN
+  debug '\nCHAIN'
+  set a to: 1,2,3
+  chain a
+    reverse
+  debug a
+  

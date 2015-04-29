@@ -21,8 +21,16 @@ var SAIconfig = {
 
 // HELPERS
 
+if (!Symbol) var Symbol={iterator:'@@iterator'};
+
+var getIterator=function(i) {
+  var iter=i[Symbol.iterator];
+  return iter ? iter() : i;
+}
+
 var isIterable=function(i) {
   if (!i) return false;
+  if (i[Symbol.iterator]) return true;
   var next=i.next;
   if (!next) return false; 
   if ((typeof next) === 'function') return true; // close enough for our purposes
@@ -71,16 +79,20 @@ _$AI.sow=function(a) { // test 'sow *'
   return function*(){ yield a; }();
 }
 
-_$AI.reap=function(iterable) {
-  if (!isIterable(iterable)) return iterable;
-  var a=[];
+_$AI._reap=function(iterable) {
+  var a=[]; 
   for (var val of iterable) a.push(val);
   return a;
 }
 
+_$AI.reap=function(iterable) {
+  if (!isIterable(iterable)) return iterable;
+  return _$AI._reap(iterable);
+}
+
 _$AI.sort=function(a,f) {
   if (isArray(a)) return a.slice(0).sort(f);
-  if (isIterable(a)) return _$AI.reap(a).sort(f);
+  if (isIterable(a)) return _$AI._reap(a).sort(f);
   if (isObject(a)) return _.values(a).sort(f);
   return a;
 };
@@ -175,6 +187,7 @@ _$AI.reduce = function(a,f,accum) {
     return accum;
   }
   if (isIterable(a)) {
+    a=getIterator(a);
     return function*(){
       var step=a.next();
       if (step.done) { yield accum; return; } 
@@ -231,6 +244,7 @@ _$AI.slice = function(a,start,count) {
   if (isArray(a)) return a.slice(start,end);
 
   if (isIterable(a)) {
+    a=getIterator(a);
     // return new iterable that slices the previous
     // first n records limited
     if (start===0) {
@@ -285,6 +299,7 @@ _$AI.element = function(a,index) {
   if (isArray(a)) {
     return a[index];
   } else if (isIterable(a)) { // untested
+    a=getIterator(a);
     a=_$AI.limit(a,index,1);
     var v=a.next();
     while (index--) {
@@ -304,6 +319,7 @@ _$AI.overlay = function(l,r) {// test 'overlay'
   if (!isIterable(l)) { // left side static
     l=_.clone(l); // no in-place modification
     if (isIterable(r)) {
+      r=getIterator(r);
       // right side iterator
       return function*(){
         var v=r.next();
@@ -323,15 +339,16 @@ _$AI.overlay = function(l,r) {// test 'overlay'
     }
     return l;
   } else {
+    l=getIterator(l);
     // left side iterable
     if (isIterable(r)) {
+      r=getIterator(r);
       // right side iterable
       return function*(){
         var vl=l.next(),vr=r.next();
         while (!vr.done) {
           yield (vr.value===undefined) ? vl.value : vr.value;
-          vl=l.next(); 
-          vr=r.next();
+          vl=l.next(); vr=r.next();
         }
         yield *l;
       }();
@@ -372,7 +389,9 @@ _$AI.select = function(src,keys) {
     for (var i in keys) result.push(src[i]);
     return result;
   } else if (isIterable(src)) { // lhs iterator
+    src=getIterator(src);
     if (isIterable(keys)) { // test 'select iterable iterable' // rhs iterator console.log("path 4");
+      keys=getIterator(keys);
       return function*(){
         var buf=[],len=0;
         for (v of keys) {
@@ -590,58 +609,45 @@ SAI.prototype.Constructor=function() {}
 
 ///////////////////////////////////// PARSER AND TRANSPILER
 
-// Multiline Function String - Nate Ferrero - Public Domain
-hereDoc = function (f) {
-    return f.toString().match(/\/\*\s*([\s\S]*?)\s*\*\//m)[1];
-};
+// converts semantic whitespace into braces for easier parsing.
 
-var indentParserSource=hereDoc(function() {/*
-  {
-  function start(first, tail) {
-    var done = [];
-    if (first) done.push(first[1]);
-    for (var i = 0; i < tail.length; i++) {
-      //if (tail[i][1]) {
-        done = done.concat(tail[i][1][0])
-        done.push(tail[i][1][1]);
-      //}
+var dedenter=function(src) {
+  var lines=src.split(/\r\n|[\r\n\u0085\u2028\u2029]/);
+  var indent=[0];
+  var out=[];
+  for (var i=0; i<lines.length; i++) {
+    var line=lines[i];
+    var depth=0;
+    while (line[depth]==' ') depth++;
+    if (depth==line.length) { // empty line
+      out.push('');
+    } else {
+      line=line.substring(depth);
+      if (depth==indent[0]) { // same depth
+        out.push(line);
+      } else if (depth>indent[0]) { // indenting
+        out.push('{');
+        out.push(line);
+        indent.unshift(depth);
+      } else { // outdenting
+        while (depth<indent[0]) {
+          out.push('}');
+          indent.shift();
+        }
+        if (depth!=indent[0]) {
+          for (var context='',j=i-3; j<i+4; j++) if (j>=0 && j<lines.length) context+=j+(i==j?'->':'  ')+lines[j]+'\n';
+          throw new Error("SAI: indenting error\n"+context);
+        }
+        out.push(line)
+      }
     }
-  //console.log(done);
-    return done;
   }
-
-  var depths = [0];
-
-  function indent(s) {
-    var depth = s.length;
-
-    if (depth == depths[0]) return [];
-
-    if (depth > depths[0]) {
-      depths.unshift(depth);
-      return ["{"];
-    }
-
-    var dents = [];
-    while (depth < depths[0]) {
-      depths.shift();
-      dents.push("}");
-    }
-
-    if (depth != depths[0]) dents.push("!! BAD INDENTING !!");
-
-    return dents;
-  }
+  while (indent.shift()>0) out.push('}');
+  return out.join('\n')+'\n';
 }
 
-start   = first:line tail:(newline line)* newline? { return start(first, tail) }
-line    = depth:indent s:text                      { return [depth, s] }
-indent  = s:" "*                                   { return indent(s) }
-text    = c:[^\n\r]*                                 { return c.join("") }
-newline = "\n"/"\r"/"\r\n"                         {}
-  
-*/});
-  
+
+
   
 SAI.prototypes={};
 SAI.protogens={};
@@ -649,7 +655,6 @@ SAI.isa={};
 SAI.config=SAIconfig;
   
 SAI.GetParser = function() {
-  var indentParser = PEG.buildParser(indentParserSource);
   try {
     var grammarFile=__dirname + "/saigrammar.peg";
     var parserFile=__dirname + "/saigrammar.cached";
@@ -677,20 +682,17 @@ SAI.GetParser = function() {
   //console.log (mainParser.parse.toString());
   return function(source,bound,fn) {
     source+='\n\n';
-    source=source.replace(/\/\/[^\r\n]*$/gm, '');
-    //console.log(commentStrippedSource);
-    var newlineStrippedSource=source.replace(/^\s*$[\n\r]{1,}/gm, '');
-    indentedSource=indentParser.parse(newlineStrippedSource).join('\n');
-    //console.log(indentedSource);
+    source=dedenter(source.replace(/\/\/[^\r\n]*$/gm, ''));
+    var dedentedSource=dedenter(source);
     var parser;
     try {
-      parser=mainParser.parse(indentedSource,{bound:bound,globals:SAI.config.verbs,filename:fn});
+      parser=mainParser.parse(dedentedSource,{bound:bound,globals:SAI.config.verbs,filename:fn});
     } catch (e) {
       var info='\nSAI: Syntax error <HERE> in '+fn+'\n\n';
       
-      var context=indentedSource.substring(e.offset-100,e.offset);
+      var context=dedentedSource.substring(e.offset-100,e.offset);
       context+='<HERE>';
-      context+=indentedSource.substring(e.offset,e.offset+100);
+      context+=dedentedSource.substring(e.offset,e.offset+100);
       
       // transforms parse-ready code back into indented
       var ind=0,minind=0;

@@ -725,14 +725,14 @@ NoneClause
 IterateStatement
  = ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
    var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar(),this:(o?o[0]:false)};
-   var setup='var ^{t1}=^{v}; var ^{t2}=^{t1}.next();\n';
+   var setup='var ^{t1}=(^{v}.next) ? (^{v}) : ^{v}[Symbol.iterator](); var ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
    var iterate='for (;!^{t2}.done; ^{t2}=^{t1}.next()) { ^{this}=^{t2}.value; ^{block}; }\n';
    return RV(setup+none+iterate,w); 
   }
  / ITERATE Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
    var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar()};
-   var setup='var ^{t1}=^{v}; var ^{t2}=^{t1}.next();\n';
+   var setup='var ^{t1}=(^{v}.next) ? (^{v}) : ^{v}[Symbol.iterator](); var ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
    var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value); ^{t2}=^{t1}.next(); }\n';
    return RV(setup+none+iterate,w); 
@@ -763,26 +763,28 @@ IterateStatement
      var iterate='for (var ^{k}=0; ^{k}<^{l}; ^{k}++) { ^{task}(^{j}[^{k}],^{k},^{j}) };\n';
      return RV(setup+test+iterate,w); 
   }
- / COUNT Sep DOWN Sep start:Expression stop:(TO Sep x:Expression {return x})? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
+ / COUNT Sep DOWN Sep start:Expression stop:(TO Sep x:Expression {return x})? step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
      if (!stop) stop=0;
-     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false)};
+     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false),step:(step?step:'-1')};
      var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
      var alternate=none ? 'if (^{key}<=^{dest}) { ^{none} } else ' : '';
-     var iterate='while (^{key}>^{dest}) { ^{key}--; ^{block} }\n';
+     var iterate='while (^{key}>^{dest}) { ^{key}+=^{step}; ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
   }
- / COUNT Sep start:(x:Expression _ TO Sep { return x })? stop:Expression out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
+ / COUNT Sep start:(x:Expression _ TO Sep { return x })? stop:Expression step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
      if (!start) start=0;
-     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false)};
+     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false),step:(step?step:'1')};
      var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
      var alternate=none ? 'if (^{key}>=^{dest}) { ^{none} } else ' : '';
-     var iterate='for (; ^{key}<^{dest}; ^{key}++) { ^{block} }\n';
+     var iterate='for (; ^{key}<^{dest}; ^{key}+=^{step}) { ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
   }
   / WHILE Sep v:Expression b:Block {
     return 'while ('+v+') { '+b+' }\n';
   }
 
+StepCount
+ = STEP Sep v:Expression _ { return v }
 
 
 LValues
@@ -1583,12 +1585,6 @@ VerbChainLine
   }
 
 NewObject
-// = NEW _ v:ClassName _ o:Parameters _ VerbTerminal { 
-//   var clause;
-//   if (o[0]=='list') clause=o[1].join(','); else clause=o[1];
-//   return '_$AI.new("'+v+'",'+clause+')'; 
-// }
-// /
  = CREATE _ v:Value _ o:ParameterList?  { 
    return '_$AI.new('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
@@ -1664,6 +1660,11 @@ EscapedChar
  / v:'\\$' { return [true,'$'] }
  / v:'\\&#123;' { return [true,'&#123;'] }
  / v:'\\&#125;' { return [true,'&#125;'] }
+ / v:'\\\n' { return [true,'\n'] }
+ / v:'\\\r' { return [true,'\r'] }
+ / v:'\\\t' { return [true,'\t'] }
+ / v:'\\\b' { return [true,'\b'] }
+ / v:'\\\f' { return [true,'\f'] }
 
 StringTemplate
  = '${' v:Expression '}' { return [false,v] }
@@ -1882,6 +1883,7 @@ SELECT = 'select'
 SELF = 'self'
 SET = 'set'
 SOW = 'sow'
+STEP = 'step'
 SUPER = 'super'
 SWITCH = 'switch'
 TASK = 'task'

@@ -11,12 +11,12 @@ We need some way to launch the SAI runtime from native Javascript. In most cases
 **index.js**
 
 	var SAI = require('SAI'); 
-	SAI.configure({paths:[__dirname]});
-	new SAI.require('HelloWorld')();
+	SAI.Configure({paths:[__dirname]});
+	new SAI.Require('HelloWorld')();
 
-The important thing to note is the call to __SAI.configure__ which sets the directory where SAI object source files live.
+The important thing to note is the call to __SAI.Configure__ which sets the directory where SAI object source files live.
 
-Then __SAI.require__ is called to create a standard Javascript prototype for the HelloWorld object. Calling __new__ on a prototype, as always, creates a new object with that prototype and runs its constructor.
+Then __SAI.Require__ is called to create a standard Javascript prototype for the HelloWorld object. Calling __new__ on a prototype, as always, creates a new object with that prototype and runs its constructor.
 
 
 **HelloWorld.sai**
@@ -35,7 +35,7 @@ Let’s have a look, line by line.
 
 	object HelloWorld 0.1.0
 
-SAI is an object-oriented language, and in order to execute any code at all, you must create an object that contains and defines that code. SAI object definitions are saved as plain text files with the extension __.sai__, and each file defines one (and only one) object.  
+SAI is an object-oriented language, and in order to execute any code at all, you must create an object that contains and defines that code. SAI object definitions are saved as plain text files with the extension **.sai**, and each file defines one (and only one) object.  
 
 Objects must have formal names that describe what kind of object it is, and should have version numbers (_SemVer_ numbers, to be specific). 
 
@@ -99,7 +99,7 @@ Let's take it line by line again.
   
 	reference:
 
-References are global variables. They should only be used for __require__ and for preset constants or configuration values. The colon __:__ begins the definition of a series of named fields, like {} would be used in Javascript.
+References are global variables. They should only be used for __require__ and for preset constants or configuration values. The colon __:__ begins the definition of a series of named fields, like `{}` would be used in Javascript.
 
 	  express from require 'express'
 
@@ -191,13 +191,11 @@ The first two lines used to set up an object are familiar; we’ll skip them and
 
 This is an assignment, which takes the general form of `set varname to value` (though there are variations). In this statement, the _value_ is quite interesting.
 
-SAI uses a colon at the beginning of both array and field literals. It knows the difference between arrays and traits at parse time because each field has a name _and_ a value, whereas each array element _only_ has a value.  
+SAI uses a colon at the beginning of both array and field literals. It knows the difference between arrays and fields at parse time because each field has a name _and_ a value, whereas each array element _only_ has a value.  
 
-This example creates an array (first colon, followed immediately by a two-line indented block) with two elements. Each element (line beginning with a colon) is an object with two traits, `word` and `divisor`. 
+This example creates an array (first colon, followed immediately by an indented block) with two elements. Each element (line beginning with a colon) is an object with two fields, `word` and `divisor`. 
 
-We could have stored our words as separately named fields in a single object and just iterated over that object, but since Javascript doesn’t guarantee iteration order in object traits, on some platforms we might end up with “BuzzFizz” printed for 15, which is _not acceptable_ per the specification. 
-
-_Grey-haired programmer tip: it is never okay to deliver an application that works on your machine if you can’t confidently promise that it will work on someone else’s machine. So when a language definition says certain behaviour is undefined, you are not production ready even if your tests pass. Sorry, sermon over!_
+We could have stored our words as separately named fields in a single object and just iterated over that object (e.g. `:Fizz 3, Buzz 5`), but since Javascript doesn’t guarantee iteration order in object properties, on some platforms we might end up with “BuzzFizz” printed for 15, which is _not acceptable_ per the specification. 
 
 	  count 1 to 101 as num
 

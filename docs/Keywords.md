@@ -16,9 +16,9 @@ Uses the following data:
 	   :name 'Jenna', age 28, #dog, province 'ON'
 	
 	set
-	  width 10
-	  height 5
-	  angle 45o
+	  width to 10
+	  height to 5
+	  angle to 45o
 
 
 And these syntactic indicators:
@@ -61,9 +61,8 @@ And these types:
 
 	.. [expr] != [expr]
 
-Compares two values for value equality; returns **true** if the values appear to be the same, **false** otherwise.
+Compares two values for value equality; returns **true** if the values appear to be the same, **false** otherwise. This is implemented with Javascript’s != operator and the behaviour is identical.
 
-\<\>
 
 ### ‘ and “ (string)_literal_
 
@@ -73,25 +72,28 @@ Compares two values for value equality; returns **true** if the values appear to
 
 Declare a literal string.
 
-\<\>
+String literals support embedded expressions (a.k.a. string compositions) using the EcmaScript 6 syntax: `${expr}`. Any normal expression can be evaluated and will be concatenated in-place.
+
+Use backslash as an escape for string delimiters `\'` and `\"`, dollar signs before braces `\${`, and the standard control characters `\n \r \t \b \f`.
+
+	debug 'This here\'s ${'a'} test using \${} composition.'
+	> This here's is a test using ${} composition.
 
 
 ### ‘’’ (multi-line string) _literal_
 
 	.. '''
 	  Now you can type as much text as you want,
-	  with any characters you want, though you must
-	  remember that leading and trailing whitespace 
-	  will be stripped.
+	  remembering that leading and trailing whitespace 
+	  will be stripped. So it's perfect for markup.
 	
-	  The string goes on as long as the indention does.
-	  Empty newlines will be folded away.
+	  The string goes on as long as the indenting does.
 	
-	  And you can include compositions as well.
+	  And you can include ${'compo'+'sitions'} as well.
 
 Declare a multi-line string ideal for embedding longer passages of markup.
 
-\<\>
+
 
 
 ### \# (hashtag) _literal_ / _comprehension_
@@ -844,31 +846,39 @@ Inheriting from an object that has contracts, and then not providing implementat
 
 ### COUNT _statement_
 
-	count [high expr] ( as [key ident] )
+	count [high expr] ( step [expr] ) ( as [key ident] )
 	  [block]
 	( none 
 	  [none block] )
 	
 	// variants
-	count [low expr] to [high expr] ( as [key ident] )
-	count down [high expr] ( as [key ident] )
-	count down [high expr] to [low expr] ( as [key ident])
+	count [low expr] to [high expr] ( step [expr] ) ( as [key ident] )
+	count down [high expr] ( step [expr] ) ( as [key ident] )
+	count down [high expr] to [low expr] ( step [expr] ) ( as [key ident])
 
-Specifically designed as an integer iterator for list elements, **count** always counts 1 at a time, and its highest value is always 1 less than the high value provided (both when counting up and down).
+Specifically designed as an integer iterator for list elements, **count** always counts 1 at a time (unless a **step** clause is provided), and its highest value is always the step value less than the high value provided (both when counting up and down). To reiterate, **count** _never_ outputs the high value.
 
 	count 10
 	  debug it
-	
-	( prints numbers from 0 to 9 )
+	// prints numbers from 0 to 9 
 	
 	count 5 to 10
-	> 5 to 14
+	// prints numbers 5 to 9
 	
 	count down 10
-	> 9 to 0
+	// prints numbers from 9 to 0
 	
 	count down 25 to 15
-	> 24 to 15
+	// prints numbers 24 to 15
+	
+	count 50 step 10
+	// prints 0, 10, 20, 30, 40
+	 
+	count down 45 step -10
+	// prints 35, 25, 15, 5
+
+When using the **step** clause with **count down**, be sure that the step expression is negative, otherwise an infinite loop will result.
+
 	
 	count aList.length
 	  debug 'List element ${key} is ${aList|key}'
@@ -1349,7 +1359,7 @@ Increments (adds 1 to) the given variable.
 	> 2
 
 
-### INHERIT _declaration_
+### inherit _declaration_
 
 	inherit:
 	  [classname]
@@ -1360,7 +1370,7 @@ Specify inheritance during object definition.
 \<\>
 
 
-### ISNT _operator_
+### isnt _operator_
 
 	.. [expr] isnt [expr]
 

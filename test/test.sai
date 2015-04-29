@@ -37,7 +37,7 @@ Instantiate task
     
   if @fail.length
     debug 'FAILED'
-    each @fail
+    ply @fail
       debug 'FAIL: ${it}'
     ~process.exit 1
   else
