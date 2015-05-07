@@ -263,5 +263,27 @@ Execute task
       set b|1 + |1
     return b|1='123' and b|0='abc'
       
-      
-      
+  @Test 'until', task
+    set a to 0
+    until a
+      set a to 1
+    return true
+    
+  @Test 'do while', task
+    do while false
+      return true
+    return false
+    
+  @Test 'do until', task
+    do until true
+      return true
+    return false
+    
+  @Test 'while as', task
+    set a to false
+    while true
+      set a to it
+      break
+    return a
+    
+    

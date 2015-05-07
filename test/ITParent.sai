@@ -4,7 +4,7 @@ given:
  g 'Parent'
  gruncle 'Parent'
 
-set:
+instance:
  s 'Parent'
   
 T task

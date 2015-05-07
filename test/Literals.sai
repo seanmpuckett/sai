@@ -68,6 +68,16 @@ Execute task
     set a to '\f'
     return a=~String.fromCharCode(12)
 
-
+  @Test 'unicode', task
+    set a to '\u0041'
+    return a='A'
     
+  @Test 'hex', task
+    set a to '\x41'
+    return a='A'
+    
+//  @Test 'unicode code point', task
+//    set a to '\u{41}'
+//    return a='A'
+  
     

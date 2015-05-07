@@ -1,6 +1,46 @@
 
 ## Keyword Reference
 
+SAI keyword reference.
+
+#### Legend
+
+	.. - elided code
+	... - repeating pattern
+	A/B/C - alternatives
+	( .. ) - optional syntax or component
+	
+	[block] - an indented block of code
+	[expr] - any expression/value
+	[function] - a function value
+	[identifier] - a variable or method name
+	
+	lexpr / rexpr - an expression on the left/right side of an operator
+
+
+#### Keyword Types
+
+**Clause** - a component of a larger construct
+
+**Comprehension** - a special class of operator intended for use with collections.
+
+**Declaration** - describes or defines behaviour
+
+**Literal** - declares a value or collection of values
+
+**Mvar** - (magic variable) an identifier that holds context-specific data
+
+**Operator** - a process that produces a new, likely modified value while leaving the original value(s) unchanged
+
+**Scoping Prefix** - symbol used at the beginning of a variable to specifiy context.
+
+**Statement** - a unit of code, occuping one or more lines, that performs some useful action
+
+**Verb** - a function reference that may be used as a statement or in an expression as a computation returning a value
+
+
+#### Sample Data
+
 Uses the following data:
 
 	set fruit to list Apple, Banana, Citron
@@ -21,42 +61,6 @@ Uses the following data:
 	  angle to 45o
 
 
-And these syntactic indicators:
-
-	.. - elided code
-	... - repeating pattern
-	A/B/C - alternatives
-	() - optional syntax or component
-	
-	\[block] - an indented block of code
-	\[expr] - any expression/value
-	\[function] - a function value
-	\[identifier] - a variable or method name
-	
-	Left/right expression - an expression on the left/right side of an operator
-
-
-And these types:
-
-**Clause** - a component of a larger construct
-
-** Comprehension** - a special class of operator intended for use with collections.
-
-**Declaration** - describes or defines behaviour
-
-**Literal** - declares a value or collection of values
-
-**Mvar** - (magic variable) an identifier that holds context-specific data
-
-**Operator** - a process that produces a new, likely modified value while leaving the original value(s) unchanged
-
-**Scoping Prefix** - symbol used at the beginning of a variable to specifiy context.
-
-**Statement** - a unit of code, occuping one or more lines, that performs some useful action
-
-**Verb** - a function reference that may be used as a statement or in an expression as a computation returning a value
-
-
 ### != (not equal) _operator_
 
 	.. [expr] != [expr]
@@ -70,7 +74,7 @@ Compares two values for value equality; returns **true** if the values appear to
 	.. 'Use a backslash to escape \' and \" and \\ in your strings.'
 	.. "Double quote is semantically identical to single quote."
 
-Declare a literal string.
+Declare a single line delimited literal string.
 
 String literals support embedded expressions (a.k.a. string compositions) using the EcmaScript 6 syntax: `${expr}`. Any normal expression can be evaluated and will be concatenated in-place.
 
@@ -85,39 +89,92 @@ Use backslash as an escape for string delimiters `\'` and `\"`, dollar signs bef
 	.. '''
 	  Now you can type as much text as you want,
 	  remembering that leading and trailing whitespace 
-	  will be stripped. So it's perfect for markup.
+	  will be stripped, though newlines will be preserved.
+	  So it's perfect for markup.
 	
 	  The string goes on as long as the indenting does.
 	
 	  And you can include ${'compo'+'sitions'} as well.
 
+That’s three single quotes in a row, then an indented block.
+
 Declare a multi-line string ideal for embedding longer passages of markup.
-
-
 
 
 ### \# (hashtag) _literal_ / _comprehension_
 
-As a literal:
+Declares or searches for a _hashtag_.
+
+#### \#hashtag literal
 
 	.. traits #[tagname]
 	.. fields #[tagname]
 
-As a comprehension:
+When defining fields or traits, using a hash in front of a trait _name_ will automatically assign a value of **true** to that trait. 
 
-	.. [collection] #[tagname]
+The following two definitions are identical:
 
-\<\>
+	set row1 to: name 'John', age 19, #cat, #dog
+	set row2 to: name 'John', age 19, cat true, dog true
+
+
+#### \#hashtag comprehension
+
+	.. [collection] #[tagname] // require field to be truthy
+	.. [collection] !#[tagname] // require field to be falsy
+
+When used as a comprehension, the hashtag creates a simple filter that returns only records that have a _truthy_ value for the named field.
+
+The following two comprehensions are identical:
+
+	set results1 to friends #cat
+	set results2 to friends has .cat
+
+A negated hashtag createsa  filter that returns only records that have a _falsy_ value for the named field. Not having that field at all is also a match.
+
+These comprehensions are identical:
+
+	set results1 to friends !#dog
+	set results2 to friends has not .dog
+
+Hashtag comprehensions can be chained inline, and the filtering is done efficiently.
+
+	set results3 to friends #cat !#dog
 
 
 ### $ (parameter) _scoping prefix_
 
-	.. $
+	.. $ 
 	.. $[attribute]
 
-When by itself, the first parameter a function was called with. With an attribute, that attribute of the first parameter in a function.
+When alone, **$** returns the first parameter a function was called with. 
 
-\<\>
+	set ShowParameter to task
+	  debug $
+	ShowParameter 'Bianca'
+	
+	> Bianca
+
+When followed immediately by an attribute name, that attribute of the first parameter in a function. (It is not necessary to include the dot.)
+
+	set ShowAttribute to task
+	  debug $name
+	ShowAttribute friends[0]
+	
+	> Sara
+
+Even if you use **as** to name your parameters, **$** continues to refer to the first parameter. 
+
+	set ShowParameters to task as p1, p2
+	  debug $
+	  debug p1
+	  debug p2
+	ShowParameters 'First', 'Second'
+	
+	> First
+	> First
+	> Second
+
 
 ### $$ (arguments) _mvar_
 
@@ -125,20 +182,31 @@ When by itself, the first parameter a function was called with. With an attribut
 
 Equivalent to Javascript’s `arguments` and can be used the same way.
 
-\<\>
 
+### $\{ } (string compose) _modifier_
 
-### $\{ \} (string compose) _modifier_
-
-	.. 'String literal ${ [expr] } continues.'
-	.. "String literal ${ [expr] } continues."
-	.. `String literal ${ [expr] } continues.
+	.. 'String ${ [expr] } continues.'
+	.. "String ${ [expr] } continues."
+	.. `String ${ [expr] } continues.
 	.. '''
-	  String literal ${ [expr] } continues.
+	  String ${ [expr] } continues.
 
-Allows the insertion of any arbitrary expression in the middle of a string literal of any type.  Use `\${` to represent `${` in a string literal. 
+Allows the insertion of any arbitrary expression in the middle of a string literal. As shown above, this is supported in all four string literal formats.
 
-\<\>
+	set FriendSummary to task 
+	  return 'Name: ${$name}, age: ${$age}'
+	ply friends limit 3 as friend
+	  debug 'Subject ${key+1}: ${FriendSummary(friend)}'
+	
+	> Subject 1: Sara, age 23
+	> Subject 2: John, age 19
+	> Subject 3: Ellie, age 22
+
+Use `\${` to represent `${` in a string literal. 
+
+	debug 'But I really need to include \${} in my output!'
+	
+	> But I really need to include ${} in my output! 
 
 
 ### % (modulo) _operator_
@@ -147,7 +215,11 @@ Allows the insertion of any arbitrary expression in the middle of a string liter
 
 Calculates the mathematical **modulus**; returns the remainder of the left expression divided by the right.
 
-\<\>
+	debug 5 % 2
+	debug 6.2 % 1
+	
+	> 1
+	> 0.2
 
 
 ### \* (multiply) _operator_
@@ -156,7 +228,9 @@ Calculates the mathematical **modulus**; returns the remainder of the left expre
 
 Multiplies the two expressions.
 
-\<\>
+	debug 2 * 3
+	
+	> 6
 
 
 ### \*\* (exponent) _operator_
@@ -165,87 +239,162 @@ Multiplies the two expressions.
 
 Calculates an exponent; equivalent to `Math.pow([lexpr],[rexpr])`.
 
-\<\>
+	debug 2 ** 3
+	
+	> 8
 
 
 ### + (plus) _operator_
 
 	.. [expr] + [expr]
 
-Adds two numbers OR concatenates two strings.  If the first expression is numeric, tries to add. Otherwise, concatenates.
+Adds two numbers OR concatenates two strings.  If both expressions are numbers, adds them. Otherwise converts them both to strings and concatenates.
 
-\<\>
+	 debug 1+2     
+	 debug '1'+2   
+	 debug 1+'2'   
+	 debug '1'+'2' 
+	
+	> 3
+	> 12
+	> 12
+	> 12
 
 
 ### - (minus) _operator_
 
-	.. [expr] - [expr]
+	.. [lexpr] - [rexpr]
 	.. - [expr]
 
-Subtracts one value from another, or when used without a value on the left, negates the value on the right.
+Used as a binary operator, subtracts the right expression from the left. Used as a unary operator, negates the expression (subtracts it from 0).
+
+	debug 3 - 5
+	debug 3 + -5
+	
+	> -2
+	> -2
+
 
 ### . (attribute) _syntax_
 
-	.. [value].[attribute]
+	.. [expression].[attribute]
 	.. .[attribute]
 	
 	[value].[attribute]
 	.[attribute]
 
-Looks up the trait named _attribute_ in the value. 
+Looks up the trait named _attribute_ in the expression. When used without a leading value, references the named attribute in the **it** magic variable.
 
-When used without a leading value, references the named attribute in the **it** magic variable.
-
-\<\>
-
-
-### \/ (divide) _operator_
-
-	.. [expr] / [expr]
-
-Divides one number by another.
-
-\<\>
+	set friend to friends[0]
+	debug friend.name
+	with friend 
+	  debug it.name
+	  debug .name
+	
+	// prints 'Sara' three times
 
 
-### \// (comment) _syntax_
+### / (divide) _operator_
 
-	// any text goes here, is ignored
+	.. [lexpr] / [rexpr]
 
-Format of comments in SAI source files.
+Divides the left expression by the right expression.
+
+	debug 22 / 7
+	debug 355 / 113
+	
+	> 3.142857142857143
+	> 3.1415929203539825
 
 
-### \: (declare structure) _literal_ / _clause_
+### // (comment) _syntax_
+
+	// any text goes here, is ignored through the end of line.
+
+Format of comments in SAI source files. 
 
 
+### : (declare structure) _literal_ / _clause_
+
+To define an array, single line:
+
+	.. : [expr] (, [expr], [expr], ...) (;)
  
-\<\>
+Multiple line variant:
 
-### \; (end structure) _literal_
+	.. : 
+	  [expr] ( , [expr], ... )
+	 ( [expr], [expr], ...
+	   [expr]
+	   ... )
 
-	.. [structure definition] ;
+To define fields:
 
-Optional, closes the current structure definition when needed for clarity.
+	.. : [name] [expr], [name] [expr], [name] [expr], ... (;)
 
-\<\>
+Multiple line variation:
+
+	.. :
+	  [name] [expr] (, [name] [expr], ...)
+	 ( [name] [expr], [name] [expr], ...
+	   [name] [expr]
+	   ... )
+
+The **:** structure definition parser determines whether to create an array or fields by whether or not a field name is included before the first expression.
+
+	debug :1,2,3  
+	> [ 1, 2, 3 ]
+	
+	debug :a 1, b 2, c 3  
+	> { a: 1, b: 2, c: 3 }
+
+
+### ; (end structure) _literal_
+
+	.. [structure definition] (;)
+
+Optional, closes the current structure definition when needed for clarity. Only needed when there is additional code on the same line that might mistakenly bind too tightly to the final value in the structure.
+
+	debug list 3, 2, 1 by it
+	debug array 3, 2, 1 by it
+	debug array 3, 2, 1; by it  
+	
+	> [ 1, 2, 3 ]
+	> [ 3, 2, 1 ] // undesired result
+	> [ 1, 2, 3 ]
+
+In the example above, the **list** literal sorts properly because **list** elements are not allowed to be mathematical expressions, so the parser can correctly bind `by it` to the entire list.
+
+However, the first **array** literal _doesn’t_ sort correctly because array elements can be expressions, and `by it` is binding to the final term in the literal. Thus, the definition is parsed as `array (3), (2), (1 by it)`.
+
+One can force **list** to parse incorrectly by using the **=** list element expression evaluation flag, but that’s ridiculous.
+
+	debug list =3, =2, =1 by it   // don't write code like this
+	debug list =3, =2, =1; by it  // just don't
+	
+	> [ 3, 2, 1 ]
+	> [ 1, 2, 3 ]
 
 
 ### \< (less than) _operator_
 
 	.. [lexpr] < [rexpr]
 
-Evaluates **true** if lexpr is numerically lower than rexpr, **false** otherwise.
+Evaluates **true** if lexpr is numerically or lexically lower than rexpr, **false** otherwise.
 
-\<\>
+	debug 1 < 1 // false 
+	debug 1 < 2 // true
+	debug 'a' < 'b' // true
+	debug 'a' < 'B' // false, case matters
+
+If you want a case insensitive comparison, you must ensure both expressions are of the same case.
 
 
 ### \<= (less or equal) _operator_
 
 	.. [lexpr] <= [rexpr]
 
-Evaluates to **true** if lexpr is numerically lower or equal to rexpr, **false** otherwise.
-
-\<\>
+Evaluates to **true** if lexpr is numerically or lexically lower or equal to rexpr, **false** otherwise.
 
 
 ### \<=\> (compare) _operator_
@@ -254,34 +403,35 @@ Evaluates to **true** if lexpr is numerically lower or equal to rexpr, **false**
 
 Evaluates to **-1** if lexpr is lower than rexpr, **1** if it is greater, and **0** if they are equal.
 
-\<\>
+	debug 1 <=> 0      // returns 1
+	debug 1 <=> 1      // returns 0
+	debug 1 <=> 2      // returns -1
+	debug 'b' <=> 'a'  // returns 1
+	debug 'b' <=> 'b'  // returns 0
+	debug 'b' <=> 'c'  // returns -1
 
 
-### \= (equal) _operator_
+### = (equal) _operator_
 
-	.. [lexpr] = [rexpr]
+	.. [expr] = [expr]
 
-Evaluates to **true** if the two expressions are equal. Not to be used when comparing with `undefined`, `null` or `NaN`.
+Evaluates to **true** if the two expressions are equivalent. This compiles directly to Javascript’s `==` operator and has the same occasionally bizarre side effects. Basically, don’t use = except for comparing numeric, boolean or string values. 
 
-\<\>
+Use **is** or **isnt** to compare objects or object types, except when dealing with **NaN** in which case the only reliable way to test for its existence is to use **isNaN**. That’s Javascript for you.
 
 
 ### \> (greater than) _operator_
 
 	.. [lexpr] > [rexpr]
 
-Evaluates to **true** if lexpr is numerically greater than rexpr, **false** otherwise.
-
-\<\>
+Evaluates to **true** if lexpr is numerically or lexically greater than rexpr, **false** otherwise.
 
 
 ### \>= (greater or equal) _operator_
 
 	.. [lexpr] <= [rexpr]
 
-Evaluates to **true** if lexpr is numerically greater or equal to rexpr, **false** otherwise.
-
-\<\>
+Evaluates to **true** if lexpr is numerically or lexically greater or equal to rexpr, **false** otherwise.
 
 
 ### ? (safe fetch) _operator_
@@ -290,24 +440,32 @@ Evaluates to **true** if lexpr is numerically greater or equal to rexpr, **false
 
 Adds extra type-checking to an expression ensuring that it will not throw an exception if roots are undefined; instead just returning **undefined**.
 
+	set a to undefined
+	debug a.a
+	// throws an exception
 	
+	debug ?a.a
+	> undefined
+
 
 ### ?\< (minimum) _operator_
 
 	.. [lexpr] ?< [rexpr]
 
-Evaluates to whichever expression is numerically lowest.
+Evaluates to whichever expression is numerically or lexically lower.
 
-\<\>
+	debug 1 ?< 2   // returns 1
+	debug 2 ?< 1   // returns 1
 
 
 ### ?\> (maximum) _operator_
 
 	.. [lexpr] ?> [rexpr]
 
-Evaluates to whichever expression is numerically highest.
+Evaluates to whichever expression is numerically or lexically higher.
 
-\<\>
+	debug 1 ?< 2   // returns 2
+	debug 2 ?< 1   // returns 2
 
 
 ### ?? :: (if/this/that) _operator_
@@ -316,16 +474,26 @@ Evaluates to whichever expression is numerically highest.
 
 Evaluates to expr1 if the left expression is _truthy_, otherwise evaluates to expr2.
 
-\<\>
+	debug true ?? 'True' :: 'False'   // prints 'True'
+	debug false ?? 'True' :: 'False'  // prints 'False'
 
 
 ### [ ] (lookup) _syntax_
 
-	.. [value] \[ [expr] \]
+	.. [value] '[' [expr] ']'
 
 Performs an indirect lookup of a trait/element in the given value.
 
-\<\>
+The following debug statements print identical results.
+
+	set field to 'name'
+	set friend to friends[0]
+	debug friend.name
+	debug friend['name']
+	debug friend['na'+'me']
+	debug friend[field]
+	
+	// prints 'Sara' four times.
 
 
 ### @ (object) _scoping prefix_
@@ -336,38 +504,92 @@ Performs an indirect lookup of a trait/element in the given value.
 
 Reference a trait or method attached to the current object. Equivalent to Javascript’s `this.`.
 
-\<\>
+Here’s a short implementation of a 2D vector by way of illustration.
+
+	object Vector 1.0.0
+	
+	instance:
+	  x 0
+	  y 0
+	
+	Instantiate task as x,y
+	  if x isof 'Vector'
+	    set @x to x.y
+	    set @y to y.y
+	  else
+	    set @x to x
+	    set @y to y
+	
+	angle set as radians // dynamic trait
+	  @SetPolar radians, @magnitude
+	get 
+	  return ~Math.atan2(@y,@x)
+	
+	magnitude set as units // dynamic trait
+	  @SetPolar @angle, units
+	get
+	  return ~Math.sqrt((@x*@x)+(@y*@y))
+	
+	SetXY task as x, y
+	  set @x to x
+	  set @y to y
+	
+	SetPolar task as radians, units
+	  set @x to units * ~Math.cos(radians)
+	  set @y to units * ~Math.sin(radians)
 
 
 ### \` (full line string) _literal_
 
-	.. `Type as much stuff as you want here with any character except EOL.
+	.. `text
 
 Signifies the start of a string literal that will occupy the rest of the source code line.
 
-\<\>
+	debug `It's nice not to have to worry about "delimiters."
+	
+	> It's nice not to have to worry about "delimiters."
 
 
 ### | (lookup) _syntax_
 
-	.. [value]|[value]
+	.. [var]|[value]
 	.. |[value]
   
-A cleaner way of doing indirect lookups when only using a single value or variable. Without a leading identifier, refers to the **it** value.
+A cleaner way of doing indirect lookups when only using a single literal or variable. Without a leading identifier, refers to the **it** value.
 
-\<\>
+The following debug statements print identical results.
+
+	set field to 'name'
+	with friends|0 
+	  debug it.name
+	  debug .name
+	  debug it['name'] 
+	  debug it|'name' 
+	  debug |'name' 
+	  debug it[field]
+	  debug it|field
+	  debug |field
+	
+	// prints 'Sara' eight times.
+
+The **|** lookup syntax can only be used with _simple_ values; that is, single variable names or literals. If you need to use an expression, you should use the **[expr]** form of lookup.
 
 
-### ACCUM _magic variable_
+### ACCUM _mvar_
 
 A magic variable active only within a **into** clause or code block. Represents the static value that accumulates changes during **into** iteration over a data set.
 
 	debug friends into 0
 	  set accum + .age
+	
+	> 185
 
-**Accum** is initialized with the value following **into**.
+**Accum** is initialized with the value following **into**, or, if the **into it** variant is used, with the value in the first iteration; accumulation then begins directly with the second iteration.
 
-\<\>
+	debug friends into blank
+	  set accum|.province to (self default 0)+1
+	
+	> { ON: 5, QC: 3 }
 
 
 ### ALTER _operator_
@@ -662,7 +884,7 @@ To exit a loop, iterator or switch case before its natural end, use the **break*
 	> Nevermind…
 
 
-### BY \_comprehension
+### BY _comprehension_
 
 	[expr] by [expr] (ASC/ASCENDING/DESC/DESCENDING)
 	[expr] by ASC/ASCENDING/DESC/DESCENDING
@@ -741,7 +963,7 @@ Calculate list of ages by province (using named task)\*\* 
 
 ### CASE _clause_
 
-	switch [trial expr]
+	switch [trial expr] ( as [trial ident] )
 	  case [match expr] (, [match expr] (, ...) )
 	    [code]
 	  case [match expr]
@@ -751,7 +973,6 @@ Calculate list of ages by province (using named task)\*\* 
 	  ...
 
 Use one or more **case** clauses within a **switch** statement to specify one or more matching expressions to be tested against with the trial expression. 
-
 
 	switch keystroke
 	  case 'n', 'N'
@@ -873,13 +1094,13 @@ Specifically designed as an integer iterator for list elements, **count** always
 	
 	count 50 step 10
 	// prints 0, 10, 20, 30, 40
-	 
+	
 	count down 45 step -10
 	// prints 35, 25, 15, 5
 
 When using the **step** clause with **count down**, be sure that the step expression is negative, otherwise an infinite loop will result.
 
-	
+ 
 	count aList.length
 	  debug 'List element ${key} is ${aList|key}'
 	else
@@ -890,20 +1111,20 @@ The optional **else** clause is executed instead of the main block if the **coun
 
 ### CREATE _operator_
 
-	.. create [object name]
+	.. create [expr] [parameters]
 
-Creates a SAI object by name. Will attempt to find the object’s source by using a lookup function.
+Creates a SAI object by name. Will attempt to find the object’s source by using the `SAI.config.Loader` function, which defaults to `SAI.GetSourceFromPaths`, which tries to find a file named `[expr].sai` in the provided paths. 
 
 \<\>
 
 
-### DEBUG _verb_
+### DEBUG _adhoc verb_
 
 	debug [expr]
 
-Prints the value of the expression to the console.
+Prints the value of the expression to the console. 
 
-\<\>
+Compiles directly to `console.log([expr])`.
 
 
 ### DEC _statement_
@@ -962,6 +1183,25 @@ Used with the **by** comprehension just like **ascending/asc** but the sort orde
 See also: **by**
 
 
+### DO _modifier_
+
+	do while [expr]
+	  [code]
+	
+	do until [expr]
+	  [code]
+
+Alters a **while** or **until** statement so that the test is performed after the code block, not before. This guarantees the code block will be executed at least once.
+
+Check out these wacky examples.
+
+	do until true
+	  debug 'Hello, World!' 
+	
+	do while false
+	  debug 'Hello, World!'
+
+
 ### DOWN _modifier_
 
 	count down [start]
@@ -983,11 +1223,14 @@ See also: **count**
 
 ### EACH
 
-	each [collection] ( as [it ident] ( , [key ident] )
+	each [collection] ( as [it var] ( , [key var] )
 	  [code block]
+	( else
+	  [code] )
+	
 	each [collection] using [function]
 
-Enumerates through each element of the collection, in arbitrary order, setting **it** and **key** variables, and executing the code block for each one.
+Enumerates through each element of the collection, in arbitrary order, setting **it** and **key** variables, and executing the code block for each one. If the collection is empty, executes the (optional) **else** block. Unlike **ply**, which works well with arrays, **each** is intended for use with traits/fields objects. 
 
 \<\>
 
@@ -1035,7 +1278,7 @@ When declaring a set of fields, specifies a value 1 higher than the value of the
 	> { a: 1, b: 2, c:10, d: 11}
 
 
-### ERROR _magic variable_
+### ERROR _mvar_
 
 	.. error
 
@@ -1067,6 +1310,7 @@ You can override this behaviour by using an **as** clause with the **catch** sta
 
 Executes the indented code if the expression is a defined value, e.g. if it is not **undefined**.  The tested value will be available as **it** within the scope of the code block.  (This is different from the _truthy_ testing **if**, which uses **trial**.)
 
+
 \<\>
 
 
@@ -1075,7 +1319,13 @@ Executes the indented code if the expression is a defined value, e.g. if it is n
 	.. task expects [$name] ([type]), ...
 	.. [expr] expects [traits expr]
 
-Used to check whether a function’s named parameters (or any arbitrary object) has traits, and optionally if those traits are of a particular type.
+Used to check whether a function’s named parameters (or any arbitrary object) has certain traits, and optionally if those traits are of a particular type.
+
+#### expects clause
+
+#### expects operator
+
+
 
 \<\>
 
@@ -1110,7 +1360,7 @@ An exception handling clause identifying a block of code that is executed whethe
 
 Used to specify the creation of a plain object with a set of key/value pairs. (Contrast with **traits**.)  In general, the **colon** structure constructor will figure out what you want, but when you want to be specific about creating a plain object with of keyed values & expressions, use **fields**. Compare with **list**, **array** and **traits**.
 
-The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **expr** is any valid literal, variable, object or expression.
+The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\\\\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **expr** is any valid literal, variable, object or expression.
 
 Fields may be specified on one line:
 
@@ -1170,7 +1420,7 @@ The following pairs are synonymous:
 
 **From** is the encouraged form because it allows a more natural reading of source code, indicating that the identifier that follows will be used as a verb and returning a value.
 
-When calling a function as a verb without a value, **from** is not needed.
+When calling a function as a verb (the first thing on a source code line), **from** is not needed.
 
 	set cursor from db.Query 'select * from names'
 	set records from cursor.FetchAll
@@ -1201,12 +1451,30 @@ Declares a _getter_ for a dynamic object trait; that is, a trait that has a valu
 
 ### GIVEN _declaration_
 
-	given [identifier] [expr]
-	given [structural expr]
+	given [definition]
 
-Defines immutable traits when declaring an object.
+Defines immutable traits when declaring an object. These traits are assigned to the object prototype itself and locked/frozen; they cannot be changed and yet are available in every instance of an object. Givens are useful for static data. 
 
-\<\>
+	object Apple
+	instance: varietal 'unknown'
+	given: species 'M. domestica'
+	Describe task
+	  return '${@species} var ${@varietal}
+	..
+	set apple to create 'Apple'
+	set apple.varietal to 'Macintosh'
+	debug from apple.Describe
+	> M. domestica var Macintosh
+  
+**Given** traits can only be changed/overridden through inheritance.
+ 
+	object Crabapple
+	inherit: Apple
+	given: species 'M. coronaria
+	..
+	set specimen to create 'Crabapple'
+	debug from specimen.Describe
+	> 'M. coronaria var unknown'
 
 
 ### HAS _comprehension_
@@ -1217,6 +1485,7 @@ Defines immutable traits when declaring an object.
 	.. [collection] has using [function]
 
 The comprehension operator **has** indicates an expression based filter using the **it** _magical value_ to represent the item currently under examination. Since **it** is in play, the associated **dot** scoping prefix is also active within the expression for easy access to item fields. 
+
 
 #### HAS (inline)
 
@@ -1359,28 +1628,94 @@ Increments (adds 1 to) the given variable.
 	> 2
 
 
+### Infinity _literal_
+
+	.. Infinity
+
+Represents an infinitely large value. Generally obtained by attempting to evaluate an expression with a divisor of zero.
+
+	debug 1/0
+	
+	> Infinity
+
+
 ### inherit _declaration_
 
 	inherit:
 	  [classname]
 	  ...
 
-Specify inheritance during object definition.
+Specify inheritance during object definition. 
 
-\<\>
+An object can have multiple parents at each level of inheritance, as in the following example.
 
-
-### isnt _operator_
-
-	.. [expr] isnt [expr]
-
-Returns **true** if the two expressions are in any way distinguishable. More rigorous than **!=** when objects are of differing types.
-
-	debug 1 != true
-	debug 1 isnt true
+	object Licensed
+	instance: licenseTag false
+	..
+	object Passengers
+	instance: paxCount 0
+	contract: paxMaximum
+	..
+	object Automobile
+	inherit: Licensed, Passengers
+	.. 
+	object Sedan
+	inherit: Automobile
+	instance: paxMaximum 6
+	..
+	set myCar to create 'Sedan'
+	debug myCar 
+	> { licenseTag: false, paxCount: 0, paxMaximum: 6 }
+	 
+	debug myCar.isa
+	> Sedan
 	
-	> false
-	> true
+	debug myCar.isof
+	> { Licensed: 
+	   { version: '0.0.0-unspecified',
+	     isa: 'Licensed',
+	     load: './sample/Keywords/Licensed.sai' },
+	  Passengers: 
+	   { version: '0.0.0-unspecified',
+	     isa: 'Passengers',
+	     load: './sample/Keywords/Passengers.sai' },
+	  Automobile: 
+	   { version: '0.0.0-unspecified',
+	     isa: 'Automobile',
+	     load: './sample/Keywords/Automobile.sai',
+	     inherit: [ 'Licensed', 'Passengers' ] },
+	  Sedan: 
+	   { version: '0.0.0-unspecified',
+	     isa: 'Sedan',
+	     load: './sample/Keywords/Sedan.sai',
+	     inherit: [ 'Automobile' ] } }
+
+Note the use of **contract** in the _Passengers_ object; this requires any child object to offer a `paxMaximum` trait. Contracts can be fulfilled by class functions (**task**/**process**/**promise**), class traits (**given**) or **instance** traits.
+
+
+### instance _declaration_
+
+	instance:
+	  [varname] [initial value]
+	  ...
+
+Define initial values for an object’s traits. When an object is created, instance traits are assigned the given values before the object’s **Instantiate** task is called.
+
+	object Sock 1.0.0
+	
+	instance:
+	  colour 'Brown'
+	  pattern 'Argyle'
+	  size 'M'
+	  kind 'dress'
+	
+	Instantiate task
+	  debug @ select list colour, pattern, size, kind
+	
+	....
+	
+	set aSock to create 'Sock'
+	> { colour: 'Brown', pattern: 'Argyle', size: 'M', kind: 'dress' }
 
 
 ### is _operator_
@@ -1396,21 +1731,119 @@ Returns **true** if the two expressions are completely indistinguishable.  More 
 	> false
 
 
+### isa (object name) _trait_
+
+	.. [object].isa
+
+All prototyped SAI objects have an **isa** trait that identifies the object name. Further details about the object and its inheritance are found in the **isof** trait.
+
+	object Fruit 1.0.0
+	Instantiate task
+	  debug 'I am a ${@isa}'
+	
+	set a to create 'Fruit'
+	> I am a Fruit
+	
+	object Pear 1.0.0
+	inherit: Fruit
+	
+	set b to create 'Apple'
+	> I am a Pear
+
+
+### isnt _operator_
+
+	.. [expr] isnt [expr]
+
+Returns **true** if the two expressions are in any way distinguishable. More rigorous than **!=** when objects are of differing types.
+
+	debug 1 != true
+	debug 1 isnt true
+	
+	> false
+	> true
+
+
+### isof (object info) _trait_ / _operator_
+
+#### .isof trait
+
+	.. [object].isof
+
+All prototyped SAI objects have an **isof** trait that is a plain object that encapsulates detailed information about the SAI object and its heritage. 
+
+Continuing from the **isa** example:
+
+	debug a.isof
+	
+	> { Fruit: 
+	>   { version: '1.0.0',
+	>     isa: 'Fruit',
+	>     info: './sample/Keywords/Fruit.sai' } }
+	
+	debug b.isof
+	
+	> { Fruit: 
+	>   { version: '1.0.0',
+	>     isa: 'Fruit',
+	>     load: './sai/sample/Keywords/Fruit.sai' },
+	>  Pear: 
+	>   { version: '1.0.0',
+	>     isa: 'Pear',
+	>     load: './sai/sample/Keywords/Pear.sai',
+	>     inherit: [ 'Fruit' ] } }
+
+You can trace an object’s creation in order recursively by starting at the **isof** entry for the present object — `@isof[@isa]` — and stepping through the **inherit** array.
+
+#### isof operator
+
+	.. [object] isof [class name expr]
+
+Returns true if the object is an instance of a class that is, or inherits from, the given class name.  
+
+	class Parent 1.0.0
+	 
+	class Child 1.0.0
+	inherits: Parent
+	 
+	set a to create 'Child'
+	debug a isof 'Child'   // true
+	debug a isof 'Parent'  // true
+
+
 ### isNaN _operator_
 
 	.. isNaN \[expr]
 
 Returns true if the expression is the **NaN** flag.  Note there is no other way to test for NaN than by using **isNaN**. Note also that capitalization matters.
 
-\<\>
+	set a from ~parseInt 'This is not a number.'
+	debug a           // NaN
+	debug a = 0      // false
+	debug a = false  // false
+	debug a = NaN   // false
+	debug isNaN a    // true
 
 
 ### iterate _statement_
 
 	iterate [iterable expression] (as [term ident])
 	  [block]
+	( else
+	  [block] )
+	
+	iterate [iterable expression] using [function]
+	( else
+	  [block] )
+
+Step through each result of an _iterable expression_, passing it through a block of code via the **it** magic variable.  If an **else** clause is present, that code is executed only if there is no iteration.
+
+What’s an iterable expression?  It’s an object that **yield**s values for iteration, or an object that on demand (via call to **[Symbol.iterator]** produces such an expression. (In ES6, native collection types based on **Array**, **Map**, and **Set** support lazy iteration.)
+
+A disadvantage of using **iterate** is that you don’t get a **key** value, you only get the **it** value. There is also a minor performance penalty as compared to more atomic types of iteration.
 
 \<\>
+
 
 ### it _mvar_
 
@@ -1430,29 +1863,34 @@ A complete list of **it** enabled events:
 	ply [list] // it: each element in the array
 	
 	.. [expr] alter // it: the expression
-	.. [expr] observe // it: the expression
+	.. [expr] observe 
 	
 	.. [collection] thru // it: each value in the collection
-	.. [collection] audit // it: each value in the collection
-	.. [collection] into // it: each value in the collection
-	.. [collection] has // it: each value in the collection
-	.. [collection] highest // it: each value in the collection
-	.. [collection] lowest // it: each value in the collection
+	.. [collection] audit 
+	.. [collection] into 
+	.. [collection] has
+	.. [collection] highest
+	.. [collection] lowest
 
-When nesting contexts that create a **it** context, you will be unable to access “outer” values of **it** within the inner contexts unless assign them to a name other than **it**, using the **as** clause.
+When nesting contexts that create a **it** context, you will be unable to access “outer” values of **it** within the inner contexts unless you assign them to a name other than **it** using the **as** clause.
 
-	count to 5
-	  count to 3
-	    // only the inner loop's 'it' is visible here.
+	ply: 1,2,3
+	  ply: 4,5,6
+	    debug it 
 	
-	count to 5 as i
-	  count to 3
-	    // outer loop's 'it' now available here as 'i'
+	// prints 4 5 6 4 5 6 4 5 6
 	
-	count to 5
-	  count to 3 as j
-	    // no, this doesn't work, you still can't access the outer 'it'
-	    // 'it' always has the value of the innermost context
+	ply: 1,2,3
+	  ply: 4,5,6 as inner
+	    debug it
+	
+	// still prints 4 5 6 4 5 6 4 5 6
+	
+	ply: 1,2,3 as outer
+	  ply: 4,5,6
+	    debug outer
+	
+	// prints 1 1 1 2 2 2 3 3 3
 
 When **it** is populated, you can also use the “unrooted” **attribute** ( . dot) and **lookup** ( | pipe) operators.  The following are all synonymous:
 
@@ -1467,14 +1905,13 @@ When **it** is populated, you can also use the “unrooted” **attribute** ( . 
 (There is no unrooted [] lookup available.)
 
 
-### KEYS _operator_ / _comprehension_
+### KEYS _comprehension_
 
-	.. keys [collection] // unary operator
-	.. [collection] keys // comprehension operator
+	.. [collection] keys 
 
 Returns the keys (or indices) of a collection’s elements.
 
-	debug keys fruit
+	debug fruit keys
 	debug friends first keys
 	
 	> [ 0, 1, 2 ]
@@ -1485,13 +1922,61 @@ Returns the keys (or indices) of a collection’s elements.
 
 	.. key
 
-\<\>
+Often a partner to **it**, **key** is the second most commonly used _magic variable_, populated by most iterators and comprehensions. Like all mvars, **keys** is only visible in attached expressions or code blocks, not in any functions that may be called within those expressions.
+
+A complete list of **keys** enabled events:
+
+	each [collection] // it: the trait name of each value in the collection
+	ply [list] // key: the array index of each element in the array
+	count [expr] // key: the number being counted
+	
+	.. [collection] thru // key: each trait name/array index of the collection
+	.. [collection] audit 
+	.. [collection] into 
+	.. [collection] has 
+
+An example:
+
+	ply friends
+	  debug key
+	
+	// prints: 0 1 2 3 4 5 6 7
+	
+	each friends[0]
+	  debug key
+	
+	// prints: name age cat province
+
+Similar to **it** in nested contexts, you are unable to access “outer” values of **key** within inner contexts unless you assign them to a name other than **key** using the **as** clause.
+
+	count 3
+	  count 3
+	    debug key
+	    // only the inner loop's 'key' is visible here. 
+	
+	// prints 0 1 2 0 1 2 0 1 2
+	
+	count 3 as i
+	  count 3
+	    debug i+','+key
+	    // outer loop's 'key' now available here as 'i'
+	
+	// prints 0,0  0,1  0,2  1,0  1,1  1,2  2,0  2,1  2,2
+	
+	count 3
+	  count 3 as j
+	    debug key+','+j
+	    // no, this doesn't work, you still can't access the outer 'key'
+	    // 'key' always has the value of the innermost context
+	
+	// prints 0,0  1,1  2,2  0,0  1,1  2,2  0,0  1,1  2,2
+
 
 ### LAST _comprehension_
 
 	.. [collection] last
 
-Returns the last element in a collection as a stand-alone value or object.
+Returns the last element in a collection as a stand-alone value or object. (If the collection is an iterator, it will be exhausted.)
 
 	debug fruit last
 	
@@ -1516,6 +2001,8 @@ You always get a list back, even if just one element will be returned.
 	> [ 'Apple']
 	> [ 'Citron']
 	> [ 'Banana']
+
+If the collection is an iterable, it will only be fetched as many times as needed. (If you ask for elements offset from the end, the iterator will be exhausted because an iterator’s length can only be ascertained by exhausting it.)
 
 
 ### LIST _literal_
@@ -1569,15 +2056,17 @@ Or enclose the array in parenthesis:
 Arrays can be nested by use of either parenthesis or semicolons, or by using multiple levels of indent. Note that commas separate expressions on one line but are not included at the end of a line.
 
 
-### LOCAL _declaration_
+### local _declaration_
 
 	local [varname] (, [varname], ... )
 	set local [varname] to [expr]
 
 Declare the modified variable to be limited to the current function scope. (Normally, variables are scoped to the object method they’re used in.)
 
+Generally only needed when providing callback functions in poorly architected code.
 
-### LOWEST _comprehension_
+
+### lowest _comprehension_
 
 	.. [collection] lowest [expr]
 
@@ -1591,9 +2080,24 @@ Returns the collection element with the lowest value of the expression. Prepares
 
 	.. NaN
 
-NaN (capitalization matters) means Not a Number.
+**NaN** (capitalization matters) means Not a Number.  **NaN** is returned from some library calls on failure to convert a value into a number.  (The **number** operator returns 0 instead.)
 
-\<\>
+	debug ~parseInt('The one ring.')
+	> NaN
+	
+	debug number 'The one ring.'
+	> 0
+
+The _only_ way to test for **NaN** is to use the **isNaN** operator. 
+
+	debug NaN = ~parseInt('The one ring.')
+	> false  // !
+	
+	debug NaN is ~parseInt('The one ring.')
+	> false  // !!!!
+	
+	debug isNan ~parseInt('The one ring.')
+	> true
 
 
 ### NAND _operator_
@@ -1615,6 +2119,20 @@ A semantic simplification of `not ([expr] and [expr])`.
 	.. new [prototype] ( [parameters] )
 
 Instantiates a new object with the given prototype. If parameters are supplied, passes them to the object’s constructor.
+
+
+### NOP _statement_
+
+	nop
+
+No operation; no data; do nothing. This statement (or one like it) is necessary as a syntactical placeholder when a white-space indent is expected but you do not wish to put code in it.
+
+	if x>26
+	  nop
+	else if x>13
+	  set x - 13
+	else if x>0
+	  set x + 13
 
 
 ### NOR _operator_
@@ -1671,18 +2189,38 @@ Attempts to convert the following expression into a numeric value. If it cannot,
 
 	.. null
 
-An empty value.
-
-\<\>
+An empty value. I don’t have any example code for this.
 
 
 ### OBJECT _declaration_
 
 	object [identifier] [version]
 
-Begins the definition of an object.
+Begins the definition of an object. Only one object definition is permitted per file, and the object name must be the same name as the file name. 
 
-\<\>
+In an object definition, the following sections are supported. See each keyword for more details. Also review the _Defining an Object_ document.
+
+	object [identifier] [version]
+	
+	inherit:
+	  [list of objects to inherit from]
+	
+	contract:
+	  [list of traits that child objects must provide]
+	
+	given:
+	  [list of immutable object traits]
+	
+	instance:
+	  [list of initial trait values for each instance]
+	
+	get [trait name to implement dynamically]
+	  [code]
+	set as [value]
+	  [code] 
+	
+	[name] task/process/promise
+	  [code that implements this task/process/promise] 
 
 
 ### OBSERVE _operator_
@@ -1709,9 +2247,11 @@ N.B. useful in **chain** expressions.
 	.. task
 	  orphan
 
-Compiles to `@=this` which in effect detaches a function defined within an object-owned function from that object. It causes the @ scoping prefix within the function to refer to the context of the function call instead of the context of the function definition.
+Compiles to `@=this` which in effect detaches a function defined within an object-owned function from that object. 
 
-\<\>
+It causes the @ scoping prefix within the function to refer to the context of the function call instead of the context of the function definition. 
+
+You probably want to use this in combination with some **local** variable definitions.
 
 
 ### OR _operator_
@@ -1743,36 +2283,64 @@ Performs a bitwise or on two 32-bit integers.
 
 	.. [collection] overlay [collection]
 
-Creates a new collection that is a composite of a copy of the left collection with all of the values in the right collection overlaid. If discrete keys are available in the left or right collection, they will be used intelligently. 
+Creates a new collection that is a composite of a copy of the left collection with all of the values in the right collection overlaid. If discrete keys are available in the left or right collection, they will be used intelligently. Undefined values on the right will not be assigned.
 
-\<\>
+	Sample data
+	
+	set list1 to list Apple, Banana, Citron
+	set list2 to list Kiwi, undefined, Mango
+	set traits1 to: a 1, b 2, c 3
+	set traits2 to: '1' 4, d 5
+	
+	debug list1 overlay list2
+	> [ 'Kiwi', 'Banana', 'Mango' ]
+	
+	debug list1 overlay traits1
+	> [ 'Apple', 4, 'Citron', d: 5 ]
+	
+	debug traits1 overlay traits2
+	> { '1': 4, a: 1, b: 2, c: 3, d: 5 }
+	
+	debug traits1 overlay list2
+	{ '0': 'Kiwi', '2': 'Mango', a: 1, b: 2, c: 3 }
 
-
-### TRUE _literal_
-
-	.. true
-
-The boolean value true.
+Overlay also works with iterators and treats them like arrays.
 
 
 ### PLY _statement_
 
 	ply [list-like collection] ( as [item ident] ( , [key ident] ) )
 	  [code block]
+	( else 
+	  [code block] )
+	
+	ply [list-like collection] using [function]
+	( else
+	  [code block] )
 
-The **ply** iterator sequentially steps through all elements in an array-like collection. 
+The **ply** iterator sequentially steps through all elements in an _array-like_ collection; it works on any object that has a **length** trait.  It accesses numeric traits from 0 to **length**-1, sending each trait value to the code block or function. If **length** is 0, the **else** clause is invoked instead.
 
-\<\>
+The trait value is captured in the **it** mvar, and the trait number is captured as **key**.
+
+	ply fruit 
+	  debug '${key}: ${it}'
+	else
+	  debug 'There is no fruit.'
+	
+	> 0: Apple
+	> 1: Banana
+	> 2: Citron
 
 
 ### PROMISE _declaration_
 
 	[identifier] promise ( as [parameter list] )
 	  [code block]
+	
 	.. promise ( as [parameter list] )
 	  [code block]
 
-Wraps the code block in a Promise-like function shell. Purely syntactic sugar.
+Wraps the code block in a Promise-like function shell. Along with **resolve** and **reject**, forms a convenient bit of syntactic sugar for making Promise-like functionality.
 
 \<\>
 
@@ -1781,6 +2349,7 @@ Wraps the code block in a Promise-like function shell. Purely syntactic sugar.
 
 	[identifier] process ( as [parameter list] )
 	  [yielding code block]
+	
 	.. process ( as [parameter list] )
 	  [yielding code block]
 
@@ -1793,7 +2362,36 @@ Creates a function that is expected to **yield** one or more values.
 
 	.. [iterable] reap
 
-Converts an iterator into an array by draining the iterator. If the iterator never ends, your system will lock up.
+Converts an iterator into an array by draining the iterator. If the iterator never ends, your system will lock up until you run out of memory. (You could use a **limit** comprehension to keep that from happening.)
+
+	set Odds to process
+	  set local i to 1
+	  while i
+	    yield i
+	    set i + 2
+	
+	debug Odds() reap // locks up
+	debug Odds() limit 10 reap
+	
+	> [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 ]
+
+
+### REFERENCE _declaration_
+
+	reference:
+	  [name] [expr]
+	  ...
+
+Declare global variables at the top of a **.SAI** source file.
+
+\<\>
+
+
+### REJECT _statement_
+
+	reject ( [expr] )
+
+Call the failed potential outcome for a function declared with **promise**.
 
 \<\>
 
@@ -1810,26 +2408,6 @@ As in Javascript.
 	resolve ( [expr] )
 
 Call the successful potential outcome for a function declared with **promise**.
-
-\<\>
-
-
-### REJECT _statement_
-
-	reject ( [expr] )
-
-Call the failed potential outcome for a function declared with **promise**.
-
-\<\>
-
-
-### REFERENCE _declaration_
-
-	reference:
-	  [name] [expr]
-	  ...
-
-Declare global variables at the top of a **.SAI** source file.
 
 \<\>
 
@@ -1912,25 +2490,41 @@ Call the previous ancestral version of the current object task.
 
 ### SWITCH _statement_
 
-	switch [expr]
+	switch [expr] ( as [trial ident] )
 	  case [expr] ( , [expr] ... )
 	    [code]
 	  ( default
 	    [code] )
 
-Choose among alternatives based on expression equality.
+Choose among alternatives based on expression equality. The expression under evaluation is available to all codepaths as **trial** (which can be renamed with the **as** clause).
 
-\<\>
+	switch from ~System.IO.Keypress as key
+	  case 'n', 'N'
+	    @Move 0,-1
+	  case 's', 'S'
+	    @Move 0,1
+	  case 'e', 'E'
+	    @Move 1,0
+	  case 'w', 'W'
+	    @Move -1,0
+	  case ' '
+	    @Jump
+	  case '?'
+	    @Help
+	  default
+	    @Emit 'Key [${key}] isn't used; type ? for help.'
 
 
 ### TASK _declaration_
 
 	[identifier] task ( as [parameters] ) / ( expects [parameters] )
 	  [code]
+	
 	.. [task] ( as [parameters] ) / ( expects [parameters] )
 	  [code]
 
-Define a block of code as an object trait, or anonymous function.
+Define a block of code as an object trait or anonymous function.
+
 
 \<\>
 
@@ -1941,18 +2535,70 @@ Define a block of code as an object trait, or anonymous function.
 
 Trigger exception handling.
 
+\<\>
+
 
 ### THRU _comprehension_
 
 	.. [collection] thru [expr]
-	.. [collection] thru ( as [item ident] (, [key ident] ) )
-	  [code block]
+	
+	.. [collection] thru ( as [it ident] (, [key ident] ) )
+	  [code]
 	  return [new item value]
+	
 	.. [collection] thru using [function]
 
-Pass each element of a collection through an expression, code block, or previously defined function.
+Pass each element of a collection “thru’ an expression, code block, or previously defined function. The result of the expression becomes the new value in a copy of the collection. 
 
-\<\>
+Conversion to uppercase:
+
+	debug fruit thru .toUpperCase()
+	 
+	> [ 'APPLE', 'BANANA', 'CITRON' ]
+
+A more complex formatting that could be an expression but I needed a block example:
+
+	debug friends #cat thru
+	  return '${key+1}) ${.name}, age ${.age}, lives in ${.province}'
+	 
+	> [ '1) Sara, age 23, lives in ON',
+	     '2) Jon, age 19, lives in QC',
+	     '3) Ann, age 23, lives in QC' ]
+
+Passing values **thru** a function:
+
+	set rot13 to task
+	  set out to ''
+	  count $length
+	    set char to $charCodeAt(key)
+	    switch char >> 5
+	      case 2,3
+	        with char andb 31
+	          if it > 26
+	            nop
+	          else if it > 13
+	            set char - 13
+	          else if it > 0
+	            set char + 13
+	    set out + ~String.fromCharCode(char)
+	  return out
+	
+	debug fruit thru using rot13
+	 
+	> [ 'Nccyr', 'Onanan', 'Pvgeba' ]
+  
+The function called by the **using** variant receives two parameters:
+
+	set instrument to task
+	  debug $$ 
+	  return $
+	 
+	debug fruit thru using instrument
+	
+	> { '0': 'Apple', '1': 0 }
+	> { '0': 'Banana', '1': 1 }
+	> { '0': 'Citron', '1': 2 }
+	> [ 'Apple', 'Banana', 'Citron' ]
 
 
 ### TRAITS _literal_
@@ -1965,19 +2611,68 @@ Pass each element of a collection through an expression, code block, or previous
 
 Used to specify the creation of a plain object with a set of key/term pairs. (Contrast with **fields**.)  When you want to be specific about creating a plain object from a set of of keyed values & literal terms, use **traits**. 
 
-The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **term** is any valid term (see **list** for a description of valid terms).
+The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **term** is any valid term (see **list** for a description of valid terms).
 
 See **fields** for examples.
 
 
-### TRIAL _magic variable_
+### TRIAL _mvar_
 
 	if [expr] 
 	  .. trial ..
+	 
+	switch [expr] 
+	  case [match] 
+	    .. trial ..
+	  default
+	    .. trial ..
 
-A magic variable set to the value tested in an **if** statement. Only valid in the body of the first code block.
+A magic variable set to the value tested in an **if** or **switch** statement. 
 
-\<\>
+In an **if** statement, **trial** is only valid in the body of the first code block.
+
+	if readline()
+	  // trial is available here 
+	else
+	  // trial is undefined here
+
+In a **switch** statement, **trial** is available through all **case**s and the **default**.
+
+	switch @Keypress.toUpperCase()
+	  case 'N'
+	    @Move 0,-1
+	  case 'S'
+	    @Move 0,1
+	  default
+	    debug 'I don't know what ${trial} means.'
+	...
+
+You can grant a specific name to the tested value with the **as** clause:
+
+	if @Keypress as key
+	  switch key.toUpperCase()
+	...
+
+Note that **trial** receives the tested value; the final result of the **if** or **switch** expression, not the value of any component:
+
+	if @Keypress>0
+	  debug trial
+	
+	// the debug statement can only ever print 'true'
+
+Using the parenthetical **as** is one solution to this problem, but there are better ways of writing this code:
+
+	if (@Keypress as key) > 0
+	  debug key
+	
+	// reports the actual value of key
+
+
+### TRUE _literal_
+
+	.. true
+
+The boolean value true.
 
 
 ### TRY _statement_
@@ -2002,16 +2697,19 @@ Exception handling construct.
 
 Used as a syntactic clarifier in **set** and **count** statements.
 
-\<\>
-
 
 ### TYPEOF _operator_
 
 	.. typeof [expr]
 
-Returns the Javascript-native type of an expression.
+Returns the Javascript-native type of an expression.  See e.g. [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof][2] for details.
 
-\<\>
+
+### UNDEFINED _literal_
+
+	.. undefined
+
+A literal indicating no value, or a variable that has not been assigned. This compiles directly to Javascript’s `undefined`.
 
 
 ### UNLESS _statement_
@@ -2021,27 +2719,83 @@ Returns the Javascript-native type of an expression.
 	else 
 	  [code if expr is true]
 
-Execute the following code block if the given expression evaluates to _falsy_.
+Execute the following code block if the given expression evaluates to _falsy_. Executes from an **else** clause otherwise. All this really does is prepend a logical **not** to the expression. It’s for clarity, see?
+
+while
+	unless b
 
 \<\>
 
 
-### UNDEFINED _literal_
+### UNTIL _statement_
 
-	.. undefined
+	until [expr] 
+	  [code]
+	  ( break ) // optional exit the loop
+	  ( continue ) // optional short-cut the loop 
+	  [more code]
+	
+	do until [expr] 
+	  [code]
 
-A value representing no value, or a variable that has not been assigned.
+Executes the code block repeatedly, as long as the expression is false. This is essentially a **while** statement with the test inverted.
 
-\<\>
+The basic **until** variation performs the test first, so there is a chance the code will not execute. The **do until** variation executes the block first, then performs the test.
+
+	until true
+	  debug 'You will never see this.'
+	
+	do until true
+	  debug 'You will see this once.'
+
+**Until** _does not_ make its test value available for use as **it**. Because the code block only executes when the test value is _falsy_, there’s really no point.
 
 
 ### UPDATE _operator_
 
 	set [variable] update [collection]
 
-Update a collection variable with a set of keys/values. 
+Update a collection variable with a set of keys/values. Much like **overlay** except that the original data is overlaid in-place. Works on lists and traits, and accepts lists, traits and iterators for update data.
 
-\<\>
+Updating a list:
+
+	debug fruit
+	
+	> [ 'Apple', 'Banana', 'Citron' ]
+	
+	set fruit update: '1' 'Pear', '3' 'Guava'
+	debug fruit
+	
+	> [ 'Apple', 'Pear', 'Citron', 'Guava' ]
+	
+	set fruit update list Grape, undefined, Melon
+	debug fruit
+	
+	> [ 'Grape', 'Pear', 'Melon', 'Guava' ]
+
+Updating traits:
+
+	set friend to friends|1
+	debug friend
+	
+	> { name: 'John', age: 19, cat: true, dog: true, province: 'ON' }
+	
+	set friend update: name 'Jon', province 'QC'
+	debug friend
+	
+	> { name: 'Jon', age: 19, cat: true, dog: true, province: 'QC' }
+	
+	set friends update: undefined, friend
+	debug friends
+	
+	[ { name: 'Sara', age: 23, cat: true, province: 'ON' },
+	  { name: 'Jon', age: 19, cat: true, dog: true, province: 'QC' },
+	  { name: 'Ellie', age: 22, province: 'QC' },
+	  { name: 'Marshal', age: 21, dog: true, province: 'ON' },
+	  { name: 'Doug', age: 18, province: 'ON' },
+	  { name: 'Ann', age: 23, cat: true, province: 'QC' },
+	  { name: 'Harry', age: 31, province: 'QC' },
+	  { name: 'Jenna', age: 28, dog: true, province: 'ON' } ]
 
 
 ### USING _clause_
@@ -2056,19 +2810,18 @@ Update a collection variable with a set of keys/values.
 	.. [expr] observe using [function]
 	.. [expr] alter using [function]
 
-Use a previously defined function as the process for an iterator or comprehension.
+Use a previously defined function with an iterator or comprehension.
 
 \<\>
 
 
-### VALUES _operator_ / _compherension_
+### VALUES _compherension_
 
-	.. values [collection] // unary operator
-	.. [collection] values // comprehension operator
+	.. [collection] values 
 
 Returns the values of a collection’s elements.
 
-	debug values fruit
+	debug fruit values
 	debug friends first values
 	
 	> [ 'Apple', 'Banana', 'Citron' ]
@@ -2081,7 +2834,7 @@ Returns the values of a collection’s elements.
 
 A syntactical shortcut for `function(expr)`; the following are synonymous:
 
-	set a from ~Math.sin(b)
+	set a from ~Math.sin b
 	set a to b via ~Math.sin
 
 Probably not long for this world.
@@ -2094,8 +2847,26 @@ Probably not long for this world.
 	  ( break ) // optional exit the loop
 	  ( continue ) // optional short-cut the loop 
 	  [more code]
+	
+	do while [expr] 
+	  [code]
 
 Executes the code block repeatedly, as long as the expression is true.
+
+The basic **while** variation performs the test first, so there is a chance the code will not execute. The **do while** variation executes the block first, then performs the test.
+
+	while false
+	  debug 'You will never see this.'
+	
+	do while false
+	  debug 'You will see this once.'
+
+**While** makes its value available for use as **it**, as below. 
+
+	while from file.NextLine
+	  @story.push it
+
+**Do while** _does not_ use **it**, because the expression is not evaluated until after the first pass through the code, thus the first **it** result would always be **undefined**.
 
 
 ### WITH _statement_
@@ -2107,7 +2878,7 @@ Allows the use of the **it** magic variable (and the . and | lookups) within an 
 
 	with customer
 	  set label to '''
-	    <b>${.name}</b>
+	    ${.name}
 	    ${.address1}
 	    ${.address2}
 	    ${.city} ${.region} ${.postcode}
@@ -2164,3 +2935,4 @@ Yields to a yielding process, until that process is done yielding. Equivalent to
 
 
 [1]:	http://www.sitepoint.com/javascript-truthy-falsy/
+[2]:	https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof

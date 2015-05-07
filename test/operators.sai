@@ -175,21 +175,21 @@ Execute task
 
 
 
-  @Test 'keys unary undefined', task
-    set a to keys undefined
-    return ~Array.isArray(a) and (a.length = 0)
+//  @Test 'keys unary undefined', task
+//    set a to keys undefined
+//    return ~Array.isArray(a) and (a.length = 0)
   
-  @Test 'keys unary value', task 
-    set a to keys 1
-    return ~Array.isArray(a) and (a.length=0)
+//  @Test 'keys unary value', task 
+//    set a to keys 1
+//    return ~Array.isArray(a) and (a.length=0)
   
-  @Test 'keys unary list', task 
-    set a to keys: 1, 2
-    return ~Array.isArray(a) and (a.length=2) and (a|0=0) and (a|1=1)
+//  @Test 'keys unary list', task 
+//    set a to keys: 1, 2
+//    return ~Array.isArray(a) and (a.length=2) and (a|0=0) and (a|1=1)
     
-  @Test 'keys unary traits', task
-    set a to keys: a 1, b 2
-    return ~Array.isArray(a) and (a.length=2) and (a|0='a') and (a|1='b')
+//  @Test 'keys unary traits', task
+//    set a to keys: a 1, b 2
+//    return ~Array.isArray(a) and (a.length=2) and (a|0='a') and (a|1='b')
     
   @Test 'values comp undefined', task
     set a to undefined values
@@ -214,21 +214,21 @@ Execute task
 
 
     
-  @Test 'values unary undefined', task
-    set a to values undefined
-    return ~Array.isArray(a) and (a.length is 0)
+//  @Test 'values unary undefined', task
+//    set a to values undefined
+//    return ~Array.isArray(a) and (a.length is 0)
     
-  @Test 'values unary value', task
-    set a to values 1
-    return ~Array.isArray(a) and (a|0=1)
+//  @Test 'values unary value', task
+//    set a to values 1
+//    return ~Array.isArray(a) and (a|0=1)
     
-  @Test 'values unary list', task
-    set a to values: 1, 2
-    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
+//  @Test 'values unary list', task
+//    set a to values: 1, 2
+//    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
     
-  @Test 'values unary traits', task
-    set a to values: a 1, b 2
-    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
+//  @Test 'values unary traits', task
+//    set a to values: a 1, b 2
+//    return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
     
   @Test 'overlay static', task
     set a to traits a 1, b 2

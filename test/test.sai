@@ -1,7 +1,7 @@
 
 object Test
 
-set fields
+instance:
   pass empty
   fail empty
   ids blank
@@ -30,6 +30,7 @@ Instantiate task
     Reference
     
 //  set inactive to list
+
 
   ply tests
     set suite to create it @

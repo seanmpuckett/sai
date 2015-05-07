@@ -372,16 +372,14 @@
   }
   function FixVars(code) {
   }
-  
-  
 }
 
 
 start
   = OptionalEOLs r:Reference? o:Object+ {
-    code='';
+    code='';//var __source=decodeURI('+quoted(encodeURI(input))+');\n';
     if (r) code+=r;
-    code+=o.join('\n');
+    code+=o.join('\n')
     return code;
   }
   
@@ -406,7 +404,7 @@ Object
     code+='prototype.isa='+isa+';\n';
     isof+='version:'+v+',';
     isof+='isa:'+isa+',';
-    isof+='info:__info';
+    isof+='load:__loadinfo';
     code+='prototype.isof['+isa+']={'+isof+'};\n';
     var l;
     if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
@@ -539,13 +537,14 @@ MiscStatement
  = BREAK _ { return 'break;\n'; }
  / CONTINUE _ { return 'continue;\n' }
  / ORPHAN _ { return 'var $=this;\n' }
+ / NOP _ { return ';' }
 
 
 SwitchStatement // test 'switch*'
  = s:SwitchClause o:Output? EOLs INDENT c:(EOLs c:CaseClause {return c})+ d:(EOLs d:DefaultClause {return d})? EOLs DEDENT {
    o=o?o:tempvar();
    addLocal(o);
-   var r=RV('switch (^{output}=('+s+')) {\n',{output:o});
+   var r=RV('switch (^{trial}=('+s+')) {\n',{trial:o});
    for (var i in c) {
      for (var j in c[i][0]) {
        r+='case ('+c[i][0][j]+'): ';
@@ -779,8 +778,17 @@ IterateStatement
      var iterate='for (; ^{key}<^{dest}; ^{key}+=^{step}) { ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
   }
-  / WHILE Sep v:Expression b:Block {
-    return 'while ('+v+') { '+b+' }\n';
+  / WHILE Sep v:Expression o:IterateOutput? b:Block {
+    return RV('var ^{this}; while (^{this}=('+v+')) { '+b+' }\n',{this:(o?o[0]:false)});
+  }
+  / UNTIL Sep v:Expression b:Block {
+    return 'while (!('+v+')) { '+b+' }\n';
+  }
+  / DO __ WHILE Sep v:Expression b:Block {
+    return 'do { '+b+' } while ('+v+');\n';
+  }
+  / DO __ UNTIL Sep v:Expression b:Block {
+    return 'do { '+b+' } while (!('+v+'));\n';
   }
 
 StepCount
@@ -978,6 +986,7 @@ Property
 SimpleTerm
  = It/Local/Parameter/Property/Root
  / v:Number { return [['literal',v]] }
+ / v:StringLiteral { return [['literal',v]] }
 
 // DEFINITIONS
 
@@ -996,7 +1005,11 @@ Define
     code+='var t='+v[1]+';\nfor (var i in t) { prototype.__tobelocked.push(i); prototype[i]=t[i]; };\n'; 
     return code;
   }
-  / SET _ v:Definition EOLs { return 'var Constructor=prototype.Constructor || function(){};\nprototype.Constructor=function() {\nConstructor.call(this);\nvar t='+v[1]+'; for (var i in t) this[i]=t[i];\n};\n'; }
+  / INSTANCE _ v:Definition EOLs { 
+    var proof='var t='+v[1]+';\nfor (var i in t) { prototype[i]="instance"; };\n'; 
+    var setup= 'var Constructor=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n  Constructor.call(this);\n  for (var i in t) this[i]=t[i];\n};\n'; 
+    return setup+proof;
+  }
 
 
 
@@ -1007,10 +1020,10 @@ SemVer
 
 
 ParameterList
- = _ COLON _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields', '{'+w.join(',')+'}',v] }
- / _ COLON _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
- / _ COLON? _ v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
- / _ COLON? _ v:Items ';'? { return ['array',v.join(','),v] }
+ = COLON _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields', '{'+w.join(',')+'}',v] }
+ / COLON _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
+ / v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
+ / v:Items ';'? { return ['array',v.join(','),v] }
  / ';' { return null }
 
 Definition
@@ -1042,6 +1055,8 @@ Term
  / Number
  / TRUE
  / FALSE
+ / UNDEFINED
+ / NULL
  / StringLiteral
  / BareString
   
@@ -1428,8 +1443,8 @@ ComparisonOp
 
 
 MathOp
- = '?>' { return 'Math.max' } // test '?>'
- / '?<' { return 'Math.min' } // test '?<'
+ = '?>' { return '_$AI.max' } // test '?>'
+ / '?<' { return '_$AI.min' } // test '?<'
  / '<=>' { return '_$AI.compare' } // test '<=>'
 
    
@@ -1459,6 +1474,9 @@ Multiplication
  / l:Value _ EXPECTS Sep r:Multiplication { 
    return '_$AI.expects('+l+','+r+')' 
  }
+ / l:Value _ ISOF Sep r:Multiplication { 
+   return '('+l+').isof['+r+']'; 
+ }
  / v:Value _ { return v }
 
 MultiplicationOp
@@ -1479,8 +1497,8 @@ Value
  / NUMBER Sep v:Value { return '(_$AI.number('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
  / COPY Sep v:Value _ { return '_$AI.copy('+v+')'; } // test 'copy'
- / KEYS Sep v:Value _ { return '(_$AI.keys('+v+'))' } // test 'keys unary *'
- / VALUES Sep v:Value _ { return '(_$AI.values('+v+'))' } // test 'values unary*'
+// / KEYS Sep v:Value _ { return '(_$AI.keys('+v+'))' } // test 'keys unary *'
+// / VALUES Sep v:Value _ { return '(_$AI.values('+v+'))' } // test 'values unary*'
  / TASK Sep v:TaskClause _ { return v }
  / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
@@ -1537,6 +1555,7 @@ Literal
  / UNDEFINED 
  / NULL
  / NaN { return 'NaN' }
+ / INFINITY { return 'Infinity' }
  
 IntoClause
  = IT Sep { return 'it' }
@@ -1620,7 +1639,6 @@ Real
 Integer 
  = PositiveInteger
  / '-' v:PositiveInteger { return -v }
- / '+' v:PositiveInteger { return v }
 
 PositiveInteger
  = v:[0-9]+ { return parseInt(v.join('')) } 
@@ -1655,16 +1673,19 @@ BarelineStringChar
  = v:[^\n}] { return [true,v] }  
   
 EscapedChar
- = v:"\\'" { return [true,'\''] }
- / v:'\\"' { return [true,'"'] }
- / v:'\\$' { return [true,'$'] }
- / v:'\\&#123;' { return [true,'&#123;'] }
- / v:'\\&#125;' { return [true,'&#125;'] }
- / v:'\\\n' { return [true,'\n'] }
- / v:'\\\r' { return [true,'\r'] }
- / v:'\\\t' { return [true,'\t'] }
- / v:'\\\b' { return [true,'\b'] }
- / v:'\\\f' { return [true,'\f'] }
+ = '\\' "'" { return [true,'\\'+"'"] }
+ / '\\' '"' { return [true,'\\'+'"'] }
+ / '\\' '$' { return [true,'\\'+'$'] }
+ / '\\&#123;' { return [true,'\\'+'&#123;'] }
+ / '\\&#125;' { return [true,'\\'+'&#125;'] }
+ / '\\' 'n' { return [true,'\\'+'n'] }
+ / '\\' 'r' { return [true,'\\'+'r'] }
+ / '\\' 't' { return [true,'\\'+'t'] }
+ / '\\' 'b' { return [true,'\\'+'b'] }
+ / '\\' 'f' { return [true,'\\'+'f'] }
+ / '\\' 'x' a:[0-9a-fA-F] b:[0-9a-fA-F] { return [true,'\\'+'x'+a+b ] }
+ / '\\' 'u' a:[0-9a-fA-F] b:[0-9a-fA-F] c:[0-9a-fA-F] d:[0-9a-fA-F] { return [true,'\\'+'u'+a+b+c+d] }
+ / '\\' 'u' '{' a:[0-9a-fA-F]+ '}' { return [true,'\\'+'u{'+a.join('')+'}' ] }
 
 StringTemplate
  = '${' v:Expression '}' { return [false,v] }
@@ -1756,7 +1777,6 @@ ReservedWords
  / LIST
  / LOCAL
  / LOWEST 
- / LSH
  / NaN
  / NAND
  / NEW
@@ -1773,7 +1793,6 @@ ReservedWords
  / PROMISE
  / PROCESS
  / REAP
- / RSH
  / SELECT
  / SELF
  / SOW
@@ -1795,6 +1814,11 @@ ReservedWords
  / YIELDING
  / YIELD
  
+__SOURCE = '__source'
+__OFFSET = '__offset'
+__COLUMN = '__column'
+__LINE = '__line'
+
 ACCUM = 'accum'
 ALTER = 'alter'
 AND = 'and'
@@ -1820,6 +1844,7 @@ DEFAULT = 'default'
 DELETE = 'delete'
 DESC = 'desc'
 DESCENDING = 'descending'
+DO = 'do'
 DOWN = 'down'
 EACH = 'each'
 ELSE = 'else'
@@ -1838,12 +1863,15 @@ HAS = 'has'
 HIGHEST = 'highest'
 IF = 'if'
 INITIALIZED = 'initialized'
+INFINITY = 'Infinity'
+INSTANCE = 'instance'
 INTO = 'into'
 INC = 'inc'
 INHERIT = 'inherit'
 ISNT = 'isnt'
 ISNAN = 'isNaN'
 IS = 'is'
+ISOF = 'isof'
 ITERATE = 'iterate'
 IT = 'it'
 KEYS = 'keys'
@@ -1851,12 +1879,12 @@ KEY = 'key'
 LAST = 'last'
 LIMIT = 'limit'
 LIST = 'list'
-LSH = 'lsh'
 LOCAL = 'local'
 LOWEST = 'lowest'
 NaN = 'NaN'
 NAND = 'nand'
 NEW = 'new'
+NOP = 'nop'
 NOR = 'nor'
 NOT = 'not'
 NOTB = 'notb'
@@ -1878,7 +1906,6 @@ RESOLVE = 'resolve'
 REJECT = 'reject'
 REFERENCE = 'reference'
 RETURN = 'return'
-RSH = 'rsh'
 SELECT = 'select'
 SELF = 'self'
 SET = 'set'
@@ -1895,6 +1922,7 @@ TRY = 'try'
 TO = 'to'
 TYPEOF = 'typeof'
 UNLESS = 'unless'
+UNTIL = 'until'
 UNDEFINED = 'undefined'
 UPDATE = 'update'
 USING = 'using'

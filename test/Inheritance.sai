@@ -21,3 +21,6 @@ Execute task
   @Match 'given granduncle', 'Gruncle', task
     return child.gruncle
     
+  @Test 'isof parent', task
+   return child isof 'ITParent'
+   

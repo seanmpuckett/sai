@@ -1,0 +1,6 @@
+object Licensed
+
+instance: licenseTag false
+
+LicenseCheck task
+  return true

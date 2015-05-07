@@ -2,7 +2,7 @@
 
 object Simple
 
-set fields
+instance:
   a true
 
 Instantiate task

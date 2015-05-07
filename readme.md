@@ -27,7 +27,6 @@ SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, S
 
 Readability
 
-
+Parameter
 
 Chaining
-

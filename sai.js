@@ -335,7 +335,7 @@ _$AI.overlay = function(l,r) {// test 'overlay'
     }
     // right side static - things were so much simpler then
     for (var i in r) {
-      l[i]=r[i];
+      if (r[i]!==undefined) l[i]=r[i];
     }
     return l;
   } else {
@@ -488,6 +488,13 @@ _$AI.xor = function(a,b) { // test 'xor'
   return a?(b?false:a):(b?b:false);
 }
 
+_$AI.min = function(a,b) { // test 'min'
+  return (a<b)?(a):(b);
+}
+_$AI.max = function(a,b) { // test 'max'
+  return (a>b)?(a):(b);
+}
+
 _$AI.compare = function(a,b) { 
   if (a<b) return -1;
   if (a>b) return 1;
@@ -619,11 +626,13 @@ var dedenter=function(src) {
     var line=lines[i];
     var depth=0;
     while (line[depth]==' ') depth++;
-    if (depth==line.length || line.substr(depth,2)=='//') { // empty line
-      out.push('');
+    if (depth==line.length) {
+      out.push(''); // empty line
     } else {
       line=line.substr(depth);
-      if (depth==indent[0]) { // same depth
+      if (line.substr(0,2)=='//') { // whole-line comment (ignores indent)
+        out.push(line);
+      } else if (depth==indent[0]) { // same depth
         out.push(line);
       } else if (depth>indent[0]) { // indenting
         out.push('{');
@@ -643,10 +652,34 @@ var dedenter=function(src) {
     }
   }
   while (indent.shift()>0) out.push('}');
-  return out.join('\n')+'\n';
+  return [out.join('\n')+'\n'];
 }
 
-
+// transforms a segment of parse-ready code back into indented for inspection
+var contexualize=function(source,offset) {
+  var context=source.substring(offset-100,offset);
+  context+='<HERE>';
+  context+=source.substring(offset,offset+100);
+  
+  var ind=0,minind=0;
+  var lines=context.split('\n');
+  for (var i in lines) {
+    var line=lines[i];
+    if (line=='{') ind++;
+    else if (line=='}') ind--;
+    if (ind<minind) minind=ind;
+  }
+  ind=-minind;
+  var newcontext='';
+  var dup=function(s,x) { var ret=''; while (x-->=0) ret+=s; return ret; }
+  for (var i in lines) {
+    var line=lines[i];
+    if (line=='{') ind++;
+    else if (line=='}') ind--;
+    else newcontext+=dup('  ',ind)+line+'\n';
+  }
+  return newcontext;
+}
 
   
 SAI.prototypes={};
@@ -680,47 +713,29 @@ SAI.GetParser = function() {
   }
   mainParser=eval(mainParser);
   //console.log (mainParser.parse.toString());
-  return function(source,bound,fn) {
-    source+='\n\n';
-    var dedentedSource=dedenter(source);
-    var parser;
+  return function(rawsource,bound,fn) {
+    rawsource+='\n\n';
+    var dedent=dedenter(rawsource);
+    var source=dedent[0];
+    var js='';
     try {
-      parser=mainParser.parse(dedentedSource,{bound:bound,globals:SAI.config.verbs,filename:fn});
+      js=mainParser.parse(source,{
+        bound:bound,
+        globals:SAI.config.verbs,
+        filename:fn}
+      );
     } catch (e) {
       var info='\nSAI: Syntax error <HERE> in '+fn+'\n\n';
-      
-      var context=dedentedSource.substring(e.offset-100,e.offset);
-      context+='<HERE>';
-      context+=dedentedSource.substring(e.offset,e.offset+100);
-      
-      // transforms parse-ready code back into indented
-      var ind=0,minind=0;
-      var lines=context.split('\n');
-      for (var i in lines) {
-        var line=lines[i];
-        if (line=='{') ind++;
-        if (line=='}') ind--;
-        if (ind<minind) minind=ind;
-      }
-      ind=-minind;
-      var newcontext='';
-      var dup=function(s,x) { var ret=''; while (x-->=0) ret+=s; return ret; }
-      for (var i in lines) {
-        var line=lines[i];
-        if (line=='{') ind++;
-        else if (line=='}') ind--;
-        else newcontext+=dup('  ',ind)+line+'\n';
-      }
-      
-      info+=newcontext+'\n\n'+e.message+'\n\n';
+      var context=contexualize(source,e.offset);
+      info+=context+'\n\n'+e.message+'\n\n';
       throw new Error(info);
     }
-    //parser=Beautify(parser,{ indent_size: 2, preserve_newlines: false});
-    //console.log(parser);
-    return parser;
+    //js=Beautify(js,{ indent_size: 2, preserve_newlines: false});
+    return js;
   }
-}();
+};
 
+SAI.Parse = SAI.GetParser();
 
 SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
   var filename;
@@ -741,7 +756,6 @@ SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
   };
 }
 
-
 SAI.GetProtogen = function(name) {
   var protogen=SAI.protogens[name];
   if (!protogen) {
@@ -750,8 +764,8 @@ SAI.GetProtogen = function(name) {
     if (!load.success) {
       throw new Error('SAI.GetProtogen: Could not load object '+name+', reason given: '+load.info);
     }
-    var source=SAI.GetParser(load.source,undefined,load.info);
-    source='var __info="'+load.info+'";\n'+source;
+    var source=SAI.Parse(load.source,undefined,load.info);
+    source='var __loadinfo="'+load.info+'";\n'+source;
     protogen=new Function('prototype','options','require','_$AI',source);
     if (!protogen) {
       throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
@@ -766,11 +780,7 @@ SAI.GetProtogen = function(name) {
 
 SAI.GetPrototype = function(name,bindings) {
   var proto=SAI.prototypes[name];
-  //console.log("** WANT "+name);
-  if (proto) {
-    //console.log("** HAVE "+name);
-  } else {
-    //console.log("** MAKING "+name);
+  if (!proto) {
     var heritage=[name]
     var ancestors={};
     var nodupes={};
@@ -833,8 +843,8 @@ SAI.GetPrototype = function(name,bindings) {
     if (proto.__unverified) {
       for (var i in proto.__contracts) {
         var l=proto.__contracts[i];
-        if (!proto[l]) {
-          throw new Error("SAI: Contractually required task '"+l+"' does not exist in object '"+proto.isa+"'.");
+        if (undefined===proto[l]) {
+          throw new Error("SAI: Contractually required trait '"+l+"' does not exist in object '"+proto.isa+"'.");
         } else {
           //console.log("Contract test: "+proto.isa+" does indeed have a "+l+" property.");
         }
@@ -850,6 +860,7 @@ SAI.GetPrototype = function(name,bindings) {
         proto[i]=bindings.functions[i];
       }
     }
+    
     proto.constructor=function() {
       var obj=Object.create(proto);
       obj.Constructor();
@@ -864,7 +875,6 @@ SAI.GetPrototype = function(name,bindings) {
 }
 
 SAI.Require = function(name) {
-  //console.log("* REQUIRE "+name);
   proto=SAI.GetPrototype(name).constructor;
   if (!proto) throw new Error('SAI.Require: Do not know how to create SAI object "'+name+'".');
   return proto;
@@ -896,28 +906,3 @@ SAI.Configure = function(config) {
   }
 }
 
-
-/*
-/////// APPLICATION SPECIFIC
-
-var SAIObjId={};
-
-SAI.spawn = function(name,host,bindings,parameters) {
-  if (bindings && host===undefined) {
-    throw new Error("Cannot have undefined host in object spawn for "+name);
-  }
-  var proto=getPrototype(name,bindings);
-  var obj=Object.create(proto); 
-  obj.Constructor();
-  obj.__host=host;
-  if (obj.unique) {
-    var id=SAIObjId[name] || 0;
-    SAIObjId[name]=++id;
-    obj.id=obj.isa+','+id;
-  } else {
-    obj.id=obj.isa;
-  }
-  if (obj.Instantiate) obj.Instantiate(parameters);
-  return obj;
-}
-*/

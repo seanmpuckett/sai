@@ -1,0 +1,5 @@
+object Fruit 1.0.0
+Instantiate task
+  debug 'I am a ${@isa}'
+  
+  

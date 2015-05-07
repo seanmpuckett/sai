@@ -159,7 +159,7 @@ Instantiate task
   
   // KEYS
   debug '\nKEYS'
-  debug keys fruit
+  debug fruit keys
   debug friends first keys
   
   // ISNT
@@ -193,7 +193,7 @@ Instantiate task
 
   // VALUES
   debug '\nVALUES'
-  debug values fruit
+  debug fruit values
   debug friends first values
   
   // SELECT
@@ -207,4 +207,194 @@ Instantiate task
   chain a
     reverse
   debug a
+  
+  // CHAIN ${}
+  debug '\n\${}'
+  set FriendSummary to task 
+    return 'Name: ${$name}; age: ${$age}'
+  ply friends limit 3 as friend
+    debug 'Subject ${key+1}: ${FriendSummary(friend)}'
+  
+  // +
+  debug '\n+'
+  debug 1+1
+  debug '1'+1
+  debug 1+'1'
+  debug '1'+'1'
+  
+  // -
+  debug '\n-'
+  debug 3-5
+  debug 3+-5
+  
+  // /
+  debug '\n/'
+  debug 22/7
+  debug 355/113
+  
+  // ;
+  debug '\n;'
+  debug list 3, 2, 1 by it
+  debug array 3, 2, 1 by it
+  debug array 3, 2, 1; by it
+  debug list =3, =2, =1 by it
+  debug list =3, =2, =1; by it
+  
+  // <
+  debug '\n<'
+  debug 1 < 1
+  debug 1 < 2
+  debug 'a' < 'b'
+  debug 'a' < 'B'
+  
+  // <=>
+  debug '\n<=>'
+  debug 1<=>0
+  debug 1<=>1
+  debug 1<=>2
+  debug 'b'<=>'a'
+  debug 'b'<=>'b'
+  debug 'b'<=>'c'
+  
+  // |
+  debug '\n|'
+  set field to 'name'
+  with friends|0
+    debug it.name
+    debug .name
+    debug it['name'] 
+    debug it[field]
+    debug it|field
+    debug |field
+    debug |'name' 
+    debug it|'name' 
+  
+  // isNaN
+  debug '\nisNaN'
+  set a to ~parseInt('This is not a number.')
+  debug a
+  debug a = 0
+  debug a = false
+  debug a = NaN
+  debug isNaN a
+  
+  // isa
+  debug '\nisa'
+  set a to create 'Fruit'
+  set b to create 'Pear'
+  
+  // isof
+  debug '\nisof'
+  debug a.isof
+  debug b.isof
+
+  // iterate
+  debug '\niterate'
+  iterate friends
+    debug it
+    
+  // key
+  debug '\nkey'
+  ply friends
+    debug key
+  each friends[0]
+    debug key
+    
+  count 3
+    count 3
+      debug key
+      
+  count 3 as i
+    count 3
+      debug i+','+key
+      
+  count 3
+    count 3 as j
+      debug key+','+j
+      
+  // nan
+  debug '\nNaN'
+  debug ~parseInt('The one ring.')
+  debug number 'The one ring.'
+  debug NaN = ~parseInt('The one ring.')
+  debug NaN is ~parseInt('The one ring.')
+  debug isNaN ~parseInt('The one ring.')
+  
+  // overlay
+  debug '\nOVERLAY'
+  set list1 to list Apple, Banana, Citron
+  set list2 to list Kiwi, undefined, Mango
+  set traits1 to: a 1, b 2, c 3
+  set traits2 to: '1' 4, d 5
+  debug list1 overlay list2
+  debug list1 overlay traits2
+  debug traits1 overlay traits2
+  debug traits1 overlay list2
+  
+  // reap
+  debug '\nREAP'
+  set Odds to process
+    set local i to 1
+    while i
+      yield i
+      set i + 2
+      
+  debug Odds() limit 10 reap
+  
+  // update
+  debug '\nUPDATE'
+  set a to copy fruit
+  debug fruit
+  set fruit update traits '1' Pear, '3' Guava
+  debug fruit
+  set fruit update list Grape, undefined, Melon
+  debug fruit
+  set fruit to a
+  
+  set friend to friends|1
+  debug friend
+  set friend update: name 'Jon', province 'QC'
+  debug friend
+  set friends update: undefined, friend
+  debug friends
+  
+  // inherit
+  debug '\nINHERIT'
+  set myCar to create 'Sedan'
+  debug myCar
+  debug myCar.isa
+  debug myCar.isof
+  
+  set rot13 to task
+    set out to ''
+    count $length
+      set char to $charCodeAt(key)
+      if char<65 or char>122 
+        nop
+      else if char > 109
+        set char - 13
+      else if char > 96
+        set char + 13
+      else if char > 90
+        nop
+      else if char > 77
+        set char - 13
+      else
+        set char + 13
+      set out + ~String.fromCharCode(char)
+    return out
+        
+  set instrument to task
+    debug $$
+    
+  // thru
+  debug '\nTHRU'
+  debug friends #cat thru '${.name}, age ${.age}, lives in ${.province}'
+  debug fruit thru using rot13
+  debug fruit thru using instrument
+  
+  // instruments
+  debug '\nINSTRUMENTS'
+  debug 'line: ${__line}'
+  
   

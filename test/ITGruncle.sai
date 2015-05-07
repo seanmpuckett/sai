@@ -1,5 +1,8 @@
 object ITGruncle
 
+contract:
+  gruncleVar
+
 given:
   gruncle 'Gruncle'
   
