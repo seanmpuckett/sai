@@ -478,7 +478,7 @@ Evaluates to expr1 if the left expression is _truthy_, otherwise evaluates to ex
 	debug false ?? 'True' :: 'False'  // prints 'False'
 
 
-### [ ] (lookup) _syntax_
+### \[ ] (lookup) _syntax_
 
 	.. [value] '[' [expr] ']'
 
@@ -575,7 +575,7 @@ The following debug statements print identical results.
 The **|** lookup syntax can only be used with _simple_ values; that is, single variable names or literals. If you need to use an expression, you should use the **[expr]** form of lookup.
 
 
-### ACCUM _mvar_
+### accum _mvar_
 
 A magic variable active only within a **into** clause or code block. Represents the static value that accumulates changes during **into** iteration over a data set.
 
@@ -592,7 +592,7 @@ A magic variable active only within a **into** clause or code block. Represents 
 	> { ON: 5, QC: 3 }
 
 
-### ALTER _operator_
+### alter _operator_
 
 	.. [expr] alter [expr]
 	.. [expr] alter
@@ -629,7 +629,7 @@ _If you don’t specifically **return** a value or object from within an alter c
 _You must specifically return a value in the function called by alter, or `undefined` will be passed forward; there is no implicit return._
 
 
-### AND _operator_
+### and _operator_
 
 	.. [expr] and [expr]
 
@@ -645,7 +645,7 @@ Logical and operator. If the left expression evaluates to **falsy**, returns it,
 	> Fred
 
 
-### ANDB _operator_
+### andb _operator_
 
 	.. [expr] andb [expr]
 
@@ -660,7 +660,7 @@ Bitwise and operator. Converts, if possible, both left and right expressions int
 	//  1 in binary: 00000000000000000000000000000001
 
 
-### ARRAY _literal_
+### array _literal_
 
 	.. array [expr], [expr], ... (;)
 	.. array
@@ -715,23 +715,19 @@ Arrays can be nested by use of either parenthesis or semicolons, or by using mul
 	> [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
 
 
-### AS _clause_
+### as _clause_
  
 As declares named locally scoped variables within a code block based on values passed into the block.  (In general, **as** is optional because one can usually access such passed-in values through magic variables.)
 
 **As** is used in conjunction with the following SAI keywords: set, task, process, promise, switch, catch, if, exists, with, iterate, each, ply, count, by, thru, audit, gather, has, alter, observe, and within parenthesis as the “parenthetic as”.
 
 
-#### AS (parameters)
+#### as with parameters
 
-	set [ident] (as [ident])
-	  [block] // n.b. omitted below to conserve space)
-	
-	[ident] task (as [ident], [identifer], ...)
-	[ident] process (as [ident], [ident], ...)
-	task (as [ident], [identifer], ...)
-	process (as [ident], [ident], ...)
-	promise (as [ident], [ident], ...)
+    set [ident] (as [$ var]) // dynamic trait
+    .. task (as [parameter1], [parameter2], ...)
+    .. process (as [parameter1], [parameter2], ...)
+    .. promise (as [parameter1], [parameter2], ...)
 
 An example of parameter naming:
 
@@ -746,53 +742,80 @@ An example of parameter naming:
 	> { socks: 3, pants: 6 }
 
 
-#### AS (value reclaimation)
+#### as value reclaimation
 
-	switch [expr] (as [ident]) 
-	catch (as [ident])
-	if [expression] (as [ident])
-	exists [expression] (as [ident])
-	with [expression] (as [ident]) 
+	switch [expr] (as [trial var]) 
+	catch (as [error var])
+	if [expression] (as [trial var])
+	exists [expression] (as [it var])
+	with [expression] (as [it var]) 
 
-An of value reclamation with **as**:
+An example of **if** value reclamation with **as**:
 
-\<\> example needed
+    if @keydown as charcode
+      switch charcode
+        case 27
+          @Escape
+        case 32
+          @Continue
+  
 
-
-#### AS (iterators)
+#### as with iterators
  
-	iterate [expr] (as [value ident])
-	each [expr] (as [value ident] (, [key ident] ) )
-	ply [expr] (as [value ident] (, [key ident] ) )
-	count [expr] (as [key ident])
+	iterate [expr] (as [it var])
+	each [expr] (as [it var] (, [key var] ) )
+	ply [expr] (as [it ident] (, [key var] ) )
+	count [expr] (as [key var])
 
-\<\> example needed
+An example, renaming **it** and **key** in an each iterator:
 
-
-#### AS (comprehensions)
-
-	[expr] by (as [first ident], [second ident] )
-	[expr] thru (as [value ident] (, [key ident] ) )
-	[expr] audit (as [value ident] (, [key ident] ) )
-	[expr] into [expr] (as [accum ident] (, [value ident] (, [key ident] ) ) )
-	[expr] filter (as [value ident] (, [key ident] ) )
-	[expr] alter (as [ident])
-	[expr] observe (as [ident])
-
-\<\> example needed
+    each friends first as value, field
+      debug `${field}: ${value}
+    
+    > name: Sara
+    > age: 23
+    > cat: true
+    > province: ON
 
 
-#### AS (parenthetic)
- 
-	( [expr] ( as [ident] )
+#### as with comprehensions
+
+	[expr] by (as [a var], [b var] )
+	[expr] thru (as [it var] (, [key var] ) )
+	[expr] audit (as [it ident] (, [key var] ) )
+	[expr] into [expr] (as [accum var] (, [it var] (, [key var] ) ) )
+	[expr] filter (as [it var] (, [key var] ) )
+	[expr] alter (as [it var])
+	[expr] observe (as [it var])
+
+An example, renaming **it** and **key** in the block handler of a **thru** comprehension:
+
+    debug friends thru as friend, index
+      return `${index}) ${friend.name} lives in ${friend.province}
+    
+    > [ '0) Sara lives in ON',
+        '1) Jon lives in QC',
+        '2) Ellie lives in QC',
+        '3) Marshal lives in ON',
+        '4) Doug lives in ON',
+        '5) Ann lives in QC',
+        '6) Harry lives in QC',
+        '7) Jenna lives in ON' ]
+
+  
+#### as parenthetic
+
+	.. ( [expr] ( as [var] )
 
 The parenthetic as assigns the value of the parenthesised expression to a named identifier. The assignment happens as soon as the parethesis is evaluated, so you can use the identifier in the same expression as the parenthetical, as long as the parenthetical is evaluated first.
 
-	set six to (1+2 as three)+three
-	debug array three, six
+	  set six to (1+2 as three)+three
+	  debug array three, six
+    
+    > [ 3, 6 ]
 
 
-### ASCENDING and ASC _modifier_
+### ascending / asc _modifier_
 
 	.. [expr] by [expr] (ascending) 
 	.. [expr] by [expr] (asc)
@@ -804,18 +827,22 @@ Used with the **by** sort comprehension to indicate the sort order should be low
 Because sort order is by default ascending, this keyword is never truly needed except in the simplest case where sorting by value itself.
 
 	debug list Bob, Carol, Ted, Alice by ascending
+    
+    > [ 'Alice', 'Bob', 'Carol', 'Ted' ]
 
-> [ 'Alice', 'Bob', 'Carol', 'Ted' ]
 
-
-### ASSERT _verb_
+### assert _verb_
 
 	assert [expr], [expr]
 
 If the first expression is _falsy_, throw an exception with the second expression as a message.
 
+    assert everythingIsAwesome, 'I have some bad news...'
+    
+    Error: SAI: failed assertion: I have some bad news...
 
-### AUDIT _comprehension_
+
+### audit _comprehension_
 
 	[expr] audit [expr]
 	[expr] audit (as [value ident] (, [key ident]) )
@@ -846,7 +873,8 @@ This example shows how one could add instrumentation to a process in a light-wei
 
 Neither **observe** nor **audit** alter the chained data. _A side effect of this is that **observe** can’t be used with true iterators as it’s impossible to statically observe an iterator without draining it. _
 
-### BLANK _literal_
+
+### blank _literal_
 
 	.. blank
 
@@ -859,7 +887,7 @@ The keyword **blank** creates a plain object with no traits. It is the SAI equiv
 	> { age: 21 }
 
 
-### BREAK _statement_
+### break _statement_
 
 	[loop/iterator]
 	  [code]
@@ -884,7 +912,7 @@ To exit a loop, iterator or switch case before its natural end, use the **break*
 	> Nevermind…
 
 
-### BY _comprehension_
+### by _comprehension_
 
 	[expr] by [expr] (ASC/ASCENDING/DESC/DESCENDING)
 	[expr] by ASC/ASCENDING/DESC/DESCENDING
@@ -895,7 +923,7 @@ To exit a loop, iterator or switch case before its natural end, use the **break*
 To create sorted array, use **by**. The newly resulting array will be sorted by the specified inline expression or code block. (**By** does not sort in-place; it always returns a new array.)
 
 
-#### BY (inline)
+#### by inline
 
 When you use the inline expression form, the provided expression is used to extract a value from a single record, which is then compared against other records to determine the sort order.
 
@@ -927,7 +955,7 @@ Print sorted by length of name, then age:
 	> Marshal: 21
 
 
-#### BY (block)
+#### by block
 
 When using **by** with a block of code, the magic variables change. You are given both records under consideration just as you would using the Javascript `.sort` method. And perhaps unsurprisingly to those who have ever seen a programming textbook, the magic variables are the letters **a** and **b**.
 
@@ -948,7 +976,7 @@ Print a sorted list of ages by province:
 	> Harry: QC, 31
 
 
-#### BY USING
+#### by using
 
 If you’ll recall, **has using** provides the ability to use a named function for your sorting facilitator, and **by using** allows the same thing.
 
@@ -961,7 +989,7 @@ Calculate list of ages by province (using named task)\*\* 
 	// same result as previous example
 
 
-### CASE _clause_
+### case _clause_
 
 	switch [trial expr] ( as [trial ident] )
 	  case [match expr] (, [match expr] (, ...) )
@@ -991,7 +1019,7 @@ Use one or more **case** clauses within a **switch** statement to specify one or
 Unlike Javascript, execution within a **case** statement does not fall through to the next case, so you don’t need to add **break** at the end of a code block.
 
 
-### CATCH _clause_
+### catch _clause_
 
 	try
 	  [code]
@@ -1000,12 +1028,26 @@ Unlike Javascript, execution within a **case** statement does not fall through t
 	finally
 	  [code]
 
-The **catch** clause heads a section of code that executes if and only if any code within the **try** clause throws an exception. The exception thrown is caught and placed in the **error** magic variable (or the variable named in the **as** clause).
+The **catch** clause heads a section of code that executes if and only if any code within the **try** clause throws an exception. 
 
-\<\>
+The exception thrown is caught and placed in the **error** magic variable (or the variable named in the **as** clause), as follows:
+
+    try
+      throw new ~Error 'This is an error message!'
+    catch 
+      return error.message
+
+Alternately:
+
+    try
+      throw new ~Error 'This is another error message!'
+    catch as e
+      return e.message
+
+For details on how try/catch/finally exceptions work, see the Jasacript exception documentation.
 
 
-### CHAIN _operator_
+### chain _operator_
 
 	.. chain [expr]
 	  [comprehension/method] 
@@ -1014,19 +1056,81 @@ The **catch** clause heads a section of code that executes if and only if any co
 
 The **chain** clause allows you to compose (string together) a series of operations that will each be applied in turn to a value, object, collection or iterator.
 
-\<\>
+**Chain** is another way of writing `value.method().method().method().method()` that offers cleaner code and more possibilities. You start with an object, then apply a sequence of verbs to it. Each verb is a new link in the chain.
+
+    set mirror to task 
+      return chain $
+        split ''
+        reverse
+        join ''
+    debug mirror('A man, a plan, a canal, Panama!')
+      
+    > !amanaP ,lanac a ,nalp a ,nam A  
+
+In the previous case, each verb was a trait (a method) of the string itself. 
+
+You can also chain comprehensions:
+
+    debug chain friends
+      #cat
+      by .name
+      thru 'My friend ${.name} likes cats.'
+    
+    > [ 'My friend Ann likes cats.',
+    >   'My friend Jon likes cats.',
+    >   'My friend Sara likes cats.' ]
+
+And because one of the comprehensions is **alter**, you can actually chain any function at all.
+
+    set double to task
+      return chain empty
+        concat $
+        concat $
+    
+    debug chain fruit
+      alter double(it)
+      
+    > [ 'Apple',
+        'Banana',
+        'Citron',
+        'Apple',
+        'Banana',
+        'Citron' ]
+
+Functions you use in **chain** typically return a value; this is used as the object to pass to the next link in the chain. However, some methods and functions don't return a value, instead modifying their context in-place. If a function returns **undefined**, **chain** will reuse the previous object for the next call.
 
 
-### COPY _operator_
+### copy _operator_
 
 	.. copy [expr]
 
-Use the **copy** unary operator to create a _shallow copy_ of the expression it precedes.  
+Use the **copy** unary operator to create a _shallow copy_ of the expression it precedes.  You sometimes need this because ordinarily SAI and Javascript assign objects, rather than copies of object values. 
 
-\<\>
+    set plate to fruit       // i want some fruit
+    plate.push 'Ice cream'   // and also dessert
+    debug fruit              // but now fruit has changed
+    
+    > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
+    
+    fruit.pop                 // get rid of the ice cream
+    debug fruit
+    
+    > [ 'Apple', 'Banana', 'Citron' ]
+    
+    set plate to copy fruit  
+    plate.push 'Ice cream'
+    debug fruit
+    
+    > [ 'Apple', 'Banana', 'Citron' ]
+    
+    debug plate               // there we go
+     
+    > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
+
+Note that **copy** only copies enumerable values.
 
 
-### CONTINUE _statement_
+### continue _statement_
 
 	[iterator/loop]
 	  [code]
@@ -1034,7 +1138,16 @@ Use the **copy** unary operator to create a _shallow copy_ of the expression it 
 
 In a loop or otherwise iterating block of code, **continue** short-cuts the remaining code in the block, causing the loop to continue its next iteration immediately.
 
-\<\>
+    count 10
+      unless key % 2
+        continue
+      debug key
+     
+    > 1
+    > 3
+    > 5
+    > 7
+    > 9
 
 
 ### CONTRACT _declaration_
@@ -1156,7 +1269,7 @@ Like **or** except instead of checking for _truthy_ tests to see if a value is a
 	> 0.5
 
 
-### DELETE
+### delete _statement_ / _operator_
 
 	delete [variable]
 	set [variable] delete
@@ -1164,10 +1277,26 @@ Like **or** except instead of checking for _truthy_ tests to see if a value is a
 
 Undefines the named variable or attribute(s) of a variable.
 
-\<\>
+This just calls the underlying Javascript version of **delete**, with all the same rules and caveats. The only clever addition is the ability to delete multiple attributes at once by supplying a collection:
+
+    set obj to: a 1, b 2, c 3, d 4, e 5, f 6
+    set obj delete 'a'
+    debug obj
+    
+    > { b: 2, c: 3, d: 4, e: 5, f: 6 }
+     
+    set obj delete: 'c', 'f'
+    debug obj
+     
+    > { b: 2, d: 4, e: 5 }
+     
+    set obj delete: b 'B is for Bonobo.', d 'D is for Dixie cups.'
+    debug obj
+    
+    > { e: 5 }
 
 
-### DESCENDING and DESC
+### descending / desc _modifier_
 
 	.. [expr] by [expr] (descending) 
 	.. [expr] by [expr] (desc)
@@ -1183,7 +1312,7 @@ Used with the **by** comprehension just like **ascending/asc** but the sort orde
 See also: **by**
 
 
-### DO _modifier_
+### do _modifier_
 
 	do while [expr]
 	  [code]
@@ -1202,7 +1331,7 @@ Check out these wacky examples.
 	  debug 'Hello, World!'
 
 
-### DOWN _modifier_
+### down _modifier_
 
 	count down [start]
 	count down [start] to [stop]
@@ -1210,7 +1339,7 @@ Check out these wacky examples.
 Used only with **count**; signifies the count is to proceed by _decrementing_ the key. The first key value is the start value minus one, and the last key value is the stop value, or zero.
 
 	count down 5
-	  debug it
+	  debug key
 	
 	> 4
 	> 3
@@ -1218,10 +1347,21 @@ Used only with **count**; signifies the count is to proceed by _decrementing_ th
 	> 1
 	> 0
 
-See also: **count**
+**Down** can seem freaky because you never get the value you begin with, and it seems to be even freakier when you're using a step value other than 1.
+
+    count down 15 step -4
+      debug key 
+      
+    > 11
+    > 7
+    > 3
+
+Here's an important safety tip, illustrated above: if you're using **down** with **step**, be sure the step value is negative. Otherwise the loop will never terminate.
+
+See also: **count** and **step**.
 
 
-### EACH
+### each _statement_
 
 	each [collection] ( as [it var] ( , [key var] )
 	  [code block]
@@ -1230,12 +1370,36 @@ See also: **count**
 	
 	each [collection] using [function]
 
-Enumerates through each element of the collection, in arbitrary order, setting **it** and **key** variables, and executing the code block for each one. If the collection is empty, executes the (optional) **else** block. Unlike **ply**, which works well with arrays, **each** is intended for use with traits/fields objects. 
+**Each** uses Javascript's `for-in` loop construct to iterate through an object's enumerable properties. It steps through each element of the collection, in arbitrary order, setting **it** and **key** variables, and executing the code block for each one. 
 
-\<\>
+If the collection is empty, executes the (optional) **else** block instead. Unlike **ply**, which works well with length-based arrays, **each** is intended for use with objects containing arbitrary traits/fields. 
+
+    set friend to friends first
+    each friend
+      debug `${key}: ${it}
+    else
+      debug `You have no friends.
+      
+    > name: Jon
+    > age: 19
+    > cat: true
+    > dog: true
+    > province: QC
+  
+Recall that you can rename **it** and **key** with the **as** clause:
+
+    each friend as value, field
+      debug `${field}: ${value}
+
+**Each** can also call out to a function with the **each using** variation.
+
+    set handler to task as value, field
+      debug `${field}: ${value}
+    
+    each friend using handler
 
 
-### ELSE _clause_
+### else _clause_
 
 	if [expr] 
 	/ unless [expr]
@@ -1261,14 +1425,14 @@ Specifies a block of code that will be executed if the condition leading to the 
 	  debug 'No traits.'
  
 
-### EMPTY _literal_
+### enum _literal_
 
 	.. empty
 
 A literal value indicating an empty list/array. The equivalent of Javascript’s `[]`, **empty** creates an Array with no elements.
 
 
-### ENUM _modifier_
+### enum _modifier_
 
 	fields [identifier] enum, ( [identifier] enum, ... )
 
@@ -1278,7 +1442,7 @@ When declaring a set of fields, specifies a value 1 higher than the value of the
 	> { a: 1, b: 2, c:10, d: 11}
 
 
-### ERROR _mvar_
+### error _mvar_
 
 	.. error
 
@@ -1301,7 +1465,7 @@ You can override this behaviour by using an **as** clause with the **catch** sta
 	> [TypeError: undefined is not a function]
 
 
-### EXISTS
+### exists
 
 	exists [expr] ( as [it ident] )
 	  [code]
@@ -1310,34 +1474,77 @@ You can override this behaviour by using an **as** clause with the **catch** sta
 
 Executes the indented code if the expression is a defined value, e.g. if it is not **undefined**.  The tested value will be available as **it** within the scope of the code block.  (This is different from the _truthy_ testing **if**, which uses **trial**.)
 
+**Exists** is quite handy when working with caches and lookups.
 
-\<\>
+    exists @cache|$key
+      return it
+    else
+      set @cache|key from @ExpensiveCalculation $key
+      return @cache|key
+
+Though an even slicker way of dealing with that particular idiom is to use **initialized**:
+
+    return @cache|$key initialized from @ExpensiveCalculation $key
+
+...Though it's only actually useful if you really have nothing else to do besides look something or calculate it. **Exists** gives you a lot more flexibility.
 
 
-### EXPECTS _clause_ / _operator_
+### expects _clause_ / _operator_
 
-	.. task expects [$name] ([type]), ...
-	.. [expr] expects [traits expr]
+	... task/promise/process expects [rules definition]
+	.. [expr] expects [rules object]
 
 Used to check whether a function’s named parameters (or any arbitrary object) has certain traits, and optionally if those traits are of a particular type.
 
 #### expects clause
 
+When used as the clause in a **task**, **promise** or **process** function definition. **expects** adds run-time parameter checking to the function, passing the first argument (the one that holds named parameters) through an *expects check* based on the rules that follow. If any expectations are not met, a runtime error is thrown.
+
+Names appearing in **expects** clauses, and thus being used to check parameters, _must_ be preceeded by **$**. This is intended as a reminder that *named parameters are always referenced with the $ scoping operator*.
+
 #### expects operator
 
+Expects compares an object againt a set of rules and returns a list of rules that are **violated**. Thus, a successful test of expectations is an empty array. An array with one or more elements contains a list of the rules that were broken.
+
+#### expects rules
+
+Rules for **expects** take the form of a set of traits. Their names correspond to names of traits that must be found in the expression under test. The value, if not _true_, is interpreted as an object type; the trait must be of that type (or a child of that type).
+ 
+Any violations to the rules are returned in a list; that list being made up of plain objects with the following fields:
+
+    .trait - name expected
+    .expects - type expected
+    .found - type found
+  
+Here are some examples, finally:
+
+    AddStudent task expects $name string, $age number
+      @students.push copy $ 
+    ..
+    @AddStudent name 'Sally', age '12'
+    
+    > Error: SAI: parameter exception in AddStudent
+    > age should be number, but it's string
+
+Performing this same test in an ad-hoc fashion using the **expects** operator would look like this:
+
+    set newStudent to: name 'Sally', age '12'
+    set studentRules to: name 'string', age 'number'
+    debug newStudent expects studentRules
+     
+    > [ { trait: 'age', expects: 'number', found: 'string' } ]    
+
+N.B. the **expects** clause rule format is identical to that of a single-line **traits** definition, with the additional requirement of a **$** before every trait name.
 
 
-\<\>
-
-
-### FALSE _literal_
+### false _literal_
 
 	.. false
 
 The boolean value **false**.
 
 
-### FINALLY
+### finally
 
 	try 
 	  [block]
@@ -1348,9 +1555,10 @@ The boolean value **false**.
 
 An exception handling clause identifying a block of code that is executed whether or not an exception occurs. (Even executes if you re-**throw** an exception within the **catch** clause.)
 
+For details, see the Jasacript exception documentation.
 
 
-### FIELDS _literal_
+### fields _literal_
 
 	.. fields [key] [expr], [key] [expr], ... (;)
 	.. fields 
@@ -1394,7 +1602,7 @@ When using a fields literal in an expression that might make the end of the lite
 Fields initializers can be nested by use of either parenthesis or semicolons, or by using multiple levels of indent.
 
 
-### FIRST _comprehension_
+### first _comprehension_
 
 	.. [expr] first
 
@@ -1404,7 +1612,7 @@ Returns the first value in a list or iterator.
 	> Apple
 
 
-### FROM _operator_
+### from _operator_
 
 	.. from [identifier] ([parameters]) (;)
 
@@ -1426,8 +1634,13 @@ When calling a function as a verb (the first thing on a source code line), **fro
 	set records from cursor.FetchAll
 	cursor.Close
 
+If you use **from** in a continuing expression, close the parameter clause with a semicolon. The following two examples are equivalent.
 
-### GET _declaration_
+    set @x to ~Math.sin($angle) * $magnitude
+    set @x from ~Math.sin $angle; * $magnitude    
+
+
+### get _declaration_
 
 	object [name] [version]
 	
@@ -1449,7 +1662,7 @@ Declares a _getter_ for a dynamic object trait; that is, a trait that has a valu
 	  set @y to m * ~Math.sin(a)
 
 
-### GIVEN _declaration_
+### given _declaration_
 
 	given [definition]
 
@@ -1477,7 +1690,7 @@ Defines immutable traits when declaring an object. These traits are assigned to 
 	> 'M. coronaria var unknown'
 
 
-### HAS _comprehension_
+### has _comprehension_
 
 	.. [collection] has [expr]
 	.. [collection] has
@@ -1486,8 +1699,7 @@ Defines immutable traits when declaring an object. These traits are assigned to 
 
 The comprehension operator **has** indicates an expression based filter using the **it** _magical value_ to represent the item currently under examination. Since **it** is in play, the associated **dot** scoping prefix is also active within the expression for easy access to item fields. 
 
-
-#### HAS (inline)
+#### has inline
 
 	debug friends has (.province = 'QC') and (.cat or .dog)
 	
@@ -1495,7 +1707,7 @@ The comprehension operator **has** indicates an expression based filter using th
  
 Any valid expression can be used in a **has** comprehension, and one can refer to values outside the expression as well.
 
-	    set rentAge to: ON 25, QC 21
+	set rentAge to: ON 25, QC 21
 	debug friends has .age >= rentAge[.province]
 	
 	> [ { name: 'Ellie', age: 22, province: 'QC' },
@@ -1503,15 +1715,14 @@ Any valid expression can be used in a **has** comprehension, and one can refer t
 	>   { name: 'Harry', age: 31, province: 'QC' },
 	>   { name: 'Jenna', age: 28, dog: true, province: 'ON' } ]
  
- 
-#### HAS (block)
+#### has block
 
 Keyword **has** can reference a block of code directly, which makes the **it** magic value available within that block, or be given the name of a task (or a task definition). You must **return** a _truthy_ (keep) or _falsy_ (discard) value from the block so the filter can take the according action. If you don’t return a value, all rows will be discarded.
 
 	    friends has
 	      return .age >= rentAge[.province]
 
-#### HAS USING
+#### has using
 
 You can integrate function calls into a composed comprehension by adding the **using** keyword immediately following the comprehension keyword itself.
 
@@ -1520,7 +1731,7 @@ You can integrate function calls into a composed comprehension by adding the **u
 	debug friends has using CanRent
 
 
-### HIGHEST _comprehension_
+### highest _comprehension_
 
 	.. [collection] highest [expr]
 
@@ -1531,7 +1742,7 @@ Returns the collection element with the highest value of the expression. Prepare
 	> { name: 'Harry', age: 31, province: 'QC' }
 
 
-### IF _statement_
+### if _statement_
 
 	if [expr] ( as [ident] )
 	  [code]
@@ -1555,7 +1766,7 @@ The value used in the test of the **if** is available in the _magic variable_ **
 	  debug row // prints the contents of names|pk
 
 
-### INITIALIZED _operator_
+### initialized _operator_
 
 	.. [var] initialized [expr]
 
@@ -1568,7 +1779,7 @@ If the variable on the left is **undefined**, stores the value on the right to i
 	  QC: [ 'Ellie', 'Ann', 'Harry' ] }
 
 
-### INTO _comprehension_
+### into _comprehension_
 
 	.. into [initial accumulator value] [expr]
 	.. into [initial accumulator value]
@@ -1579,7 +1790,7 @@ Javascript features the array method `Array.prototype.reduce` which performs the
 
 In addition to the item (**it**) and the item key (**key**) available in other comprehensions, an accumulator variable (**accum**) is used when evaluating **into** expressions. The value of the expression becomes the value of **accum** the next time the expression is evaluated.
 
-#### INTO (inline)
+#### into inline
 
 The **accum** variable is initialized by the value following **into** — in the example below `0` — and then each row in the collection is visited and we add `.age` to it. This adds up the ages of every friend.
 
@@ -1587,7 +1798,7 @@ The **accum** variable is initialized by the value following **into** — in the
 	
 	> 185
 
-#### INTO (block)
+#### into block
 
 The **into** comprehension, like other comprehensions, has an inline version with an expression, and a long-form which takes a block of code.
 
@@ -1604,7 +1815,7 @@ Another hint: **default** is an operator that evaluates to its right hand value 
 
 Last hint: **blank** initializes an object with no traits; it is the SAI equivalent of Javascript’s `{}`.  The comparable word for arrays/lists with no elements is **empty**; in Javascript you’d write `[]`.
 
-#### INTO USING
+#### into using
 
 The addition of **using** lets you call an external function.  The function must always `return` the value you wish to be used as the accumulator so the value can be preserved across function calls.  (The block version of **into** takes care of this for you.)
 
@@ -1615,7 +1826,7 @@ The addition of **using** lets you call an external function.  The function must
 	> 185
 
 
-### INC _statement_
+### inc _statement_
 
 	inc [var]
 
@@ -1905,7 +2116,7 @@ When **it** is populated, you can also use the “unrooted” **attribute** ( . 
 (There is no unrooted [] lookup available.)
 
 
-### KEYS _comprehension_
+### keys _comprehension_
 
 	.. [collection] keys 
 
@@ -1918,7 +2129,7 @@ Returns the keys (or indices) of a collection’s elements.
 	> [ 'name', 'age', 'cat', 'province']
 
 
-### KEY _mvar_
+### key _mvar_
 
 	.. key
 
@@ -1972,7 +2183,7 @@ Similar to **it** in nested contexts, you are unable to access “outer” value
 	// prints 0,0  1,1  2,2  0,0  1,1  2,2  0,0  1,1  2,2
 
 
-### LAST _comprehension_
+### last _comprehension_
 
 	.. [collection] last
 
@@ -1983,7 +2194,7 @@ Returns the last element in a collection as a stand-alone value or object. (If t
 	> Citron
 
 
-### LIMIT _comprehension_
+### limit _comprehension_
 
 	.. [collection] limit [qty]
 	.. [collection] limit [index], [qty]
@@ -2005,7 +2216,7 @@ You always get a list back, even if just one element will be returned.
 If the collection is an iterable, it will only be fetched as many times as needed. (If you ask for elements offset from the end, the iterator will be exhausted because an iterator’s length can only be ascertained by exhausting it.)
 
 
-### LIST _literal_
+### list _literal_
 
 	.. list [term], [term], ... (;)
 	.. list
@@ -2100,7 +2311,7 @@ The _only_ way to test for **NaN** is to use the **isNaN** operator.
 	> true
 
 
-### NAND _operator_
+### nand _operator_
 
 	.. [expr] nand [expr]
 
@@ -2114,14 +2325,40 @@ A semantic simplification of `not ([expr] and [expr])`.
 	debug 1 nand 1 // prints 'false'
 
 
-### NEW _operator_
+### new _operator_
 
 	.. new [prototype] ( [parameters] )
 
 Instantiates a new object with the given prototype. If parameters are supplied, passes them to the object’s constructor.
 
+**New** is used for traditional Javascript objects; objects where you have in-hand the prototype used to fabricate an instance that object. **New** trusts that the code to create that object has already been located and compiled.
 
-### NOP _statement_
+**Create** is used for SAI objects; objects where you have in-hand an object name (as a string). **Create** doesn't assume pre-compiled prototypes; if the prototype isn't cached, it will attempt to load it via the `SAI.config.Loader` function. 
+
+Since **new**'s prototypes are often created with **require**, and require is often found in **reference**, it is also often the case that the prototype is a *global* value, thus you will need to reference it with the **~** global scoping prefix:
+
+    reference:
+      express from require 'express'
+      
+    object HelloHTTP 1.0.0
+    
+    Instantiate task
+      set @app from ~express // <--- note the use of ~ to access global
+      
+      @app.get '/', task as req, res
+        res.send 'Hello HTTP!'
+      
+      set @server from @app.listen 3000, 'localhost', task
+        with @server.address()
+          debug 'Example app listening at http://${.address}:${.port}'
+
+You'll also need to use **~** when creating Javascript built-in objects such as `Error`:
+
+    if crocodiles
+      throw new ~Error "Why do we even have that lever?"
+
+
+### nop _statement_
 
 	nop
 
@@ -2135,7 +2372,7 @@ No operation; no data; do nothing. This statement (or one like it) is necessary 
 	  set x + 13
 
 
-### NOR _operator_
+### nor _operator_
 
 	.. [expr] nor [expr]
 
@@ -2149,7 +2386,7 @@ A semantic simplification of `not ([expr] or [expr])`.
 	debug 1 nor 1 // prints 'false'
 
 
-### NOT _operator_
+### not _operator_
 
 	.. not [expr]
 
@@ -2161,7 +2398,7 @@ Performs the logical not operation. Returns **false** if the right expression is
 	debug not empty  // prints 'false'
 
 
-### NOTB _operator_
+### notb _operator_
 
 	.. notb [expr]
 
@@ -2173,7 +2410,7 @@ Performs a bitwise logical not on a 32-bit signed integer.
 	 +7 in binary: 00000000000000000000000000000111
 
 
-### NUMBER _operator_
+### number _operator_
 
 	.. number [expr]
 
@@ -2185,14 +2422,14 @@ Attempts to convert the following expression into a numeric value. If it cannot,
 	> 0
 
 
-### NULL _literal_
+### null _literal_
 
 	.. null
 
 An empty value. I don’t have any example code for this.
 
 
-### OBJECT _declaration_
+### object _declaration_
 
 	object [identifier] [version]
 
@@ -2200,8 +2437,11 @@ Begins the definition of an object. Only one object definition is permitted per 
 
 In an object definition, the following sections are supported. See each keyword for more details. Also review the _Defining an Object_ document.
 
+	reference:
+    [object references]
+    
 	object [identifier] [version]
-	
+    
 	inherit:
 	  [list of objects to inherit from]
 	
@@ -2223,7 +2463,7 @@ In an object definition, the following sections are supported. See each keyword 
 	  [code that implements this task/process/promise] 
 
 
-### OBSERVE _operator_
+### observe _operator_
 
 	.. [expr] observe [expr]
 	.. [expr] observe ( as [value ident] )
@@ -2242,19 +2482,19 @@ Evaluates the right expression using the left expression value as the **it** mag
 N.B. useful in **chain** expressions.
 
 
-### ORPHAN _declaration_
+### orphan _declaration_
 
 	.. task
 	  orphan
 
-Compiles to `@=this` which in effect detaches a function defined within an object-owned function from that object. 
-
 It causes the @ scoping prefix within the function to refer to the context of the function call instead of the context of the function definition. 
 
-You probably want to use this in combination with some **local** variable definitions.
+You probably want to use this in combination with **local** variable definitions.
+
+For clarifications and example code on this, see **task**.
 
 
-### OR _operator_
+### or _operator_
 
 	[expr] or [expr]
 
@@ -2266,7 +2506,7 @@ If the left expression is **truthy**, returns it without executing the right exp
 	debug 1 or 2  // prints '1'
 
 
-### ORB _operator_
+### orb _operator_
 
 	[expr] orb [expr]
 
@@ -2279,7 +2519,7 @@ Performs a bitwise or on two 32-bit integers.
 	15 in binary: 00000000000000000000000000001111
 
 
-### OVERLAY _operator_
+### overlay _operator_
 
 	.. [collection] overlay [collection]
 
@@ -2307,7 +2547,7 @@ Creates a new collection that is a composite of a copy of the left collection wi
 Overlay also works with iterators and treats them like arrays.
 
 
-### PLY _statement_
+### ply _statement_
 
 	ply [list-like collection] ( as [item ident] ( , [key ident] ) )
 	  [code block]
@@ -2332,7 +2572,7 @@ The trait value is captured in the **it** mvar, and the trait number is captured
 	> 2: Citron
 
 
-### PROMISE _declaration_
+### promise _declaration_
 
 	[identifier] promise ( as [parameter list] )
 	  [code block]
@@ -2342,10 +2582,37 @@ The trait value is captured in the **it** mvar, and the trait number is captured
 
 Wraps the code block in a Promise-like function shell. Along with **resolve** and **reject**, forms a convenient bit of syntactic sugar for making Promise-like functionality.
 
-\<\>
+This is probably best explained by just showing you what happens when you use it.
+
+    set doThing to promise as url
+      HeyServer url, task as request, result
+        if result.success
+          resolve result
+        else
+          reject result
+    ..
+    debug doThing.toString()
+     
+    function (p) {
+      return new Promise(function($_resolve, $_reject) {
+        var $url = p;
+        $HeyServer($url, function(p, $result) {
+          var $request = p;
+          if (($56 = ($result.success))) {
+            $_resolve($result);
+          } else {
+            $_reject($result);
+          }
+        });
+      });
+    }
+
+So basically it throws a **Promise** wrapper around the function and allows you to use **resolve** and **reject** as statements. (The $56 in there is housekeeping for the **trial** mvar; V8 optimizes unused assignments like this away.)
+
+It's not a big deal, just syntactic sugar, but in combination with chaining, can make code much cleaner. And that's why I made SAI.
 
 
-### PROCESS _declaration_
+### process _declaration_
 
 	[identifier] process ( as [parameter list] )
 	  [yielding code block]
@@ -2353,12 +2620,72 @@ Wraps the code block in a Promise-like function shell. Along with **resolve** an
 	.. process ( as [parameter list] )
 	  [yielding code block]
 
-Creates a function that is expected to **yield** one or more values.
+Creates a function that is expected to **yield** one or more values. This is an ES6 feature. **Process** does exactly the same thing as **task** except the generated code uses `function*` instead of `function`. 
 
-\<\>
+If you're not familiar with generators/yielding, here is a very simplified overview.
+
+    set Candidates to process
+      count 1 to 100 as x
+        count 1 to 100 as y
+          if 1<x and x<y and x+y<100
+            yield: x x, y y, s x+y, p x*y
+
+The Candidates process, when invoked, runs all of the code in the process up until the first **yield**, then returns, handing you a process object, here stored in the variable `iter`:
+
+    set iter from Candidates
+
+That object is an _iterator_; it is a stateful representation of a `Candidates` process. Each time you call a process, you get a new iterator. Once you have an iterator, you can _iterate_ through it. Each iteration returns the next value _yielded_ by the process.
+
+Iteration takes place by calling the **.next** task on the iterator.
+
+    debug from iter.next
+     
+    > { value: { x: 2, y: 3, s: 5, p: 6 }, done: false }
+
+You can see that **.next** returns a simple object with two fields, **.value** and **.done**.  (In our iterator, the value is the first qualified candidate represented by a simple object with four fields: x, y, s and p.)
+
+**.value** holds whatever was **yield**ed. **.done** is a boolean flag that indicates whether the iteration is complete; that is, whether another call to **.next** would result in a newly generated value.
+
+Each time you call **.next** you will get a new value.
+
+    debug from iter.next
+    debug from iter.next
+    debug from iter.next
+     
+    > { value: { x: 2, y: 4, s: 6, p: 8 }, done: false }
+    > { value: { x: 2, y: 5, s: 7, p: 10 }, done: false }
+    > { value: { x: 2, y: 6, s: 8, p: 12 }, done: false }
+
+Here is a bit of code that will keep calling **.next** until the **.done** flag is set, saving the result in a four item list.
+
+    set cache to empty            // empty array
+    do until result.done          // check .done at the end of each loop
+      set result from iter.next   // next iteration to result
+      cache.push result           // save result in cache
+    debug cache limit -4          // print last four rows
+     
+    > [ { value: { x: 48, y: 50, s: 98, p: 2400 }, done: false },
+        { value: { x: 48, y: 51, s: 99, p: 2448 }, done: false },
+        { value: { x: 49, y: 50, s: 99, p: 2450 }, done: false },
+        { value: undefined, done: true } ]
+ 
+Once the **.done** flag is set, the iterator is said to be _exhausted_. Notice that **.value** is *undefined* when the **.done** flag is set.
+
+Processes, generators and iterators are very powerful tools because they allow computations to be *lazy*, that is, for data to be generated only as it is needed, thus vastly reducing memory requirements. (The Python language is very useful for scientific computing because it is a primarily lazy language because large data sets can be manipulated with modest resources.)
+
+SAI has many affordances for processes and iterators, including native support with all comprehensions. As a very simple example, all of the above code could be replaced with this simple expression:
+
+    debug Candidates() limit -4
+    
+    > [ { x: 48, y: 49, s: 97, p: 2352 },
+        { x: 48, y: 50, s: 98, p: 2400 },
+        { x: 48, y: 51, s: 99, p: 2448 },
+        { x: 49, y: 50, s: 99, p: 2450 } ]
+ 
+ (Notice how the limit comprehension itself deals silently with **.next** and **.done**, and automatically gives you just a list with only the **.value** of each iteration.)
 
 
-### REAP _comprehension_
+### reap _comprehension_
 
 	.. [iterable] reap
 
@@ -2376,52 +2703,75 @@ Converts an iterator into an array by draining the iterator. If the iterator nev
 	> [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 ]
 
 
-### REFERENCE _declaration_
+### reference _declaration_
 
 	reference:
 	  [name] [expr]
 	  ...
 
-Declare global variables at the top of a **.SAI** source file.
+Declare global variables at the top of a **.SAI** source file. This is the only way to make global variables; inside a reference declaration. The syntax is the same as a **fields** structure definition, with name/value pairs separated by commas or newlines.
 
-\<\>
+    reference:
+      MIN 0, MAX 100
+      express require('express')
+      Vector2D 'Vector2D ^1.0.0'
+
+Recall that all global variables can only be referenced in code by use of the **~** global scoping prefix. So while you define globals as above, you use them as below:
+
+    count to ~MAX
+      debug key
+    ..  
+    set @app from ~express
+    ..
+    set origin to create ~Vector2D 0, 0
+    ..
 
 
-### REJECT _statement_
+### reject _statement_
 
 	reject ( [expr] )
 
-Call the failed potential outcome for a function declared with **promise**.
+Call the failed potential outcome for a function declared with **promise**. This does not implicity end execution, however, the way **return** does.
 
-\<\>
+For an example, see **promise**.
 
 
-### REQUIRE _verb_
+### require _verb_
 
 	.. require [filename]
 
-As in Javascript.
+As in Javascript, and for clarity should be exclusively reserved for use in **reference** sections.
+
+    reference:
+      express require('express')
+    ..
+    set @app to ~express()
 
 
-### RESOLVE _statement_
+### resolve _statement_
 
 	resolve ( [expr] )
 
-Call the successful potential outcome for a function declared with **promise**.
+Call the successful potential outcome for a function declared with **promise**. Doesn't implicitly end execution the way **return** does, so make sure you mind the code path.
 
-\<\>
+For an example, see **promise**.
 
 
-### RETURN _statement_
+### return _statement_
 
 	return ( [expr] )
 
-Return a value to the caller of a function.
+Return a value to the caller of a **task**. Works just like Javascript.
 
-\<\>
+    set multiply to task as a, b
+      return a*b
+      
+    debug from multiply 2, 4
+    
+    > 8
 
 
-### SELECT _statement_
+### select _statement_
 
 	.. [collection] select [keys]
 
@@ -2436,16 +2786,19 @@ Return a new collection that is the subset of the original collection identified
 	     [ name: 'Ann', age: 23 } ]
 
 
-### SELF _mvar_
+### self _mvar_
 
 	set [var] .. self ..
 
-A magic variable to be used in a **set** statement that contains the original value of the variable that is being set/modified.
+A magic variable used only in a **set** statement that contains the original value of the variable that is being set/modified.
 
-\<\>
+The following lines are equivalent; one of them is easier to read than the other.
 
+    set totals|key to (cache|key default 0) + amount
+    set totals|key to (self default 0) + amount
+  
 
-### SET _declaration_
+### set _declaration_
 
 	[identifier] set ( as [ident] )
 	  [code block]
@@ -2454,7 +2807,30 @@ A magic variable to be used in a **set** statement that contains the original va
 
 Declare a _setter_ for a dynamic object trait. Cannot be used inside a function body.
 
-\<\>
+This example object implements *Distance*, storing the value normalized to meters. You can get and set the value in centimeters and miles through the use of dynamic traits.
+
+    object Distance 1.0.0
+    instance: meters 0
+    
+    centimeters set as val
+      set @meters to val/100
+    get
+      return @meters * 100
+    
+    miles set as val
+      set @meters to val * 1609.344
+    get
+      return @meters / 1609.344
+ 
+ And in use:
+ 
+    set trip to create 'Distance'
+    set trip.meters to 500
+    debug trip.meters       // > 500
+    debug trip.centimeters  // > 50000
+    debug trip.miles        // > 0.31068559611867
+    set trip.miles to 10
+    debug trip.meters       // > 16093.44
 
 
 ### SET _statement_
@@ -2484,6 +2860,7 @@ Convert a static collection into an iterable.  Makes a copy of the collection to
 	.. super ( [ parameters ] )
 
 Call the previous ancestral version of the current object task.
+
 
 \<\>
 
@@ -2523,10 +2900,114 @@ Choose among alternatives based on expression equality. The expression under eva
 	.. [task] ( as [parameters] ) / ( expects [parameters] )
 	  [code]
 
-Define a block of code as an object trait or anonymous function.
+Define a block of code as an object trait or anonymous function. It’s probably best to explain this by showing what Javascript is made.
 
+#### task trait
 
-\<\>
+The first example is a task trait on an object. It takes two standard parameters, name and value.
+
+	Instrument task as name, value
+	  debug `${@context} ${name}: ${value}
+
+Generated code:
+
+	function (p, $value) {
+	  var $name = p,
+	    $ = this;
+	  console.log('' + $.context + ' ' + $name + ': ' + $value);
+	}
+	
+
+You’ll note that the first parameter in a SAI-generated function is always `p`, which is explained below. More importantly, however, note the assignation `$ = this`.
+
+In SAI-generated code, the `$` variable is used as a buffer for the _this_ context. When executing a task trait, SAI captures the current _this_ with `$=this` to provide a reliable context for anonymous functions.
+
+#### anonymous task
+
+Here’s the same task but for anonymous use:
+
+	set anon to task as name, value
+	  debug `${@context} ${name}: ${value}
+
+Generated code:
+
+	function (p, $value) {
+	  var $name = p;
+	  console.log('' + $.context + ' ' + $name + ': ' + $value);
+	}
+
+Notice how the anonymous task doesn’t capture `this.` into the `$` variable the way the trait task does. 
+
+Thus, anonymous tasks automatically bind to the context that created them. This is usually what you want when creating anonymous tasks, and is why the `var self=this` idiom has so much traction in Javascript. SAI builds this idiom into the language.
+
+However, if you don’t want this behaviour for a particular anonymous task, include the **orphan** statement in it.
+
+	set anon to task as name, value
+	  orphan
+	  debug `${@context} ${name}: ${value}
+
+Generated code:
+
+	function (p, $value) {
+	  var $name = p;
+	  var $ = this;
+	  console.log('' + $.context + ' ' + $name + ': ' + $value);
+	}
+
+Orphan anonymous tasks bind to the _calling_ context, rather than to the context that created them.
+
+#### positional vs. named parameters
+
+The second example is a task which expects two named parameters, $angle and $magnitude. As shown above, the first parameter in generated code is always `p`. Named parameters are passed as traits within `p`.
+
+	SetPolar task expects $angle, $magnitude
+	  set @x to $magnitude * ~Math.cos($angle)
+	  set @y to $magnitude * ~Math.cos($angle)
+
+Generated code:
+
+	function (p) {
+	  var $ = this;
+	  _$AI.expectsThrow(p, {
+	    "angle": true,
+	    "magnitude": true
+	  }, 'SetPolar');
+	  $.x = (p.magnitude * Math.cos(p.angle));
+	  $.y = (p.magnitude * Math.sin(p.angle));
+	} 
+
+When you use **expects**, a call to _expectsThrow_ is included to validate your assumptions. 
+
+This task is called by naming the parameters:
+
+	@SetPolar angle 45o, magnitude 3
+
+Which generates this code:
+
+	 $.SetPolar({
+	    angle: 0.7853981633974483,
+	    magnitude: 3
+	  });
+
+Notice how named parameters are encapsulated in a plain JS object and passed in the first function call argument (which is always named `p`). 
+
+It is not necessary to use the **expects** clause to used named parameters. All **expects** does for you is check to see if the names (and types) are as expected. Here is the function without it:
+
+	SetPolar task
+	  set @x to $magnitude * ~Math.cos($angle)
+	  set @y to $magnitude * ~Math.cos($angle)
+
+Generating this:
+
+	function (p) {
+	  var $ = this;
+	  $.x = (p.magnitude * Math.cos(p.angle));
+	  $.y = (p.magnitude * Math.sin(p.angle));
+	}
+
+The use of named parameters with the **$** scoping prefix generates code that assumes the first argument `p` will have the expected named traits.
+
+Refer to the entry on **expects** for more on what it does.
 
 
 ### THROW _verb_
@@ -2535,7 +3016,12 @@ Define a block of code as an object trait or anonymous function.
 
 Trigger exception handling.
 
-\<\>
+    try
+      throw new ~Error 'Oh no!'
+    catch 
+      return error.message
+
+You should probably look at the Javascript documentation.
 
 
 ### THRU _comprehension_
@@ -2672,7 +3158,7 @@ Using the parenthetical **as** is one solution to this problem, but there are be
 
 	.. true
 
-The boolean value true.
+The boolean value true. 
 
 
 ### TRY _statement_
@@ -2684,11 +3170,18 @@ The boolean value true.
 	( finally
 	  [clean-up code] )
 
-Exception handling construct.
+Exception handling construct. For details, see the Jasacript exception documentation.
 
-\<\>
-
-
+    set file to new File 'output.log'
+    try
+      file.Open
+      file.Write 'Hey, it's a log'
+    catch 
+      return error.message
+    finally
+      file.Close
+  
+  
 ### TO _clause_
 
 	set [varname] to [expr]
@@ -2709,7 +3202,9 @@ Returns the Javascript-native type of an expression.  See e.g. [https://develope
 
 	.. undefined
 
-A literal indicating no value, or a variable that has not been assigned. This compiles directly to Javascript’s `undefined`.
+A literal indicating no value, or a variable that has not been assigned. 
+
+This compiles directly to Javascript’s `undefined`.
 
 
 ### UNLESS _statement_
@@ -2720,11 +3215,6 @@ A literal indicating no value, or a variable that has not been assigned. This co
 	  [code if expr is true]
 
 Execute the following code block if the given expression evaluates to _falsy_. Executes from an **else** clause otherwise. All this really does is prepend a logical **not** to the expression. It’s for clarity, see?
-
-while
-	unless b
-
-\<\>
 
 
 ### UNTIL _statement_
@@ -2919,9 +3409,30 @@ Performs a bitwise XOR operation on two 32-bit integers.
 	yield [expr]
 	.. yield [expr]
 
-Used with functions defined as **process**; see the EcmaScript 6 documentation for details.
+Used with functions defined as **process**; see that keyword in this documentation, and the EcmaScript 6 documentation for details.
 
-\<\>
+    set OddNumbers to process
+      set i to 1
+      while true
+        yield i
+        set i + 2
+        
+    set myOdds from OddNumbers
+    debug myOdds.next
+    debug myOdds.next
+    debug myOdds.next
+    
+    > { value: 1, done: false }
+    > { value: 3, done: false }
+    > { value: 5, done: false }
+    
+    iterate OddNumbers() limit 4
+      debug it
+    
+    > 1
+    > 3
+    > 5
+    > 7
 
 
 ### YIELDING _verb_
@@ -2929,9 +3440,35 @@ Used with functions defined as **process**; see the EcmaScript 6 documentation f
 	yielding [process]
 	.. yielding [process]
 
-Yields to a yielding process, until that process is done yielding. Equivalent to Javascript’s `yield *` syntax. See **yield**.
+Yields to a yielding process, until that process is done yielding. Equivalent to Javascript’s `yield *` syntax. Essentially, **yielding** calls another process as a subroutine.
 
-\<\>
+    // The Mirror process yields its first argument
+    // then reverses it (in ASCII), yields that
+    // then terminates
+    
+    set Mirror to process as str
+      yield str
+      yield str.split('').reverse().join('')
+    
+    // FruitSalad process is yielding an invocation of Mirror 
+    // for each fruit, then terminates
+    
+    set FruitSalad to process
+    ply fruit
+      yielding Mirror(it)
+      
+    // access each generated value in FruitSalad in turn
+    iterate FruitSalad()
+      debug it
+      
+    > Apple
+    > elppA
+    > Banana
+    > ananaB
+    > Citron
+    > nortiC
+
+In the example, Mirror yields twice, and FruitSalad yields to Mirror three times (once for each fruit), so the final iteration result is six values. 
 
 
 [1]:	http://www.sitepoint.com/javascript-truthy-falsy/

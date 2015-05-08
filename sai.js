@@ -68,7 +68,7 @@ var _$AI = {}
 _$AI.assert=function(test,msg) {
   if (!test) {
     if (!msg) msg='';
-    throw new Error("SAI: failed assertion "+msg);
+    throw new Error("SAI: failed assertion: "+msg);
   }
 }
 
@@ -300,12 +300,8 @@ _$AI.element = function(a,index) {
     return a[index];
   } else if (isIterable(a)) { // untested
     a=getIterator(a);
-    a=_$AI.limit(a,index,1);
+    a=_$AI.slice(a,index,1);
     var v=a.next();
-    while (index--) {
-      if (v.done) return undefined;
-      v=a.next();
-    }
     return v.value;
   }
   throw new Error("Attempt to extract an element from something not a list.");
@@ -556,15 +552,15 @@ _$AI.expects = function(params,prototype) {
         // good
       } else {
         if (!params.isof) {
-          result.push({trait:j,expects:type,is:typeof params});
+          result.push({trait:j,expects:type,found:typeof params});
           //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof params);
         } else {
-          result.push({trait:j,expects:type,is:params.isa});
+          result.push({trait:j,expects:type,found:params.isa});
           //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+params.isa);
         }
       }
     } else if (!params[j]) {
-      result.push({trait:j,expects:type,is:'undefined'});
+      result.push({trait:j,expects:type,found:'undefined'});
       //throw new Error("SAI: Expected parameter "+j+" in call to "+name);
     } else if (type!==true) {
       var param=params[j];
@@ -574,10 +570,10 @@ _$AI.expects = function(params,prototype) {
         // good
       } else {
         if (!param.isof) {
-          result.push({trait:j,expects:type,is:typeof param});
+          result.push({trait:j,expects:type,found:typeof param});
           //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof param);
         } else {
-          result.push({trait:j,expects:type,is:param.isa});
+          result.push({trait:j,expects:type,found:param.isa});
           //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+param.isa);
         }
       }
@@ -592,7 +588,7 @@ _$AI.expectsThrow = function(params,prototype,name) {
   var err=[];
   for (var i in x) {
     var j=x[i];
-    err.push(j.trait+" should be "+j.expects+", but it's "+j.is);
+    err.push(j.trait+" should be "+j.expects+", but it's "+j.found);
   }
   throw new Error('SAI: parameter exception in '+name+'\n'+err.join('\n'));
 }
@@ -730,11 +726,14 @@ SAI.GetParser = function() {
       info+=context+'\n\n'+e.message+'\n\n';
       throw new Error(info);
     }
-    //js=Beautify(js,{ indent_size: 2, preserve_newlines: false});
+    js=Beautify(js,{ indent_size: 2, preserve_newlines: false});
+    console.log(js);
     return js;
   }
 };
 
+
+  
 SAI.Parse = SAI.GetParser();
 
 SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
@@ -832,7 +831,7 @@ SAI.GetPrototype = function(name,bindings) {
     SAI.isa[proto.isa]=name;
     for (var i in proto.__tobelocked) {
       var l=proto.__tobelocked[i];
-      Object.defineProperty(proto,l,{configurable:false,writable:false});
+      Object.defineProperty(proto,l,{configurable:false});
     }
     delete proto.__tobelocked;
     for (var i in proto.__tobefrozen) {

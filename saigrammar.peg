@@ -298,7 +298,9 @@
     fun+=o.body+FunStop(); // function body
     fun+='}';
   
-    if (fun.indexOf('^{this}')>-1) error("Cannot use unrooted . accessor without a context\n\n"+fun);
+    if (o.name) {
+      if (fun.indexOf('^{this}')>-1) error("Cannot use unrooted . accessor without a context\n\n"+fun);
+    }
     fun=RV(fun,{this:false,super:'_'+fn});
   
     r=head+fun+tail;
@@ -447,10 +449,10 @@ PropertyDef
 }
 
 PropertyClause
- = _ g:(GET/SET) _ w:Output? _ b:Block EOLs { 
+ = _ g:(GET/SET) _ w:MultiOutput? _ b:Block EOLs { 
    if (!g) g='get'; 
    if (g=='get') w=null; 
-   return [g,TaskFormatter({prefix:g,name:w,body:b})]; 
+   return [g,TaskFormatter({prefix:g,as:w,body:b,kind:'function'})]; 
   }
 
 Task
@@ -493,7 +495,7 @@ PromiseClause
     block:b,
     kind:'function',
     preface:'return new Promise(function($_resolve,$_reject) {',
-    postface:'}'
+    postface:'});'
   });
 }
 
@@ -767,7 +769,7 @@ IterateStatement
      var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false),step:(step?step:'-1')};
      var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
      var alternate=none ? 'if (^{key}<=^{dest}) { ^{none} } else ' : '';
-     var iterate='while (^{key}>^{dest}) { ^{key}+=^{step}; ^{block} }\n';
+     var iterate='for (^{key}+=^{step}; ^{key}>=^{dest}; ^{key}+=^{step}) { ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
   }
  / COUNT Sep start:(x:Expression _ TO Sep { return x })? stop:Expression step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
@@ -1008,7 +1010,7 @@ Define
   / INSTANCE _ v:Definition EOLs { 
     var proof='var t='+v[1]+';\nfor (var i in t) { prototype[i]="instance"; };\n'; 
     var setup= 'var Constructor=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n  Constructor.call(this);\n  for (var i in t) this[i]=t[i];\n};\n'; 
-    return setup+proof;
+    return proof+setup;
   }
 
 
@@ -1497,8 +1499,6 @@ Value
  / NUMBER Sep v:Value { return '(_$AI.number('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
  / COPY Sep v:Value _ { return '_$AI.copy('+v+')'; } // test 'copy'
-// / KEYS Sep v:Value _ { return '(_$AI.keys('+v+'))' } // test 'keys unary *'
-// / VALUES Sep v:Value _ { return '(_$AI.values('+v+'))' } // test 'values unary*'
  / TASK Sep v:TaskClause _ { return v }
  / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
@@ -1507,7 +1507,6 @@ Value
  / YIELD Sep v:Value _ { return 'yield'+v; }
  / '?' v:RValueSafe _ { return v }
  / v:RValue _ { return v }
- //// v:Literal _ { return v }
  / VerbChain 
  / v:NestedDefinition { return v[1] }
  / o:NewObject _ { return o }

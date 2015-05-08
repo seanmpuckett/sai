@@ -341,6 +341,9 @@ Instantiate task
       
   debug Odds() limit 10 reap
   
+  
+  
+  
   // update
   debug '\nUPDATE'
   set a to copy fruit
@@ -396,5 +399,186 @@ Instantiate task
   // instruments
   debug '\nINSTRUMENTS'
   debug 'line: ${__line}'
+
+  // task
+  debug '\nTASK'
+  debug @Instrument.toString()
+  set anon to task as name, value
+    orphan
+    debug `${@context} ${name}: ${value}
+  debug anon.toString()
+  debug @SetPolar.toString()
+  
+  // expects
+  debug '\nEXPECTS'
+  //@AddStudent name 'Sally', age '12'
+  
+  set newStudent to: name 'Sally', age '12'
+  set studentRules to: name 'string', age 'number'
+  debug newStudent expects studentRules
+
+  // promise
+  debug '\nPROMISE'
+  set doThing to promise as url
+    HeyServer url, task as request, result
+      if result.success
+        resolve result
+      else
+        reject result
+  debug doThing.toString()
+  
+  // from
+  debug '\nFROM'
+  set a to task
+    return @cache|$key initialized from @ExpensiveCalculation $key
+  debug a.toString()
+  
+  // down
+  debug '\nDOWN'
+  count down 15 step -3
+    debug key
+  count down 15 
+    debug key
+  
+  // delete
+  debug '\nDELETE'
+  set obj to: a 1, b 2, c 3, d 4, e 5, f 6
+  set obj delete 'a'
+  debug obj
+  set obj delete: 'c', 'f'
+  debug obj
+  set obj delete: b 'B is for Bonobo.', d 'D is for Dixie cups.'
+  debug obj
+  
+  // each
+  debug '\nEACH'
+  set frined to friends first
+  each friend
+    debug `${key}: ${it}
+  
+  // process
+  debug '\nPROCESS'
+  set Candidates to process
+    count 1 to 100 as x
+      count 1 to 100 as y
+        if 1<x and x<y and x+y<100
+          yield: x x, y y, s x+y, p x*y
+          
+  set iter from Candidates
+  debug from iter.next
+  debug from iter.next
+  debug from iter.next
+  debug from iter.next
+
+  set cache to empty
+  do until result.done
+    set result from iter.next
+    cache.push result
+  debug cache limit -4
+  
+  debug Candidates() limit -4
+  
+  
+  // return
+  debug '\nRETURN'
+  set multiply to task as a,b
+    return a*b
+  debug from multiply 2, 4
+  
+  // yield
+  debug '\nYIELD'
+  set OddNumbers to process
+    set i to 1
+    while true
+      yield i
+      set i+2
+  set myOdds from OddNumbers
+  debug myOdds.next()
+  debug myOdds.next()
+  debug myOdds.next()
+
+  iterate OddNumbers() limit 4
+    debug it
+    
+  // yielding
+  debug '\nYIELDING'
+  set Mirror to process as str
+    yield str
+    yield str.split('').reverse().join('')
+    
+  set FruitSalad to process
+    ply fruit
+      yielding Mirror(it)
+  
+  iterate FruitSalad()
+    debug it
+  
+  // set
+  debug '\nSET DYNAMIC'
+  set trip to create 'Distance'
+  set trip.meters to 500
+  debug trip.meters
+  debug trip.centimeters
+  debug trip.miles
+  set trip.miles to 10
+  debug trip.meters
+  
+  // as
+  debug '\nAS'
+  debug friends thru as friend, index
+    return `${index}) ${friend.name} lives in ${friend.province}
+  each friends first as value, field
+    debug `${field}: ${value}
+
+  // assert
+  debug '\nASSERT'
+  assert not everythingIsAwesome, 'I have some bad news...'
+  
+  // copy
+  debug '\nCOPY'
+  set plate to fruit
+  plate.push 'Durian'
+  debug fruit
+  
+  // continue
+  debug '\nCONTINUE'
+  count 10
+    unless key % 2
+      continue
+    debug key
+    
+  // chain
+  debug '\nCHAIN'
+  set mirror to task
+    return chain $
+      split ''
+      reverse
+      join ''
+  debug mirror('A man, a plan, a canal, Panama!')
+  debug chain friends
+    #cat
+    by .name
+    thru 'My friend ${.name} likes cats.'
+  set double to task
+    return chain empty
+      concat $
+      concat $
+    
+  debug chain fruit
+    alter double(it)
+    
+  
+  
+AddStudent task expects $name string, $age number
+  @students.push copy $  
+  
+Instrument task as name, value
+  debug `${@context} ${name}: ${value}
+  
+SetPolar task 
+  set @x to $magnitude * ~Math.cos($angle)
+  set @y to $magnitude * ~Math.sin($angle)
+  @SetPolar angle 45o, magnitude 3
+  
   
   
