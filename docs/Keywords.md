@@ -514,8 +514,8 @@ Evaluates to whichever expression is numerically or lexically lower.
 
 Evaluates to whichever expression is numerically or lexically higher.
 
-	debug 1 ?< 2   // returns 2
-	debug 2 ?< 1   // returns 2
+	debug 1 ?> 2   // returns 2
+	debug 2 ?> 1   // returns 2
 
 
 ### ?? :: (if/this/that) _operator_
@@ -564,8 +564,8 @@ Here’s a short implementation of a 2D vector by way of illustration.
 	
 	Instantiate task as x,y
 	  if x isof 'Vector'
-	    set @x to x.y
-	    set @y to y.y
+	    set @x to x.x
+	    set @y to x.y
 	  else
 	    set @x to x
 	    set @y to y
@@ -855,9 +855,9 @@ An example, renaming **it** and **key** in the block handler of a **thru** compr
   
 #### as parenthetic
 
-	.. ( [expr] ( as [var] )
+	.. ( [expr] as [var] )
 
-The parenthetic as assigns the value of the parenthesised expression to a named identifier. The assignment happens as soon as the parethesis is evaluated, so you can use the identifier in the same expression as the parenthetical, as long as the parenthetical is evaluated first.
+The parenthetic **as** assigns the value of the parenthesised expression to a named identifier. The assignment happens as soon as the parethesis is evaluated, so you can use the identifier in the same expression as the parenthetical, as long as the parenthetical is evaluated first.
 
 	  set six to (1+2 as three)+three
 	  debug array three, six
@@ -909,15 +909,15 @@ A non-mutating chainable comprehension, audit is used to pass all values in a co
 	  audit debug('Fruit #${key} is ${it}') 
 	debug b
 
-> Pre-sort
-> Fruit #0 is Apple
-> Fruit #1 is Banana
-> Fruit #2 is Citron
-> Post-sort
-> Fruit #0 is Citron
-> Fruit #1 is Banana
-> Fruit #2 is Apple
-> [ 'Citron', 'Banana', 'Apple’ ] 
+    > Pre-sort
+    > Fruit #0 is Apple
+    > Fruit #1 is Banana
+    > Fruit #2 is Citron
+    > Post-sort
+    > Fruit #0 is Citron
+    > Fruit #1 is Banana
+    > Fruit #2 is Apple
+    > [ 'Citron', 'Banana', 'Apple’ ] 
 
 This example shows how one could add instrumentation to a process in a light-weight fashion.
 
@@ -1031,7 +1031,6 @@ Print a sorted list of ages by province:
 
 If you’ll recall, **has using** provides the ability to use a named function for your sorting facilitator, and **by using** allows the same thing.
 
-Calculate list of ages by province (using named task)\*\* 
 	set ProvinceAge to task as a, b
 	 return a.province <=> b.province or a.age <=> b.age
 	
@@ -1171,36 +1170,6 @@ Converts an iterator into an Array by draining the iterator. If the iterator nev
 The opposite of **collect** is **iterate**.
 
 
-### copy _operator_
-
-	.. copy [expr]
-
-Use the **copy** unary operator to create a _shallow copy_ of the expression it precedes.  You sometimes need this because ordinarily SAI and Javascript assign objects, rather than copies of object values. 
-
-    set plate to fruit       // i want some fruit
-    plate.push 'Ice cream'   // and also dessert
-    debug fruit              // but now fruit has changed
-    
-    > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
-    
-    fruit.pop                 // get rid of the ice cream
-    debug fruit
-    
-    > [ 'Apple', 'Banana', 'Citron' ]
-    
-    set plate to copy fruit  
-    plate.push 'Ice cream'
-    debug fruit
-    
-    > [ 'Apple', 'Banana', 'Citron' ]
-    
-    debug plate               // there we go
-     
-    > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
-
-Note that **copy** only copies enumerable values.
-
-
 ### continue _statement_
 
 	[iterator/loop]
@@ -1245,9 +1214,39 @@ Inheriting from an object that has contracts, and then not providing implementat
 	object pear
 	inherit:
 	  fruit
-
-> exception thrown: “SAI: Contractually required task ‘Consume’ does not exist in object ‘pear’.”
+    
+    > exception thrown: “SAI: Contractually required task ‘Consume’ does not exist in object ‘pear’.”
  
+
+### copy _operator_
+
+	.. copy [expr]
+
+Use the **copy** unary operator to create a _shallow copy_ of the expression it precedes.  You sometimes need this because ordinarily SAI and Javascript assign objects, rather than copies of object values. 
+
+    set plate to fruit       // i want some fruit
+    plate.push 'Ice cream'   // and also dessert
+    debug fruit              // but now fruit has changed
+    
+    > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
+    
+    fruit.pop                 // get rid of the ice cream
+    debug fruit
+    
+    > [ 'Apple', 'Banana', 'Citron' ]
+    
+    set plate to copy fruit  
+    plate.push 'Ice cream'
+    debug fruit
+    
+    > [ 'Apple', 'Banana', 'Citron' ]
+    
+    debug plate               // there we go
+     
+    > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
+
+Note that **copy** only copies enumerable values.
+
 
 ### count _statement_
 
@@ -1319,7 +1318,7 @@ Prints the value of the expression to the console.
 Compiles directly to `console.log([expr])`.
 
 
-### debug _statement_
+### dec _statement_
 
 	dec [var]
 
