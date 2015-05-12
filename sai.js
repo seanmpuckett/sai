@@ -20,17 +20,28 @@ var SAIconfig = {
 
 
 // HELPERS
-
-if (!Symbol) var Symbol={iterator:'@@iterator'};
-
-var getIterator=function(i) {
-  var iter=i[Symbol.iterator];
-  return iter ? iter() : i;
+/*
+try {
+  if (typeof Symbol.iterator !== 'symbol') {
+    var Symbol={iterator:'@@iterator'};
+  }
+} catch (x){
+  var Symbol={iterator:'@@iterator'};
 }
-
-var isIterable=function(i) {
+*/
+var canIterate=function(i) {
   if (!i) return false;
   if (i[Symbol.iterator]) return true;
+  if (typeof i === 'function') return true; // close enough for our purposes
+  var next=i.next;
+  if (!next) return false; 
+  if ((typeof next) === 'function') return true; // close enough for our purposes
+  return false;
+}
+
+var mustIterate=function(i) {
+  if (!i) return false;
+  if (typeof i === 'function') return true;
   var next=i.next;
   if (!next) return false; 
   if ((typeof next) === 'function') return true; // close enough for our purposes
@@ -53,17 +64,50 @@ var isSet=function(i) {
 var isArray=Array.isArray;
 
 var isMergable=function(i) {
-  return isArray(i) || isObject(i) || isIterable(i);
+  return isArray(i) || isObject(i) || canIterate(i);
 }
 
 var isCollection=function(i) {
   return isArray(i) || isObject(i);
 }
+/*
+var empty=[];
+var obj=['a'];
+var gen=function *() { yield true; }
+obj[Symbol.iterator]=gen;
+var iter=gen();
+console.log('gen can iterate: '+canIterate(gen));
+console.log('gen must iterate: '+mustIterate(gen));
+console.log('iter can iterate: '+canIterate(iter));
+console.log('iter must iterate: '+mustIterate(iter));
+console.log('obj can iterate: '+canIterate(obj));
+console.log('obj must iterate: '+mustIterate(obj));
+console.log('empty can iterate: '+canIterate(empty));
+console.log('empty must iterate: '+mustIterate(empty));
 
-
+var i=gen(), j=i.next(); if (!j.done) for (; !j.done; j=i.next()) console.log(j.value);
+process.exit();
+*/
 /// TOOLKIT
 
 var _$AI = {}
+
+_$AI.iterator=function(i) {
+  if (!i) return i;
+  if (typeof i.next === 'function') return i;
+  if (typeof i === 'function') return i();
+  if (i[Symbol.iterator]) return i[Symbol.iterator]();
+  return i;
+}
+
+_$AI.generator=function(i) {
+  if (!i) return i;
+  if (typeof i.next === 'function') return function*(){yield*i}();
+  if (typeof i === 'function') return i;
+  var iter=i[Symbol.iterator];
+  return iter ? iter : i;
+}
+
 
 _$AI.assert=function(test,msg) {
   if (!test) {
@@ -72,27 +116,30 @@ _$AI.assert=function(test,msg) {
   }
 }
 
-_$AI.sow=function(a) { // test 'sow *'
-  if (isIterable(a)) return a;
-  if (isArray(a)||isObject(a)) return function*(){ for (var i in a) yield a[i]; }();
+_$AI.iterate=function(a) { // test 'sow *'
   if (a===undefined) return undefined;
+  if (mustIterate(a)) return a;
+  if (a[Symbol.iterator]) return a[Symbol.iterator]();
+  if (isArray(a)||isObject(a)) return function*(){ for (var i in a) yield a[i]; }();
   return function*(){ yield a; }();
 }
 
-_$AI._reap=function(iterable) {
+_$AI._collect=function(iterable) {
   var a=[]; 
   for (var val of iterable) a.push(val);
   return a;
 }
 
-_$AI.reap=function(iterable) {
-  if (!isIterable(iterable)) return iterable;
-  return _$AI._reap(iterable);
+_$AI.collect=function(a) {
+  if (a===undefined) return undefined;
+  if (!mustIterate(a)) return a;
+  a=_$AI.iterator(a);
+  return _$AI._collect(a);
 }
 
 _$AI.sort=function(a,f) {
   if (isArray(a)) return a.slice(0).sort(f);
-  if (isIterable(a)) return _$AI._reap(a).sort(f);
+  if (mustIterate(a)) return _$AI._collect(a).sort(f);
   if (isObject(a)) return _.values(a).sort(f);
   return a;
 };
@@ -102,7 +149,7 @@ _$AI.alter = function(a,f) { // test 'alter *'
 }
 
 _$AI.observe = function(a,f) {
-  if (isIterable(a)) throw new Error('SAI: Cannot observe an iterator.'); // test 'observe iterator'
+  if (mustIterate(a)) throw new Error('SAI: Cannot observe an iterable.'); // test 'observe iterator'
   f(a); // test 'observe *'
   return a;
 }
@@ -111,10 +158,11 @@ _$AI.audit = function(a,f) {
   if (isArray(a)) { 
     var k=0,l=a.length;
     while (k<l) { f(a[k],k); k++; }
-  } else if (isIterable(a)) { 
+  } else if (mustIterate(a)) { 
+    a=_$AI.iterator(a);
     return function *(){
       for (var val of a) { f(val); yield val; }
-    }(); // n.b. does not fall through to final return
+    }(); 
   } else if (isObject(a)) { 
     var r={};
     for (var k in a) f(a[k],k);
@@ -133,7 +181,8 @@ _$AI.map = function(a,f) {
       k++;
     }
     return r;
-  } else if (isIterable(a)) { // test 'map iterable'
+  } else if (mustIterate(a)) { // test 'map iterable'
+    a=_$AI.iterator(a);
     return function *(){
       for (var val of a) yield f(val);
     }();
@@ -156,7 +205,8 @@ _$AI.filter = function(a,f) {
       if (f(v,k)) r.push(v);
     }
     return r;
-  } else if (isIterable(a)) { // test 'filter iterator'
+  } else if (mustIterate(a)) { // test 'filter iterator'
+    a=_$AI.iterator(a);
     return function *(){
       for (var val of a) {
         if (f(val)) yield val;
@@ -186,8 +236,8 @@ _$AI.reduce = function(a,f,accum) {
     }
     return accum;
   }
-  if (isIterable(a)) {
-    a=getIterator(a);
+  if (mustIterate(a)) {
+    a=_$AI.iterator(a);
     return function*(){
       var step=a.next();
       if (step.done) { yield accum; return; } 
@@ -243,8 +293,8 @@ _$AI.slice = function(a,start,count) {
 
   if (isArray(a)) return a.slice(start,end);
 
-  if (isIterable(a)) {
-    a=getIterator(a);
+  if (mustIterate(a)) {
+    a=_$AI.iterator(a);
     // return new iterable that slices the previous
     // first n records limited
     if (start===0) {
@@ -298,8 +348,8 @@ _$AI.slice = function(a,start,count) {
 _$AI.element = function(a,index) {
   if (isArray(a)) {
     return a[index];
-  } else if (isIterable(a)) { // untested
-    a=getIterator(a);
+  } else if (mustIterate(a)) { // untested
+    a=_$AI.iterator(a);
     a=_$AI.slice(a,index,1);
     var v=a.next();
     return v.value;
@@ -312,10 +362,10 @@ _$AI.copy = _.clone;
 _$AI.overlay = function(l,r) {// test 'overlay'
   if (!isMergable(l)) throw new Error("SAI: Attempt to OVERLAY onto something that's not a collection/iterable.");
   if (!isMergable(r)) throw new Error("SAI: Attempt to OVERLAY with something that's not a collection/iterable.");
-  if (!isIterable(l)) { // left side static
+  if (!mustIterate(l)) { // left side static
     l=_.clone(l); // no in-place modification
-    if (isIterable(r)) {
-      r=getIterator(r);
+    if (mustIterate(r)) {
+      r=_$AI.iterator(r);
       // right side iterator
       return function*(){
         var v=r.next();
@@ -335,10 +385,10 @@ _$AI.overlay = function(l,r) {// test 'overlay'
     }
     return l;
   } else {
-    l=getIterator(l);
+    l=_$AI.iterator(l);
     // left side iterable
-    if (isIterable(r)) {
-      r=getIterator(r);
+    if (mustIterate(r)) {
+      r=_$AI.iterator(r);
       // right side iterable
       return function*(){
         var vl=l.next(),vr=r.next();
@@ -375,7 +425,8 @@ _$AI.select = function(src,keys) {
       var j=0,result=[];
       for (var i in keys) result[j++]=src[keys[i]];
       return result;
-    } else if (isIterable(keys)) { // test 'select list iterable' // console.log("path 2");
+    } else if (mustIterate(keys)) { // test 'select list iterable' // console.log("path 2");
+      keys=_$AI.iterator(keys);
       src=_.clone(src);
       return function*(){
         for (var i of keys) yield src[i];
@@ -384,10 +435,10 @@ _$AI.select = function(src,keys) {
     var j=0,result=[];
     for (var i in keys) result.push(src[i]);
     return result;
-  } else if (isIterable(src)) { // lhs iterator
-    src=getIterator(src);
-    if (isIterable(keys)) { // test 'select iterable iterable' // rhs iterator console.log("path 4");
-      keys=getIterator(keys);
+  } else if (mustIterate(src)) { // lhs iterator
+    src=_$AI.iterator(src);
+    if (mustIterate(keys)) { // test 'select iterable iterable' // rhs iterator console.log("path 4");
+      keys=_$AI.iterator(keys);
       return function*(){
         var buf=[],len=0;
         for (v of keys) {
@@ -421,7 +472,8 @@ _$AI.select = function(src,keys) {
       for (var v of src) if (i++==keys[j]) { yield v; j++; if (j>=keys.length) break;}
     }();
   } // else lhs traits
-  if (isIterable(keys)) { // test 'select traits iterable' // console.log("path 7");
+  if (mustIterate(keys)) { // test 'select traits iterable' // console.log("path 7");
+    keys=_$AI.iterator(keys);
     src=_.clone(src);
     return function*(){
       for (var v of keys) {
@@ -434,14 +486,19 @@ _$AI.select = function(src,keys) {
     return result;
   } // rhs traits // test 'select traits traits
   var result={};
-  for (var i in keys) result[i]=src[i];
+  if (isObject(keys)) {
+    for (var i in keys) result[i]=src[i];
+  } else {
+    result[keys]=src[keys];
+  }
   return result;
 }
 
 _$AI.update = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   if (!(isArray(dest)||isObject(dest))) throw new Error("Attempt to MERGE into something that's not a list or traits.");
   if (!isMergable(keys)) throw new Error("Attempt to MERGE from something that's not a list or traits.");
-  if (isIterable(keys)) {
+  if (mustIterate(keys)) {
+    keys=_$AI.iterator(keys);
     var i=0;
     for (var v of keys) {
       if (v!==undefined) dest[i]=v;
@@ -461,10 +518,15 @@ _$AI.delete = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
     delete dest[keys];
   } else if (isArray(keys)) {
     for (var i in keys) { var v=keys[i]; if (v!==undefined) delete dest[keys[i]]; }
-  } else if (isIterable(keys)) {
+  } else if (mustIterate(keys)) {
+    keys=_$AI.iterator(keys);
     for (var v of keys) { if (v!==undefined) delete dest[v]; }
   } else {
-    for (var i in keys) delete dest[i];
+    if (isObject(keys)) {
+      for (var i in keys) delete dest[i];
+    } else {
+      delete dest[keys];
+    }
   }
 }
 
@@ -502,7 +564,8 @@ _$AI.keys = function(a) {
   if (isArray(a)) { // test 'keys list'
     var len=a.length;
     for (var i = 0; i<len; result.push(i++));
-  } else if (isIterable(a)) {
+  } else if (mustIterate(a)) {
+    a=_$AI.iterator(a);
     var i=0;
     for (var v of a) result.push(i++);
   } else if (isObject(a)) {
@@ -516,8 +579,8 @@ _$AI.values = function(a) {
   var result=[];
   if (isArray(a)) { // test 'values list'
     return _.clone(a);
-  } else if (isIterable(a)) { // test 'values iterable'
-    return _$AI.reap(a);
+  } else if (mustIterate(a)) { // test 'values iterable'
+    return _$AI.collect(a);
   } else if (isObject(a)) { // test 'values traits'
     for (var i in a) result.push(a[i]);
   } else if (a !== undefined) { // test 'values value'
@@ -727,7 +790,7 @@ SAI.GetParser = function() {
       throw new Error(info);
     }
     js=Beautify(js,{ indent_size: 2, preserve_newlines: false});
-    console.log(js);
+    //console.log(js);
     return js;
   }
 };

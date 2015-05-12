@@ -1,2 +1,6 @@
 object Pear 1.0.0
 inherit: 'Fruit'
+Instantiate task
+  debug 'Pear says YO'
+  super
+  

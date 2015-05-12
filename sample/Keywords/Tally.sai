@@ -1,0 +1,11 @@
+object Tally 1.0.0
+
+instance:
+  bag empty
+
+Count task 
+  set @bag|$ to (self default 0) + 1
+
+Iterator process
+  each @bag
+    yield: key, it

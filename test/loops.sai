@@ -227,13 +227,13 @@ Execute task
     return true
     
   @Test 'iterate break', task
-    iterate (:1,2,3,4) sow
+    iterate (:1,2,3,4) iterate
       break
       return false
     return true
     
   @Test 'iterate continue', task
-    iterate (:1,2,3,4) sow
+    iterate (:1,2,3,4) iterate
       continue
       return false
     return true

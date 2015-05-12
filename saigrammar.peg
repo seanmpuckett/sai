@@ -286,8 +286,8 @@
     var head='', tail='';
     if (o.prefix!='get' && o.prefix!='set') {
       addToList('lock',fn);
-      head='var _'+fn+'=prototype["'+fn+'"];\n';
-      head+='prototype.'+fn+'=';
+      head='var ^{super}=prototype['+fn+'];\n';
+      head+='prototype['+fn+']=';
       tail=';\n';
     }
   
@@ -301,9 +301,8 @@
     if (o.name) {
       if (fun.indexOf('^{this}')>-1) error("Cannot use unrooted . accessor without a context\n\n"+fun);
     }
-    fun=RV(fun,{this:false,super:'_'+fn});
+    r=RV(head+fun+tail,{this:false,super:false});
   
-    r=head+fun+tail;
     return r;
 
   }
@@ -463,13 +462,15 @@ Task
 
 TaskEvent
  = v:Identifier _ TASK _ x:Expects? _ w:MultiOutput? _ { 
-   return  {name:v,expects:x,as:w,kind:'function'};
+   return  {name:"'"+v+"'",expects:x,as:w,kind:'function'};
  } 
- / v:Identifier _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
+ / v:ProcessName _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
    return  {name:v,expects:x,as:w,kind:'function*'};
  } 
 
-
+ProcessName
+ = v:ITERATOR { return "Symbol.iterator" }
+ / v:Identifier { return "'"+v+"'" }
 
 TaskClause
 = x:Expects? _ o:MultiOutput? _ b:Block {
@@ -726,14 +727,14 @@ NoneClause
 IterateStatement
  = ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
    var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar(),this:(o?o[0]:false)};
-   var setup='var ^{t1}=(^{v}.next) ? (^{v}) : ^{v}[Symbol.iterator](); var ^{t2}=^{t1}.next();\n';
-   var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
+   var setup='var ^{t1}=_$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
+   var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
    var iterate='for (;!^{t2}.done; ^{t2}=^{t1}.next()) { ^{this}=^{t2}.value; ^{block}; }\n';
    return RV(setup+none+iterate,w); 
   }
  / ITERATE Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
    var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar()};
-   var setup='var ^{t1}=(^{v}.next) ? (^{v}) : ^{v}[Symbol.iterator](); var ^{t2}=^{t1}.next();\n';
+   var setup='var ^{t1}=_$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
    var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value); ^{t2}=^{t1}.next(); }\n';
    return RV(setup+none+iterate,w); 
@@ -1172,16 +1173,16 @@ Comprehension
  / SortComprehension 
  / KeysComprehension 
  / ValuesComprehension
- / SowComprehension
- / ReapComprehension
+ / IterateComprehension
+ / CollectComprehension
  / AlterComprehension
  / ObserveComprehension
  / OtherComprehension
 
 
-SowComprehension
- = SOW { // test 'sow *'
-     return ['_$AI.sow(',')'];
+IterateComprehension
+ = ITERATE { // test 'sow *'
+     return ['_$AI.iterate(',')'];
    }
 
 KeysComprehension
@@ -1194,9 +1195,9 @@ ValuesComprehension
      return ['_$AI.values(',')'];
    }
 
-ReapComprehension
- = REAP { 
-     return ['_$AI.reap(',')'];
+CollectComprehension
+ = COLLECT { 
+     return ['_$AI.collect(',')'];
    }
 
 SortComprehension
@@ -1746,6 +1747,7 @@ ReservedWords
  / CASE
  / CHAIN
  / CREATE
+ / COLLECT
  / COPY
  / DEC
  / DEFAULT
@@ -1770,6 +1772,8 @@ ReservedWords
  / ISNT
  / ISNAN
  / IS
+ / ITERATE
+ / ITERATOR
  / KEYS
  / LAST
  / LIMIT
@@ -1791,10 +1795,8 @@ ReservedWords
  / OVERLAY
  / PROMISE
  / PROCESS
- / REAP
  / SELECT
  / SELF
- / SOW
  / TASK
  / TRIAL
  / THROW
@@ -1833,6 +1835,7 @@ BY = 'by'
 CASE = 'case'
 CATCH = 'catch'
 CHAIN = 'chain'
+COLLECT = 'collect'
 COPY = 'copy'
 CONTINUE = 'continue'
 CONTRACT = 'contract'
@@ -1872,6 +1875,7 @@ ISNAN = 'isNaN'
 IS = 'is'
 ISOF = 'isof'
 ITERATE = 'iterate'
+ITERATOR = 'Iterator'
 IT = 'it'
 KEYS = 'keys'
 KEY = 'key'

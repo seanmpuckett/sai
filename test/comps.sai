@@ -47,7 +47,7 @@ Execute task
     return b.a is undefined and b.b is undefined and b.c is undefined
     
   @Test 'filter iterator odds', task
-    set b to: 1,2,3,4,5; sow has it%2
+    set b to: 1,2,3,4,5; iterate has it%2
     count 3
       unless b.next().value = key*2+1
         return false
@@ -87,7 +87,7 @@ Execute task
     return b.a=2 and b.b=3 and b.c=4
    
   @Match 'thru inline iterator', 5, task
-     set b to: 1,3,5; sow thru it+2
+     set b to: 1,3,5; iterate thru it+2
      b.next
      return b.next().value
      
@@ -131,7 +131,7 @@ Execute task
     return b.a=1 and b.b=2 and b.c=3 and d=6
    
   @Match 'audit iterator', 3, task
-     set b to: 1,3,5; sow audit it+2
+     set b to: 1,3,5; iterate audit it+2
      b.next
      return b.next().value
      
@@ -168,7 +168,7 @@ Execute task
   // the exception is the correct case
   @Test 'observe iterator', task
     try
-      set b to: 1,2,3; sow observe 
+      set b to: 1,2,3; iterate observe 
         debug it.length
     catch
       return true
@@ -290,31 +290,31 @@ Execute task
     return b is undefined
      
   @Match 'into 1 iterable ', 'aa', task
-    set b to list a; sow into 'a'
+    set b to list a; iterate into 'a'
        return accum+it
     return b.next().value
     
   @Match 'into 1 iterable it', 'a', task
-    set b to list a; sow into it
+    set b to list a; iterate into it
        return accum+it
     return b.next().value
 
   @Match 'into 3 iterable', 'abc', task
-    set b to list a,b,c; sow into ''
+    set b to list a,b,c; iterate into ''
        return accum+it
     return b.next().value
     
   @Match 'into 3 iterable it', 'abc', task
-    set b to list a,b,c; sow into it
+    set b to list a,b,c; iterate into it
        return accum+it
     return b.next().value
 
   @Match 'into 3 iterable inline ', 'abc', task
-    set b to list a,b,c; sow into '' accum+it
+    set b to list a,b,c; iterate into '' accum+it
     return b.next().value
     
   @Match 'into 3 iterable inline it', 'abc', task
-    set b to list a,b,c; sow into it accum+it
+    set b to list a,b,c; iterate into it accum+it
     return b.next().value
 
   

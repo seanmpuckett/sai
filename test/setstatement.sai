@@ -133,7 +133,7 @@ Execute task
 
   @Test 'self delete iterable', task
     set a to: a 1, b 2, c 3
-    set a delete (list b, d; sow)
+    set a delete (list b, d; iterate)
     return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
 
 
@@ -204,7 +204,7 @@ Execute task
 
   @Test 'merge list iterable', task
     set a to: 1,2,3
-    set a update (: undefined, 'a', undefined, 'b'; sow)
+    set a update (: undefined, 'a', undefined, 'b'; iterate)
     return a|0=1 and a|1='a' and a|2='3' and a|3='b'
 
 
@@ -220,7 +220,7 @@ Execute task
   
   @Test 'merge traits iterable', task
     set a to: a 1, b 2
-    set a update (: undefined, 'a', undefined, 'b'; sow)
+    set a update (: undefined, 'a', undefined, 'b'; iterate)
     return a.a=1 and a.b=2 and a|1='a' and a|3='b' and a|0 is undefined and a|2 is undefined
 
 

@@ -76,8 +76,11 @@ Execute task
     set a to '\x41'
     return a='A'
     
-//  @Test 'unicode code point', task
-//    set a to '\u{41}'
-//    return a='A'
+  @Match 'iterator', 1, task
+    iterate @
+      return it
+    return false
+
+Iterator process
+  yield 1
   
-    

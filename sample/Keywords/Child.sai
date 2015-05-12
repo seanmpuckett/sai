@@ -1,0 +1,8 @@
+object Child 1.0.0
+inherit: 'Parent'
+instance: age 'unknown'
+Instantiate task as name, age
+  super name
+  set @age to age
+  
+  

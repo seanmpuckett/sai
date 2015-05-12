@@ -331,15 +331,15 @@ Instantiate task
   debug traits1 overlay traits2
   debug traits1 overlay list2
   
-  // reap
-  debug '\nREAP'
+  // collect
+  debug '\nCOLLECT'
   set Odds to process
     set local i to 1
     while i
       yield i
       set i + 2
       
-  debug Odds() limit 10 reap
+  debug Odds() limit 10 collect
   
   
   
@@ -567,8 +567,69 @@ Instantiate task
   debug chain fruit
     alter double(it)
     
+  // continue
+  debug '\n...'
+  debug traits
+    name Sally
+    age 32
+    province QC
+  ... overlay traits
+    #cat
+    province ON
   
+  // iterator
+  debug '\nIterator'
+    
+  set inventory to create 'Tally'
+  inventory.Count 'apple'
+  inventory.Count 'banana'
+  inventory.Count 'apple'
+  iterate inventory
+    debug it
   
+  ply inventory by it|1
+    debug it
+    
+  ply inventory iterate by it|1
+    debug it
+  
+  // iterate
+  debug '\nITERATE'
+  set seen to new ~Set
+  seen.add 'horse'
+  seen.add 'pig'
+  seen.add 'horse'
+  iterate seen
+    debug it
+
+  // set
+  debug '\nSET'
+  set a to 2
+  set a from ~Math.pow self, 2
+  set a via ~Math.sqrt
+  set a * 4
+  set a -
+  debug a
+  
+  // super
+  debug '\nSUPER'
+  set billy to create 'Child' 'Billy', 12
+  debug billy
+
+
+
+
+Dump task 
+  if ~Array.isArray($)
+    return '[ ${$.join(', ')} ]'
+  if typeof $ is 'object'
+    return '{ ' + chain $
+      thru '${key}: ${@Dump(it)}'
+      join ', '
+    ... + ' }'
+  return $
+    
+
 AddStudent task expects $name string, $age number
   @students.push copy $  
   

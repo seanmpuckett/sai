@@ -294,6 +294,51 @@ Looks up the trait named _attribute_ in the expression. When used without a lead
 	// prints 'Sara' three times
 
 
+### .. (caboose) _style_
+
+You can use the two-dot caboose to stitch a *single line* child code block onto the end of a statement that requires it. Don't use the caboose unless it will help make your code clearer.
+
+The following are functionally identical:
+
+    if error 
+      return -1
+      
+    if error .. return -1
+
+
+### ... (continue) _style_
+
+You can use the three-dot continue syntax to insert line breaks, or multiple child code blocks, into a single statement. 
+
+This is not considered good practice (period), as most overly complex statements should be broken down into multiple statements (period), just like a run-on sentence should be clarified by a good editor.
+
+But should you really need it, it is there.
+
+The three dot continuation must start at the same indent as the line it continues.
+
+    debug traits
+      name Sally
+      age 32
+      province QC
+    ... overlay traits
+      #cat
+      province ON
+      
+    > { name: 'Sally', age: 32, province: 'ON', cat: true }
+
+Or even:
+
+    debug 1
+    ... +
+    ... 2
+    ... +
+    ... 3
+    
+    > 6
+  
+  Syntactically, the continue is equivalent to a whitespace character with a bonus ability to resent level of indent.
+  
+  
 ### / (divide) _operator_
 
 	.. [lexpr] / [rexpr]
@@ -349,7 +394,7 @@ The **:** structure definition parser determines whether to create an array or f
 	> { a: 1, b: 2, c: 3 }
 
 
-### ; (end structure) _literal_
+### ; (end structure) _syntax_
 
 	.. [structure definition] (;)
 
@@ -374,6 +419,11 @@ One can force **list** to parse incorrectly by using the **=** list element expr
 	
 	> [ 3, 2, 1 ]
 	> [ 1, 2, 3 ]
+
+The semicolon can also close parameter lists if using the **from** form of function invocation. The following examples are identical:
+
+    set x to ~Math.sin(angle) * magnitude
+    set x from ~Math.sin angle; * magnitude
 
 
 ### \< (less than) _operator_
@@ -922,6 +972,7 @@ To exit a loop, iterator or switch case before its natural end, use the **break*
 
 To create sorted array, use **by**. The newly resulting array will be sorted by the specified inline expression or code block. (**By** does not sort in-place; it always returns a new array.)
 
+If **by** is used on an iterable, it will **collect** all values before sorting.
 
 #### by inline
 
@@ -1100,6 +1151,26 @@ And because one of the comprehensions is **alter**, you can actually chain any f
 Functions you use in **chain** typically return a value; this is used as the object to pass to the next link in the chain. However, some methods and functions don't return a value, instead modifying their context in-place. If a function returns **undefined**, **chain** will reuse the previous object for the next call.
 
 
+### collect _comprehension_
+
+	.. [iterable] collect
+
+Converts an iterator into an Array by draining the iterator. If the iterator never ends, your system will lock up until you run out of memory. (You could use a **limit** comprehension to keep that from happening.)
+
+	set Odds to process
+	  set local i to 1
+	  while i
+	    yield i
+	    set i + 2
+	
+	debug Odds() collect // locks up
+	debug Odds() limit 10 collect
+	
+	> [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 ]
+
+The opposite of **collect** is **iterate**.
+
+
 ### copy _operator_
 
 	.. copy [expr]
@@ -1150,7 +1221,7 @@ In a loop or otherwise iterating block of code, **continue** short-cuts the rema
     > 9
 
 
-### CONTRACT _declaration_
+### contract _declaration_
 
 	contract:
 	  [task/trait name]
@@ -1178,7 +1249,7 @@ Inheriting from an object that has contracts, and then not providing implementat
 > exception thrown: “SAI: Contractually required task ‘Consume’ does not exist in object ‘pear’.”
  
 
-### COUNT _statement_
+### count _statement_
 
 	count [high expr] ( step [expr] ) ( as [key ident] )
 	  [block]
@@ -1222,16 +1293,24 @@ When using the **step** clause with **count down**, be sure that the step expres
 The optional **else** clause is executed instead of the main block if the **count** range length computes to 0 (or less). 
 
 
-### CREATE _operator_
+### create _operator_
 
 	.. create [expr] [parameters]
 
-Creates a SAI object by name. Will attempt to find the object’s source by using the `SAI.config.Loader` function, which defaults to `SAI.GetSourceFromPaths`, which tries to find a file named `[expr].sai` in the provided paths. 
+Creates a SAI object by name. 
 
-\<\>
+Will attempt to find the object’s source by using the `SAI.config.Loader` function, which defaults to `SAI.GetSourceFromPaths`, which tries to find a file named `[expr].sai` in the provided paths. 
+
+    reference:
+      Tally 'Tally ^1.0.0'
+    .. 
+    
+    set inventory to create ~Tally
+
+The example follows best practices of placing object names in a **reference** section, aliasing versioned names into 
 
 
-### DEBUG _adhoc verb_
+### debug _adhoc verb_
 
 	debug [expr]
 
@@ -1240,7 +1319,7 @@ Prints the value of the expression to the console.
 Compiles directly to `console.log([expr])`.
 
 
-### DEC _statement_
+### debug _statement_
 
 	dec [var]
 
@@ -1253,7 +1332,7 @@ Decrements (reduces by 1) the value in the given variable.
 	> 1
 
 
-### DEFAULT _operator_
+### default _operator_
 
 	... [expr] default [expr]
 
@@ -1626,15 +1705,15 @@ The following pairs are synonymous:
 	set cursor from db.Query 'select * from names'
 	set cursor to db.Query('select * from names')
 
-**From** is the encouraged form because it allows a more natural reading of source code, indicating that the identifier that follows will be used as a verb and returning a value.
+**From** is the encouraged form for **set** statements because it allows a more natural reading of source code. From indicates that the identifier that follows will be used as a verb and returning a value. 
 
-When calling a function as a verb (the first thing on a source code line), **from** is not needed.
+Neither **From** nor parenthesis are not needed when the verb begins the line as in the `cursor.Close` statement below.
 
 	set cursor from db.Query 'select * from names'
 	set records from cursor.FetchAll
 	cursor.Close
 
-If you use **from** in a continuing expression, close the parameter clause with a semicolon. The following two examples are equivalent.
+If you wish to use **from** in a continuing expression, close the parameter clause with a semicolon (like you'd close a structural literal). The following two examples are equivalent.
 
     set @x to ~Math.sin($angle) * $magnitude
     set @x from ~Math.sin $angle; * $magnitude    
@@ -2036,7 +2115,11 @@ Returns true if the expression is the **NaN** flag.  Note there is no other way 
 	debug isNaN a    // true
 
 
-### iterate _statement_
+### iterate _statement_ / _comprehension_
+
+What’s an iterable expression?  It’s an object that **yield**s values for iteration, or an object that on demand (via call to **[Symbol.iterator]** produces such an expression. (In ES6, native collection types based on **Array**, **Map**, and **Set** support lazy iteration.)
+
+#### iterate statement
 
 	iterate [iterable expression] (as [term ident])
 	  [block]
@@ -2049,11 +2132,89 @@ Returns true if the expression is the **NaN** flag.  Note there is no other way 
 
 Step through each result of an _iterable expression_, passing it through a block of code via the **it** magic variable.  If an **else** clause is present, that code is executed only if there is no iteration.
 
-What’s an iterable expression?  It’s an object that **yield**s values for iteration, or an object that on demand (via call to **[Symbol.iterator]** produces such an expression. (In ES6, native collection types based on **Array**, **Map**, and **Set** support lazy iteration.)
+A disadvantage of using **iterate** is that you don’t get a **key** value, you only get the **it** value. There is also a performance penalty when compared to imperative types of processing.
 
-A disadvantage of using **iterate** is that you don’t get a **key** value, you only get the **it** value. There is also a minor performance penalty as compared to more atomic types of iteration.
+    set seen to new ~Set
+    seen.add 'horse'
+    seen.add 'pig'
+    seen.add 'horse'
+    iterate seen
+      debug it
+    
+    > horse
+    > pig
 
-\<\>
+The example uses the new *Set* collection from ES6.
+
+
+#### iterate comprehension
+
+	.. [collection] iterate
+    
+    .. chain [collection]
+      iterate
+
+Ensures the collection is an iterable. If it already is an iterable, return it unchanged. If it has a **Iterate** method, call it and return that iterable. If it's an Array or object, shallow copy it and produce an iterator over its values. If it's just a plain value, produce an iterator that returns that value.
+
+Using **iterate** in this way allows you to guarantee that processing is being done using an iteration rather than a static collection. To go the other way, use **collect**, which turns an iterable into an Array.
+
+The following example follows the one in **Iterator**:
+
+    ply inventory by it|1
+      debug it
+      
+    > [ apple: 2, banana: 1 ]  // undesired result
+    
+    ply inventory iterate by it|1
+      debug it
+      
+    > [ 'banana', 1 ]          // correct result
+    > [ 'apple', 2 ]
+
+The example wants to print out a sorted list of inventory items. 
+
+The undesired result comes about because **by**, like most comprehensions, would prefer to process imperatively. So, even if you give **by** an object with a **Iterate** method, which all objects and arrays do, whether you put it there yourself or not, that method will not naturally be called. 
+
+So, **by** converts the `inventory ` object into an array so it can be sorted. The array conversion produces an array of all enumerable traits; in the case of `Tally` objects, the only enumerable trait is `bag`, and so an array that looks like `[ bag ]` is sorted (to no effect) and then printed one element at a time.
+
+When you force a call to **Iterator** with the **iterate** comprehension, you get the correct result you're expecting, as you thereby force **by** to use your custom iterator rather than a naive array conversion.
+
+The upshot is that right now SAI favours imperative collections rather than lazy iterators except when specifically using the **iterate** statement or comprehension. I'm not sure that's the right way to go.
+
+
+### Iterator _syntax_
+
+    Iterator process (as [parameter list])
+      [block]
+
+This will be a little gritty, because ES6 is gritty. When you name an object process **Iterator** (note the specific uppercase initial), the function won't be assigned to the object trait `object.Iterator`. Instead, it will be assigned to `object[Symbol.iterator]`. 
+
+The bad news is that this means you can't specifically refer to that trait by name in SAI without using the convoluted approach of `object[~Symbol.iterator]` (because **Symbol** is a global and globals must use the global scoping prefix).
+
+The good news is this means you probably won't ever *have to* refer to it by name, because all of SAI's comprehensions, as well as the **iterate** statement, and ES6's `for-of` loop, all implicitly check for the existence of the magic `Symbol.iterator` function and will use it if present.
+
+    object Tally 1.0.0
+    instance:
+      bag empty
+    Count task 
+      set bag|$ to (self default 0) + 1
+    Iterator process
+      each bag
+        yield: key, it
+      
+    set inventory to create 'Tally'
+    inventory.Count 'apple'
+    inventory.Count 'banana'
+    inventory.Count 'apple'
+    iterate inventory
+      debug it
+      
+    > [ 'apple', 2 ]
+    > [ 'banana', 1 ]
+
+In the example, when we **iterate** over `inventory`, a check is made to see if the object to iterate has an **Iterator** process, which in this case it does, so it is called, and then iteration takes place over the result. See the previous entry, **iterate comprehension**, for more on this.
+
+Note that this sleight-of-hand doesn't apply to an object **task** (as opposed to **process**) named "Iterator"; in fact SAI will not let you use that name for an object task, because doing so would break expectations of what an iterator is supposed to do (e.g. yield things).  Gah, the cruft, it burns.
 
 
 ### it _mvar_
@@ -2685,24 +2846,6 @@ SAI has many affordances for processes and iterators, including native support w
  (Notice how the limit comprehension itself deals silently with **.next** and **.done**, and automatically gives you just a list with only the **.value** of each iteration.)
 
 
-### reap _comprehension_
-
-	.. [iterable] reap
-
-Converts an iterator into an array by draining the iterator. If the iterator never ends, your system will lock up until you run out of memory. (You could use a **limit** comprehension to keep that from happening.)
-
-	set Odds to process
-	  set local i to 1
-	  while i
-	    yield i
-	    set i + 2
-	
-	debug Odds() reap // locks up
-	debug Odds() limit 10 reap
-	
-	> [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 ]
-
-
 ### reference _declaration_
 
 	reference:
@@ -2833,39 +2976,62 @@ This example object implements *Distance*, storing the value normalized to meter
     debug trip.meters       // > 16093.44
 
 
-### SET _statement_
+### set _statement_
 
-	set [ident] to [expr]
-	set [ident] from [function] ( [parameters] )
-	set [ident] [operator] [expr]
-	set [ident] [unary operator]
+	  set [ident] to [expr]
+	  set [ident] from [function] ( [parameters] )
+    set [ident] via [function]
+	  set [ident] [operator] [expr]  
+	  set [ident] [unary operator]
 
-Assign a value to an identifier.
+Assign a value to an identifier. That's right, you don't use the equals sign for assignment. Ugh, whose idea was that anyway? 
 
-\<\>
+    set a to 2
+    set a from ~Math.pow self, 2
+    set a via ~Math.sqrt
+    set a * 4
+    set a -
+    debug a
+    
+    > -8    
+
+Note: The **self** mvar refers to the current value of the variable presently being set.
 
 
-### SOW _comprehension_
-
-	.. [collection] sow
-
-Convert a static collection into an iterable.  Makes a copy of the collection to ensure the iterable doesn’t mutate even if the original collection changes.
-
-\<\>
-
-
-### SUPER _verb_
+### super _verb_
 
 	super ( [ parameters ] )
 	.. super ( [ parameters ] )
 
-Call the previous ancestral version of the current object task.
+Call the previous ancestral version of the current object method. This doesn't happen by default; if you want to chain backwards up the inheritance tree you must do it with **super**.
+
+Note there is *no other way* to access an overridden ancestral object method than by using **super** within that specific overriding method itself. SAI is very strict about inheritance that way. Don't even bother exploring the prototype chain.
+
+    object Parent 
+    instance: name 'unknown'
+    Instantiate task as name
+      set @name to name
+      
+    object Child
+    inherit: 'Parent'
+    instance: age 'unknown'
+    Instantiate task as name, age
+      super name
+      set @age to age
+      
+    set billy to create 'Child' 'Billy', 12
+    debug billy
+    
+    > { name: 'Billy', age: 12 }    
+
+Contrary to what you might expect, **super** _does not_ use the **@** scoping prefix; that's because super _always and only_ refers to the current object. You cannot call **super** on any other object.
+
+If you want to pass arguments to a **super** method without specifying them discretely, the following really ugly idiom gets the job done.
+
+    super.apply @ $$
 
 
-\<\>
-
-
-### SWITCH _statement_
+### switch _statement_
 
 	switch [expr] ( as [trial ident] )
 	  case [expr] ( , [expr] ... )
@@ -2892,7 +3058,7 @@ Choose among alternatives based on expression equality. The expression under eva
 	    @Emit 'Key [${key}] isn't used; type ? for help.'
 
 
-### TASK _declaration_
+### task _declaration_
 
 	[identifier] task ( as [parameters] ) / ( expects [parameters] )
 	  [code]
@@ -3010,7 +3176,7 @@ The use of named parameters with the **$** scoping prefix generates code that as
 Refer to the entry on **expects** for more on what it does.
 
 
-### THROW _verb_
+### throw _verb_
 
 	throw [expr]
 
@@ -3024,7 +3190,7 @@ Trigger exception handling.
 You should probably look at the Javascript documentation.
 
 
-### THRU _comprehension_
+### thru _comprehension_
 
 	.. [collection] thru [expr]
 	
@@ -3087,7 +3253,7 @@ The function called by the **using** variant receives two parameters:
 	> [ 'Apple', 'Banana', 'Citron' ]
 
 
-### TRAITS _literal_
+### traits _literal_
 
 	.. traits [key] [term], [key] [term], ... (;)
 	.. traits 
@@ -3102,7 +3268,7 @@ The **key** is an identifying word or other string, specified without quotes (al
 See **fields** for examples.
 
 
-### TRIAL _mvar_
+### trial _mvar_
 
 	if [expr] 
 	  .. trial ..
@@ -3154,14 +3320,14 @@ Using the parenthetical **as** is one solution to this problem, but there are be
 	// reports the actual value of key
 
 
-### TRUE _literal_
+### true _literal_
 
 	.. true
 
 The boolean value true. 
 
 
-### TRY _statement_
+### try _statement_
 
 	try
 	  [risky code]
@@ -3182,7 +3348,7 @@ Exception handling construct. For details, see the Jasacript exception documenta
       file.Close
   
   
-### TO _clause_
+### to _clause_
 
 	set [varname] to [expr]
 	count [start] to [end]
@@ -3191,14 +3357,14 @@ Exception handling construct. For details, see the Jasacript exception documenta
 Used as a syntactic clarifier in **set** and **count** statements.
 
 
-### TYPEOF _operator_
+### typeof _operator_
 
 	.. typeof [expr]
 
 Returns the Javascript-native type of an expression.  See e.g. [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof][2] for details.
 
 
-### UNDEFINED _literal_
+### undefined _literal_
 
 	.. undefined
 
@@ -3207,7 +3373,7 @@ A literal indicating no value, or a variable that has not been assigned.
 This compiles directly to Javascript’s `undefined`.
 
 
-### UNLESS _statement_
+### unless _statement_
 
 	unless [expr]
 	  [code if expr is false]
@@ -3217,7 +3383,7 @@ This compiles directly to Javascript’s `undefined`.
 Execute the following code block if the given expression evaluates to _falsy_. Executes from an **else** clause otherwise. All this really does is prepend a logical **not** to the expression. It’s for clarity, see?
 
 
-### UNTIL _statement_
+### until _statement_
 
 	until [expr] 
 	  [code]
@@ -3241,7 +3407,7 @@ The basic **until** variation performs the test first, so there is a chance the 
 **Until** _does not_ make its test value available for use as **it**. Because the code block only executes when the test value is _falsy_, there’s really no point.
 
 
-### UPDATE _operator_
+### update _operator_
 
 	set [variable] update [collection]
 
@@ -3288,7 +3454,7 @@ Updating traits:
 	  { name: 'Jenna', age: 28, dog: true, province: 'ON' } ]
 
 
-### USING _clause_
+### using _clause_
 
 	iterate [expr] using [function]
 	each [expr] using [function]
@@ -3300,12 +3466,10 @@ Updating traits:
 	.. [expr] observe using [function]
 	.. [expr] alter using [function]
 
-Use a previously defined function with an iterator or comprehension.
-
-\<\>
+Use a previously defined function with an iterator or comprehension. Please see the relevant comprehension for examples and details on the use of **using**.
 
 
-### VALUES _compherension_
+### values _comperension_
 
 	.. [collection] values 
 
@@ -3318,19 +3482,23 @@ Returns the values of a collection’s elements.
 	> [ 'Sara', 23, true, 'ON' ]
 
 
-### VIA _operator_
+### via _operator_
 
 	.. [expr] via [function]
 
 A syntactical shortcut for `function(expr)`; the following are synonymous:
 
-	set a from ~Math.sin b
-	set a to b via ~Math.sin
+	  set a from ~Math.sin b
+	  set a to b via ~Math.sin
 
-Probably not long for this world.
+Much more useful in this case, though:
+
+    set b via ~Math.sin
+
+I'm not real happy with **via**, let's see how it ages.
 
 
-### WHILE _statement_
+### while _statement_
 
 	while [expr] ( as [ident] )
 	  [code]
@@ -3359,7 +3527,7 @@ The basic **while** variation performs the test first, so there is a chance the 
 **Do while** _does not_ use **it**, because the expression is not evaluated until after the first pass through the code, thus the first **it** result would always be **undefined**.
 
 
-### WITH _statement_
+### with _statement_
 
 	with [expr] ( as [ident] )
 	  [code]
@@ -3374,7 +3542,7 @@ Allows the use of the **it** magic variable (and the . and | lookups) within an 
 	    ${.city} ${.region} ${.postcode}
 
 
-### XOR _operator_
+### xor _operator_
 
 	.. [expr] xor [expr]
 
@@ -3391,7 +3559,7 @@ If both expressions are _truthy_, or both expressions are _falsy_, return `false
 	> false
 
  
-### XORB _operator_
+### xorb _operator_
 
 	.. [expr] xorb [expr]
 
@@ -3404,7 +3572,7 @@ Performs a bitwise XOR operation on two 32-bit integers.
 	5 binary: 00000000000000000000000000000101
 
 
-### YIELD _verb_
+### yield _verb_
 
 	yield [expr]
 	.. yield [expr]
@@ -3435,12 +3603,12 @@ Used with functions defined as **process**; see that keyword in this documentati
     > 7
 
 
-### YIELDING _verb_
+### yielding _verb_
 
 	yielding [process]
 	.. yielding [process]
 
-Yields to a yielding process, until that process is done yielding. Equivalent to Javascript’s `yield *` syntax. Essentially, **yielding** calls another process as a subroutine.
+Yields to another process until that process is done yielding. Equivalent to Javascript’s `yield *` syntax. Essentially, **yielding** calls another process as a subroutine.
 
     // The Mirror process yields its first argument
     // then reverses it (in ASCII), yields that
@@ -3454,8 +3622,8 @@ Yields to a yielding process, until that process is done yielding. Equivalent to
     // for each fruit, then terminates
     
     set FruitSalad to process
-    ply fruit
-      yielding Mirror(it)
+      ply fruit
+        yielding Mirror(it)
       
     // access each generated value in FruitSalad in turn
     iterate FruitSalad()
