@@ -1503,6 +1503,34 @@ Specifies a block of code that will be executed if the condition leading to the 
 	  debug 'No traits.'
  
 
+### enlist _comprehension_
+
+    .. [expr] enlist
+
+Converts various collection types into a list/array using the following rules:
+
+    undefined -> undefined
+    value -> [ value ]
+    list -> self
+    object -> [ [ key, value ], [ key, value ], ... ]
+    iterable -> [ value, value, value, ... ]
+
+Note specifically that **enlist** will turn a set of key, value pairs into an array of [key,value] arrays thus no data is lost in the conversion.
+
+### entrait _comprehension_
+
+    .. [expr] entrait
+
+Converts various collection types into traits/fields using the following rules:
+
+    undefined -> undefined
+    value -> { value: true }
+    list -> { [0][0]: [0][1], [1][0]: [1][1], ... }
+    object -> self
+    iterable -> { value[0]: value[1], value[0]: value[1] }
+
+Notice that **entrait** is designed primarily to losslessly process the results of enlist and iterators that produce arrays of key/value pairs.
+
 ### enum _literal_
 
 	.. empty
@@ -2153,7 +2181,7 @@ The example uses the new *Set* collection from ES6.
     .. chain [collection]
       iterate
 
-Ensures the collection is an iterable. If it already is an iterable, return it unchanged. If it has a **Iterate** method, call it and return that iterable. If it's an Array or object, shallow copy it and produce an iterator over its values. If it's just a plain value, produce an iterator that returns that value.
+Ensures the collection is an iterable. If it already is an iterable, return it unchanged. If it has a **Iterate** method, call it and return that iterable. If it's an Array, produce an iterator over its values. If it's an object, produce an iterator that returns for each trait a 2-element array with trait name, trait value. If it's just a plain value, produce an iterator that returns that value.
 
 Using **iterate** in this way allows you to guarantee that processing is being done using an iteration rather than a static collection. To go the other way, use **collect**, which turns an iterable into an Array.
 
@@ -2635,11 +2663,13 @@ Evaluates the right expression using the left expression value as the **it** mag
 	set b to 'Fred'
 	set c to b observe debug '${it.length} letters.'
 	debug c
+  
+    > 4 letters.
+    > Fred
 
-> 4 letters.
-> Fred
+A warning: while you can **observe** an iterable expression, be careful that you don't drain it through observation. Heisenberg's uncertainty principle is very much at play with iterables: you can either have it or know what's in it.
 
-N.B. useful in **chain** expressions.
+N.B. **observe** very useful in **chain** expressions.
 
 
 ### orphan _declaration_

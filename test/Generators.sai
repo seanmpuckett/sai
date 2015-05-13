@@ -102,7 +102,7 @@ Execute task
   @Match 'iterate traits', 'pigs', task
     set i to traits pasture cows, pens pigs; iterate
     i.next
-    return i.next().value
+    return i.next().value[1]
     
   @Match 'iterate iterable', 8, task
     set i from @Counter 10,0,-2

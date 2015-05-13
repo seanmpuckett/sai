@@ -120,7 +120,8 @@ _$AI.iterate=function(a) { // test 'sow *'
   if (a===undefined) return undefined;
   if (mustIterate(a)) return a;
   if (a[Symbol.iterator]) return a[Symbol.iterator]();
-  if (isArray(a)||isObject(a)) return function*(){ for (var i in a) yield a[i]; }();
+  if (isArray(a)) return function*(){ for (var i in a) yield a[i]; }();
+  if (isObject(a)) return function*(){ for (var i in a) yield [i,a[i]]; }();
   return function*(){ yield a; }();
 }
 
@@ -144,12 +145,33 @@ _$AI.sort=function(a,f) {
   return a;
 };
 
+_$AI.enlist=function(a) {
+  if (a===undefined) return undefined;
+  var out=[];
+  if (isArray(a)) return a;
+  if (mustIterate(a)) for (var j=a.next(); !j.done; j=a.next()) out.push(j.value);
+  else if (isObject(a)) for (var i in a) out.push([i,a[i]]);
+  else out.push(a);
+  return out;
+}
+
+_$AI.entrait=function(a) {
+  if (a===undefined) return undefined;
+  var out={};
+  var assign=function(k,v) { if (k!==undefined) out[k]=v===undefined?true:v; }
+  if (mustIterate(a)) for (var j=a.next(); !j.done; j=a.next()) assign(j.value[0],j.value[1]);
+  else if (isArray(a)) for (var i in a) assign(a[i][0],a[i][1]);
+  else if (isObject(a)) return a;
+  else out[a]=true;
+  return out;
+}
+
 _$AI.alter = function(a,f) { // test 'alter *'
   return f(a);
 }
 
 _$AI.observe = function(a,f) {
-  if (mustIterate(a)) throw new Error('SAI: Cannot observe an iterable.'); // test 'observe iterator'
+//  if (mustIterate(a)) throw new Error('SAI: Cannot observe an iterable.'); // test 'observe iterator'
   f(a); // test 'observe *'
   return a;
 }

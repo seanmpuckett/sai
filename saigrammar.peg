@@ -1196,9 +1196,9 @@ ValuesComprehension
    }
 
 CollectComprehension
- = COLLECT { 
-     return ['_$AI.collect(',')'];
-   }
+ = COLLECT { return ['_$AI.collect(',')']; }
+ / ENLIST { return ['_$AI.enlist(',')']; }
+ / ENTRAIT { return ['_$AI.entrait(',')']; }
 
 SortComprehension
  = BY Sep x:SortComprehension2 { return x }
@@ -1755,6 +1755,8 @@ ReservedWords
  / DESCENDING / DESC
  / DOWN
  / EMPTY
+ / ENLIST
+ / ENTRAIT
  / ENUM
  / ERROR
  / EXISTS
@@ -1852,6 +1854,8 @@ EACH = 'each'
 ELSE = 'else'
 EMPTY = 'empty'
 ENUM = 'enum'
+ENLIST = 'enlist'
+ENTRAIT = 'entrait'
 ERROR = 'error'
 EXISTS = 'exists'
 EXPECTS = 'expects'

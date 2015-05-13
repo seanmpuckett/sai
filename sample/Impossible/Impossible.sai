@@ -79,7 +79,7 @@ Instantiate task
   // Nevertheless, it's clearer and more maintainable to abstract away the
   // candidate generator into a process.
   
-  debug chain Candidates() reap
+  debug chain Candidates() 
     
     
     // Notice the indent level has changed, we're now in the "chain"
@@ -87,7 +87,7 @@ Instantiate task
     // OBSERVE is a chain operator that receives the current object without
     // any iteration. It allows you to inspect the object without changing it. 
     // Because this is the first link in the chain, we get the value declared at
-    // the start of the chain, in this case the result of 'Candidates() reap',
+    // the start of the chain, in this case the result of 'Candidates() collect',
     // which is an array.
 
     observe Countem(it, 'Initial')
