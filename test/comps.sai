@@ -448,6 +448,8 @@ Execute task
     return a|1='a' and a|3=1 and a|5=true
   
   
-  
+  @Test 'enlist entrait', task
+    set a to: fred 1, bill 2, cal 3; enlist entrait
+    return a.fred=1 and a.bill=2 and a.cal=3
     
     

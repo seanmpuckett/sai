@@ -23,10 +23,7 @@ While SAI appears to look much like Coffeescript (in particular due to their sem
 
 SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, SAI's _affordances_ tend to emphasise clear code, while making some of the more egregiously obnoxious Javascript hacks and idioms either impossible, or just very difficult. Just because you _can_ do something a certain way in JS doesn't mean you _should_.
 
-### Features
+### Learn More
 
-Readability
+Refer to the samples and docs!
 
-Parameter
-
-Chaining
