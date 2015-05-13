@@ -77,9 +77,9 @@ Instantiate task
   // 
   // Because the algorithm uses tabular accumulation, it won't work as a lazy iterator.
   // Nevertheless, it's clearer and more maintainable to abstract away the
-  // candidate generator into a process.
+  // candidate generator into a process and then extract candidates into a list 
   
-  debug chain Candidates() 
+  debug chain Candidates() collect
     
     
     // Notice the indent level has changed, we're now in the "chain"
@@ -163,7 +163,7 @@ Instantiate task
     //
     // Here we're turning a list into a single string with elements delimited 
     // by newlines. And as this is the last indented clause in the chain,
-    // the result is the final value that is given to DEBUG to display.
+    // the resulting string is the final value that is given to DEBUG to display.
     
     join '\n'
 
