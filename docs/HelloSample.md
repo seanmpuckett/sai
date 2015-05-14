@@ -22,7 +22,7 @@ Then __SAI.Require__ is called to create a standard Javascript prototype for the
 **HelloWorld.sai**
 
 	object HelloWorld 0.1.0
-	Instantiation task
+	Instantiate task
 	   debug 'Hello, World!'
 
 Run this, and on the console appears:

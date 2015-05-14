@@ -6,7 +6,9 @@ multiple assignment???????
 source code lookup for exceptions or debugging
 "machine"
 
-
+chain $
+  to (= expr)
+  via empty.ingest
 
 
 TESTS TO WRITE

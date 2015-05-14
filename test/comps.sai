@@ -175,39 +175,39 @@ Execute task
   //  return false
     
     
-  @Match 'alter value block', '1', task
-    return 2 alter
+  @Match 'set value block', '1', task
+    return 2 set
       return 1
   
-  @Match 'alter value inline', '1', task
-    return 2 alter 1
+  @Match 'set value inline', '1', task
+    return 2 set 1
   
-  @Test 'alter block', task
-    set b to: 2; alter
+  @Test 'set block', task
+    set b to: 2; set
        it.unshift 1
     if b.length=2 and b|0=1 and b|1=2
       return true
     return false
     
-  @Test 'alter inline 1', task
+  @Test 'set inline 1', task
     set Unshifter to task as l,v
       l.unshift v
       return l
-    set b to: 2; alter from Unshifter it, 1
+    set b to: 2; set from Unshifter it, 1
     if b.length=2 and b|0=1 and b|1=2
       return true
     return false
     
-  @Test 'alter inline 2', task
-    set b to: 2, 1; alter from it.reverse
+  @Test 'set inline 2', task
+    set b to: 2, 1; set from it.reverse
     if b.length=2 and b|0=1 and b|1=2
       return true
     return false
     
-  @Test 'alter using', task
+  @Test 'set using', task
     set rev to task
       return from $.reverse
-    set b to: 2, 1; alter using rev
+    set b to: 2, 1; set using rev
     if b.length=2 and b|0=1 and b|1=2
       return true
     return false

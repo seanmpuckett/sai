@@ -642,43 +642,6 @@ A magic variable active only within a **into** clause or code block. Represents 
 	> { ON: 5, QC: 3 }
 
 
-### alter _operator_
-
-	.. [expr] alter [expr]
-	.. [expr] alter
-	  [block]
-	.. [expr] alter using [function]
-
-A chainable comprehension operator that allows direct reference of the incoming dataset within an expression or code block, using the  **it**  magic variable. 
-
-**Alter** can be used with an expression:
-
-	debug 4 alter 5*it+2 alter it/7 
-	
-	> 3.142857142857143
-
-**Alter** can use an indented code block:
-
-	debug friends by .age alter
-	  set .length to 3
-	
-	> [ { name: 'Doug', age: 18, province: 'ON' },
-	>    { name: 'John', age: 19, cat: true, dog: true, province: 'ON' },
-	>    { name: 'Marshal', age: 21, dog: true, province: 'ON' } ]
-
-_If you don’t specifically **return** a value or object from within an alter code block, the original value will be used (as in the example above). In other words, there is an implicit `return it` at the end of every alter block._
-
-**Alter** supports the **using** clause, in which case the function specified receives the original value as its first parameter, and the return value is passed forward.
-
-	set ExtractFirst to task
-	  return $[0]
-	debug friends #cat alter using Extract
-	
-	> { name: 'Sara', age: 23, cat: true, province: 'ON' }
-
-_You must specifically return a value in the function called by alter, or `undefined` will be passed forward; there is no implicit return._
-
-
 ### and _operator_
 
 	.. [expr] and [expr]
@@ -2970,7 +2933,11 @@ The following lines are equivalent; one of them is easier to read than the other
     set totals|key to (self default 0) + amount
   
 
-### set _declaration_
+### set _declaration_ / _statement_ / _operator_
+
+Set is a busy keyword used in many situations where a result is calculated and then stored.
+
+#### set _declaration_
 
 	[identifier] set ( as [ident] )
 	  [code block]
@@ -3005,7 +2972,7 @@ This example object implements *Distance*, storing the value normalized to meter
     debug trip.meters       // > 16093.44
 
 
-### set _statement_
+#### set _statement_
 
 	  set [ident] to [expr]
 	  set [ident] from [function] ( [parameters] )
@@ -3025,6 +2992,42 @@ Assign a value to an identifier. That's right, you don't use the equals sign for
     > -8    
 
 Note: The **self** mvar refers to the current value of the variable presently being set.
+
+#### set _operator_
+
+	.. [expr] set [expr]
+	.. [expr] alter
+	  [block]
+	.. [expr] alter using [function]
+
+A chainable comprehension operator that allows direct reference of the incoming dataset within an expression or code block, using the  **it**  magic variable. 
+
+**Set** can be used with an expression:
+
+	debug 4 set 5*it+2 set it/7 
+	
+	> 3.142857142857143
+
+**Set** can use an indented code block:
+
+	debug friends by .age set
+	  set .length to 3
+	
+	> [ { name: 'Doug', age: 18, province: 'ON' },
+	>    { name: 'John', age: 19, cat: true, dog: true, province: 'ON' },
+	>    { name: 'Marshal', age: 21, dog: true, province: 'ON' } ]
+
+_If you don’t specifically **return** a value or object from within an **set** code block, the original value will be used (as in the example above). In other words, there is an implicit `return it` at the end of every **set** block._
+
+**Set** supports the **using** clause, in which case the function specified receives the original value as its first parameter, and the return value is passed forward.
+
+	set ExtractFirst to task
+	  return $[0]
+	debug friends #cat set using Extract
+	
+	> { name: 'Sara', age: 23, cat: true, province: 'ON' }
+
+_You must specifically return a value in the function called by set, or `undefined` will be returned._
 
 
 ### super _verb_

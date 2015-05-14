@@ -27,16 +27,16 @@ Instantiate task
   debug friends gather into 0
     set accum + .age
 
-  // ALTER
-  debug '\nALTER'
-  debug 4 alter 5*it+2 alter it/7
+  // SET
+  debug '\nSET'
+  debug 4 set 5*it+2 set it/7
   
-  debug friends by .age alter
+  debug friends by .age set
     set .length to 3
     
   set ExtractFirst to task
     return $[0]
-  debug friends #cat alter using ExtractFirst
+  debug friends #cat set using ExtractFirst
 
   // AND
   debug '\nAND'
@@ -565,7 +565,7 @@ Instantiate task
       concat $
     
   debug chain fruit
-    alter double(it)
+    set double(it)
     
   // continue
   debug '\n...'

@@ -1175,7 +1175,7 @@ Comprehension
  / ValuesComprehension
  / IterateComprehension
  / CollectComprehension
- / AlterComprehension
+ / SetComprehension
  / ObserveComprehension
  / OtherComprehension
 
@@ -1286,8 +1286,8 @@ FilterComprehension2
   }
 
 
-AlterComprehension
- = ALTER Sep x:AlterComprehension2 { return x }
+SetComprehension
+ = SET Sep x:AlterComprehension2 { return x }
 AlterComprehension2
  = x:Logical { // test 'alter inline*'
      var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
