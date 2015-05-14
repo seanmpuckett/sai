@@ -214,107 +214,107 @@ Execute task
     
   @Match 'into no list', 'a', task
     set b to empty into 'a'
-       return accum+it
+       return sum+it
     return b
     
   @Test 'into no list it', task
     set b to empty into it
-       return accum+it
+       return sum+it
     return b is undefined
 
   @Match 'into 1 list into', 'aa', task
     set b to list a; into 'a'
-       return accum+it
+       return sum+it
     return b
     
   @Match 'into 1 list it', 'a', task
     set b to list a; into it
-       return accum+it
+       return sum+it
     return b
 
   @Match 'into 3 list ', 'abc', task
     set b to list a,b,c; into ''
-       return accum+it
+       return sum+it
     return b
     
   @Match 'into 3 list it', 'abc', task
     set b to list a,b,c; into it
-       return accum+it
+       return sum+it
     return b
 
   @Match 'into no traits', 'a', task
     set b to blank into 'a'
-       return accum+key+it
+       return sum+key+it
     return b
 
   @Test 'into no traits it', task
     set b to blank into it 
-       return accum+key+it
+       return sum+key+it
     return b is undefined
 
   @Match 'into 1 trait', 'a1', task
     set b to: a 1; into ''
-       return accum+key+it
+       return sum+key+it
     return b
 
   // GIGO result expected because into can't intuit key+it value
   @Match 'into 1 traits it', '1', task
     set b to: a 1; into it 
-       return accum+key+it
+       return sum+key+it
     return b
 
   @Match '3 traits into', 'a1b2c3', task
     set b to: a 1, b 2, c 3;  into ''
-       return accum+key+it
+       return sum+key+it
     return b
 
   // GIGO result expected because into can't intuit key+it value
   @Match 'into 3 traits it', '1b2c3', task
     set b to: a 1, b 2, c 3; into it 
-       return accum+key+it
+       return sum+key+it
     return b
 
   @Match 'into value it', 'a', task
     set b to 'a' into it
-      return accum+it
+      return sum+it
     return b
     
   @Match 'into value ', 'ba', task
     set b to 'a' into 'b'
-      return accum+it
+      return sum+it
     return b
     
   @Test 'into undefined it', task
     set b to undefined into it
-      return accum+it
+      return sum+it
     return b is undefined
      
   @Match 'into 1 iterable ', 'aa', task
     set b to list a; iterate into 'a'
-       return accum+it
+       return sum+it
     return b.next().value
     
   @Match 'into 1 iterable it', 'a', task
     set b to list a; iterate into it
-       return accum+it
+       return sum+it
     return b.next().value
 
   @Match 'into 3 iterable', 'abc', task
     set b to list a,b,c; iterate into ''
-       return accum+it
+       return sum+it
     return b.next().value
     
   @Match 'into 3 iterable it', 'abc', task
     set b to list a,b,c; iterate into it
-       return accum+it
+       return sum+it
     return b.next().value
 
   @Match 'into 3 iterable inline ', 'abc', task
-    set b to list a,b,c; iterate into '' accum+it
+    set b to list a,b,c; iterate into '' sum+it
     return b.next().value
     
   @Match 'into 3 iterable inline it', 'abc', task
-    set b to list a,b,c; iterate into it accum+it
+    set b to list a,b,c; iterate into it sum+it
     return b.next().value
 
   
@@ -358,7 +358,7 @@ Execute task
     
   @Match 'age total into', 185, task
     return friends into 0
-      set accum + .age
+      set sum + .age
   
   @Match '#cat count', 3, task
     return (friends #cat).length

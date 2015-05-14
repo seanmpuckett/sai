@@ -25,7 +25,7 @@ Instantiate task
   // ACCUM
   debug '\nACCUM'
   debug friends gather into 0
-    set accum + .age
+    set sum + .age
 
   // SET
   debug '\nSET'
@@ -175,13 +175,13 @@ Instantiate task
   // INITIALIZED
   debug '\nINITIALIZED'
   debug friends into blank
-    (accum|.province initialized empty).push .name
+    (sum|.province initialized empty).push .name
 
   // INTO
   debug '\nINTO'
-  debug friends into 0 accum + .age  
+  debug friends into 0 sum + .age  
   debug friends into blank
-    set accum[.province] to (self default 0)+1
+    set sum[.province] to (self default 0)+1
   set ageTotal to task as accumulator, row
     return accumulator+row.age
   debug friends into 0 using ageTotal

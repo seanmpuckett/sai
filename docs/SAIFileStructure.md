@@ -1,7 +1,9 @@
 
 ## Basic File Structure
 
-SAI code is written in plain text files. Leading white space is semantically relevant, and MUST be formed using spaces, not tabs.
+SAI code is written in plain text files. 
+
+Leading white space is semantically relevant, and MUST be formed using spaces, not tabs.
 
 If present, the **reference** section must appear first, before any **object** definition.
 
@@ -9,18 +11,18 @@ If present, the **reference** section must appear first, before any **object** d
 
 Declares global variables for use within the scope of the file. This is the preferred location to use `require`.
 
-	reference:
-	  [varName] [expression]
-	  ...
-
-> reference:
->   RED ‘ff0000’
->   Express require(‘express’)
+    reference:
+      [varName] [expression]
+      ...
+      
+    > reference:
+    >   RED ‘ff0000’
+    >   Express require(‘express’)
 
 When using a global variable in code, you must use the global scoping prefix, as in
 
-> set colour to \~RED
-> set app from \~Express
+    > set colour to \~RED
+    > set app from \~Express
 
 ### OBJECT - Object Definition
 
@@ -36,7 +38,7 @@ Except for global variables, all other SAI code exists within the context of an 
 
 \<\>detail
 
-#### INHERIT - Object Inheritance
+### INHERIT - Object Inheritance
 
 Objects may inherit traits, tasks and contracts from other objects, and multiple-inheritance is supported.
 
@@ -78,11 +80,11 @@ Givens are immutable object traits that are attached to the prototype and frozen
 
 \<\>example
 
-### SET - Instance Traits
+### INSTANCE - Instance Traits
 
 Instance traits are set on construction of an object instance. They are initialized to the value given here during the pre-construction phase, and are ready for use in all object code including the  `Instatiate` task.
 
-	set:
+	instance:
 	  [traitName] [expression]
 	  ...
 

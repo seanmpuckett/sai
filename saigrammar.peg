@@ -75,7 +75,7 @@
       it: [ '^{this}','' ],
       key: [ '^{key}','' ],
       trial: [ '^{trial}','' ],
-      accum: [ '^{accum}','' ],
+      sum: [ '^{sum}','' ],
       error: [ '^{error}','' ],
       self: [ '^{self}','' ],
       super: [ '^{super}','' ],
@@ -97,7 +97,7 @@
       error: [ '^{error}','' ],
       attribute: [ '^{this}.' ,  '' ],
       self: [ '^{self}','' ],
-      accum: [ '^{accum}' , '' ],
+      sum: [ '^{sum}' , '' ],
       property: [ '$["' , '"]' ], 
       parameter: [ 'p["','"]' ],
     },
@@ -941,7 +941,7 @@ It
  = IT Sep { return [['it','']] }
  / KEY Sep { return [['key','']]}
  / TRIAL Sep { return [['trial','']]}
- / ACCUM Sep { return [['accum','']]}
+ / SUM Sep { return [['sum','']]}
  / SELF Sep { return [['self','']]}
  / ERROR Sep { return [['error','']]}
 
@@ -1247,11 +1247,11 @@ ReduceComprehension
 ReduceComprehension2
  = into:IntoClause o:IterateOutput? b:Block {
     if (!o) o=[];
-    if (!o[0]) o[0]='$accum';
+    if (!o[0]) o[0]='$sum';
     if (!o[1]) o[1]='$_v';
     if (!o[2]) o[2]='$_k';
-    b+='return ^{accum};\n';
-    var block=RV('function(^{accum},^{this},^{key}){'+b+'}',{accum:o[0],this:o[1],key:o[2]});
+    b+='return ^{sum};\n';
+    var block=RV('function(^{sum},^{this},^{key}){'+b+'}',{sum:o[0],this:o[1],key:o[2]});
     if (into=='it') {
       return ['_$AI.reduce(' , ','+block+')' ];
     } else {
@@ -1259,7 +1259,7 @@ ReduceComprehension2
     }
   }
  / into:IntoClause b:Logical {
-    var block=RV('function(^{accum},^{this},^{key}){ return '+b+';}',{accum:'$accum',this:'$_v',key:'$_k'});
+    var block=RV('function(^{sum},^{this},^{key}){ return '+b+';}',{sum:'$sum',this:'$_v',key:'$_k'});
     if (into=='it') {
       return ['_$AI.reduce(' , ','+block+')' ];
     } else {
@@ -1733,7 +1733,6 @@ ReservedWord
 
 ReservedWords
  = SET
- / ACCUM
  / ANDB 
  / AND
  / ARRAY
@@ -1821,7 +1820,6 @@ __OFFSET = '__offset'
 __COLUMN = '__column'
 __LINE = '__line'
 
-ACCUM = 'accum'
 AND = 'and'
 ANDB = 'andb'
 ARRAY = 'array'
@@ -1916,6 +1914,7 @@ SELF = 'self'
 SET = 'set'
 SOW = 'sow'
 STEP = 'step'
+SUM = 'sum'
 SUPER = 'super'
 SWITCH = 'switch'
 TASK = 'task'

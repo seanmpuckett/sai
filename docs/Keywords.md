@@ -625,23 +625,6 @@ The following debug statements print identical results.
 The **|** lookup syntax can only be used with _simple_ values; that is, single variable names or literals. If you need to use an expression, you should use the **[expr]** form of lookup.
 
 
-### accum _mvar_
-
-A magic variable active only within a **into** clause or code block. Represents the static value that accumulates changes during **into** iteration over a data set.
-
-	debug friends into 0
-	  set accum + .age
-	
-	> 185
-
-**Accum** is initialized with the value following **into**, or, if the **into it** variant is used, with the value in the first iteration; accumulation then begins directly with the second iteration.
-
-	debug friends into blank
-	  set accum|.province to (self default 0)+1
-	
-	> { ON: 5, QC: 3 }
-
-
 ### and _operator_
 
 	.. [expr] and [expr]
@@ -796,7 +779,7 @@ An example, renaming **it** and **key** in an each iterator:
 	[expr] by (as [a var], [b var] )
 	[expr] thru (as [it var] (, [key var] ) )
 	[expr] audit (as [it ident] (, [key var] ) )
-	[expr] into [expr] (as [accum var] (, [it var] (, [key var] ) ) )
+	[expr] into [expr] (as [sum var] (, [it var] (, [key var] ) ) )
 	[expr] filter (as [it var] (, [key var] ) )
 	[expr] set (as [it var])
 	[expr] observe (as [it var])
@@ -1873,7 +1856,7 @@ The value used in the test of the **if** is available in the _magic variable_ **
 If the variable on the left is **undefined**, stores the value on the right to it. Then returns the value of the variable.
 
 	debug friends into blank
-	  (accum|.province initialized empty).push .name
+	  (sum|.province initialized empty).push .name
 	
 	{ ON: [ 'Sara', 'John', 'Marshal', 'Doug', 'Jenna' ],
 	  QC: [ 'Ellie', 'Ann', 'Harry' ] }
@@ -1881,20 +1864,20 @@ If the variable on the left is **undefined**, stores the value on the right to i
 
 ### into _comprehension_
 
-	.. into [initial accumulator value] [expr]
-	.. into [initial accumulator value]
+	.. into [initial sum] [expr]
+	.. into [initial sum
 	  [code block]
-	.. into [initial accumulator value] using [function]
+	.. into [initial sum] using [function]
 
 Javascript features the array method `Array.prototype.reduce` which performs the reduction function, and SAI extends its applicability with the **into** compherension keyword.
 
-In addition to the item (**it**) and the item key (**key**) available in other comprehensions, an accumulator variable (**accum**) is used when evaluating **into** expressions. The value of the expression becomes the value of **accum** the next time the expression is evaluated.
+In addition to the item (**it**) and the item key (**key**) available in other comprehensions, an sum variable (**sum**) is used when evaluating **into** expressions. The value of the expression becomes the value of **sum** the next time the expression is evaluated.
 
 #### into inline
 
-The **accum** variable is initialized by the value following **into** — in the example below `0` — and then each row in the collection is visited and we add `.age` to it. This adds up the ages of every friend.
+The **sum** variable is initialized by the value following **into** — in the example below `0` — and then each row in the collection is visited and we add `.age` to it. This adds up the ages of every friend.
 
-	debug friends into 0 accum + .age
+	debug friends into 0 sum + .age
 	
 	> 185
 
@@ -1905,7 +1888,7 @@ The **into** comprehension, like other comprehensions, has an inline version wit
 A more complex example.  See if you can suss out how it works.
 
 	    debug friends into blank
-	  set accum[.province] to (self default 0) + 1
+	  set sum[.province] to (self default 0) + 1
 	
 	> { ON: 5, QC: 3 }
 
@@ -1917,7 +1900,7 @@ Last hint: **blank** initializes an object with no traits; it is the SAI equival
 
 #### into using
 
-The addition of **using** lets you call an external function.  The function must always `return` the value you wish to be used as the accumulator so the value can be preserved across function calls.  (The block version of **into** takes care of this for you.)
+The addition of **using** lets you call an external function.  The function must always `return` the value you wish to be used as the sum so the value can be preserved across function calls.  (The block version of **into** takes care of this for you.)
 
 	    set ageTotal to task as accumulator, row
 	      return accumulator + row.age
@@ -3062,6 +3045,23 @@ _If you don’t specifically **return** a value or object from within an **set**
     > { name: 'Sara', age: 23, cat: true, province: 'ON' }
 
 You must specifically return a value in the function called by **set using**.
+
+
+### sum _mvar_
+
+A magic variable active only within a **into** clause or code block. Represents the static value that accumulates changes during **into** iteration over a data set.
+
+	debug friends into 0
+	  set sum + .age
+	
+	> 185
+
+**Sum** is initialized with the value following **into**, or, if the **into it** variant is used, with the value in the first iteration; summation then begins directly with the second iteration.
+
+	debug friends into blank
+	  set sum|.province to (self default 0)+1
+	
+	> { ON: 5, QC: 3 }
 
 
 ### super _verb_
