@@ -732,7 +732,7 @@ Arrays can be nested by use of either parenthesis or semicolons, or by using mul
  
 As declares named locally scoped variables within a code block based on values passed into the block.  (In general, **as** is optional because one can usually access such passed-in values through magic variables.)
 
-**As** is used in conjunction with the following SAI keywords: set, task, process, promise, switch, catch, if, exists, with, iterate, each, ply, count, by, thru, audit, gather, has, alter, observe, and within parenthesis as the “parenthetic as”.
+**As** is used in conjunction with the following SAI keywords: set, task, process, promise, switch, catch, if, exists, with, iterate, each, ply, count, by, thru, audit, gather, has, set, observe, and within parenthesis as the “parenthetic as”.
 
 
 #### as with parameters
@@ -798,7 +798,7 @@ An example, renaming **it** and **key** in an each iterator:
 	[expr] audit (as [it ident] (, [key var] ) )
 	[expr] into [expr] (as [accum var] (, [it var] (, [key var] ) ) )
 	[expr] filter (as [it var] (, [key var] ) )
-	[expr] alter (as [it var])
+	[expr] set (as [it var])
 	[expr] observe (as [it var])
 
 An example, renaming **it** and **key** in the block handler of a **thru** comprehension:
@@ -1093,7 +1093,7 @@ You can also chain comprehensions:
     >   'My friend Jon likes cats.',
     >   'My friend Sara likes cats.' ]
 
-And because one of the comprehensions is **alter**, you can actually chain any function at all.
+And because one of the comprehensions is **set**, you can actually chain any function at all.
 
     set double to task
       return chain empty
@@ -1101,7 +1101,7 @@ And because one of the comprehensions is **alter**, you can actually chain any f
         concat $
     
     debug chain fruit
-      alter double(it)
+      set double(it)
       
     > [ 'Apple',
         'Banana',
@@ -1115,9 +1115,9 @@ Functions you use in **chain** typically return a value; this is used as the obj
 
 ### collect _comprehension_
 
-	.. [iterable] collect
+	.. [iterator] collect
 
-Converts an iterator into an Array by draining the iterator. If the iterator never ends, your system will lock up until you run out of memory. (You could use a **limit** comprehension to keep that from happening.)
+If the expression on the left is an iterator, converts it to an array/list by draining the iterator; otherwise do nothing. If the iterator never ends, your system will lock up until you run out of memory. (You could use a **limit** comprehension to keep that from happening.)
 
 	set Odds to process
 	  set local i to 1
@@ -1130,7 +1130,7 @@ Converts an iterator into an Array by draining the iterator. If the iterator nev
 	
 	> [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 ]
 
-The opposite of **collect** is **iterate**.
+The opposite of **collect** is **iterate**. The difference between **enlist** and **collect** is that collect will only transform an iterator, while **enlist** will transform all values.
 
 
 ### continue _statement_
@@ -1480,6 +1480,22 @@ Converts various collection types into a list/array using the following rules:
 
 Note specifically that **enlist** will turn a set of key, value pairs into an array of [key,value] arrays thus no data is lost in the conversion.
 
+    set data to:
+      cats 7
+      dogs 12
+      
+    debug data
+    debug data enlist
+     
+    > { cats: 7, dogs: 12 }
+    > [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
+     
+
+Such a result can be turned back into traits with **entrait**.
+
+The difference between **enlist** and **collect** is that **enlist** will always transform its source data into an array/list, while **collect** will only transform an iterator.
+
+
 ### entrait _comprehension_
 
     .. [expr] entrait
@@ -1492,7 +1508,22 @@ Converts various collection types into traits/fields using the following rules:
     object -> self
     iterable -> { value[0]: value[1], value[0]: value[1] }
 
-Notice that **entrait** is designed primarily to losslessly process the results of enlist and iterators that produce arrays of key/value pairs.
+**Entrait** is designed primarily to losslessly restore the results of enlist and iterators that produce arrays of key/value pairs.
+
+    debug 'Coyote' entrait
+    
+    > { Coyote: true }
+    
+    set data to:
+      list cats, 7
+      list dogs, 12
+      
+    debug data
+    debug data entrait
+    
+    > [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
+    > { cats: 7, dogs: 12 }
+  
 
 ### enum _literal_
 
@@ -2224,7 +2255,7 @@ A complete list of **it** enabled events:
 	each [collection] // it: each value in the collection
 	ply [list] // it: each element in the array
 	
-	.. [expr] alter // it: the expression
+	.. [expr] set // it: the expression
 	.. [expr] observe 
 	
 	.. [collection] thru // it: each value in the collection
@@ -2937,7 +2968,7 @@ The following lines are equivalent; one of them is easier to read than the other
 
 Set is a busy keyword used in many situations where a result is calculated and then stored.
 
-#### set _declaration_
+#### set dynamic trait declaration
 
 	[identifier] set ( as [ident] )
 	  [code block]
@@ -2972,7 +3003,7 @@ This example object implements *Distance*, storing the value normalized to meter
     debug trip.meters       // > 16093.44
 
 
-#### set _statement_
+#### set value assignment
 
 	  set [ident] to [expr]
 	  set [ident] from [function] ( [parameters] )
@@ -2993,14 +3024,14 @@ Assign a value to an identifier. That's right, you don't use the equals sign for
 
 Note: The **self** mvar refers to the current value of the variable presently being set.
 
-#### set _operator_
+#### set replacement operator
 
 	.. [expr] set [expr]
-	.. [expr] alter
+	.. [expr] set
 	  [block]
-	.. [expr] alter using [function]
+	.. [expr] set using [function]
 
-A chainable comprehension operator that allows direct reference of the incoming dataset within an expression or code block, using the  **it**  magic variable. 
+A chainable comprehension operator that allows direct reference and replacement of the incoming dataset within an expression or code block, using the  **it**  magic variable. 
 
 **Set** can be used with an expression:
 
@@ -3019,15 +3050,18 @@ A chainable comprehension operator that allows direct reference of the incoming 
 
 _If you don’t specifically **return** a value or object from within an **set** code block, the original value will be used (as in the example above). In other words, there is an implicit `return it` at the end of every **set** block._
 
-**Set** supports the **using** clause, in which case the function specified receives the original value as its first parameter, and the return value is passed forward.
+**Set** supports the **using** clause, in which case the function specified receives the original value as its first parameter, and the return value is passed forward. The two debug statements below are equivalent
 
-	set ExtractFirst to task
-	  return $[0]
-	debug friends #cat set using Extract
-	
-	> { name: 'Sara', age: 23, cat: true, province: 'ON' }
+    set ExtractFirst to task
+      return $[0]
+      
+    debug friends #cat set Extract(it)    
+    debug friends #cat set using Extract  
+    
+    > { name: 'Sara', age: 23, cat: true, province: 'ON' }
+    > { name: 'Sara', age: 23, cat: true, province: 'ON' }
 
-_You must specifically return a value in the function called by set, or `undefined` will be returned._
+You must specifically return a value in the function called by **set using**.
 
 
 ### super _verb_
@@ -3088,6 +3122,8 @@ Choose among alternatives based on expression equality. The expression under eva
 	    @Help
 	  default
 	    @Emit 'Key [${key}] isn't used; type ? for help.'
+
+The compiler expects the **default** case, if it exists, to be last.
 
 
 ### task _declaration_
@@ -3496,7 +3532,7 @@ Updating traits:
 	.. [expr] has using [function]
 	.. [expr] into [value] using [function]
 	.. [expr] observe using [function]
-	.. [expr] alter using [function]
+	.. [expr] set using [function]
 
 Use a previously defined function with an iterator or comprehension. Please see the relevant comprehension for examples and details on the use of **using**.
 

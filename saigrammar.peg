@@ -1734,7 +1734,6 @@ ReservedWord
 ReservedWords
  = SET
  / ACCUM
- / ALTER
  / ANDB 
  / AND
  / ARRAY
@@ -1823,7 +1822,6 @@ __COLUMN = '__column'
 __LINE = '__line'
 
 ACCUM = 'accum'
-ALTER = 'alter'
 AND = 'and'
 ANDB = 'andb'
 ARRAY = 'array'

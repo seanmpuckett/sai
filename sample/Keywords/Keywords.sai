@@ -616,7 +616,25 @@ Instantiate task
   set billy to create 'Child' 'Billy', 12
   debug billy
 
-
+  // enlist
+  debug '\nENLIST'
+  set data to:
+    cats 7
+    dogs 12
+    
+  debug data
+  debug data enlist
+  
+  // entrait
+  debug '\nENTRAIT'
+  debug 'Coyote' entrait
+  
+  set data to:
+    list cats, 7
+    list dogs, 12
+  
+  debug data
+  debug data entrait
 
 
 Dump task 
