@@ -25,7 +25,7 @@ SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, S
 
 ### Usage Notes
 
-Required modules: SAI relies on PEGjs to compile its grammar, and lodash for some support routines. JS-beautify has been included to tidy up the generated Javascript. However, its use is completely optional.
+Required modules: SAI relies on PEGjs to compile its grammar. JS-beautify has been included to tidy up the generated Javascript. However, its use is completely optional.
 
 Parser compilation: The first time SAI runs, the *saigrammar.peg* language specification (2k lines) is compiled by PEGjs, which takes several seconds. The resulting Javascript parser (~19K lines) is saved as *saigrammar.cached*, which will be reused on subsequent runs if possible.
 

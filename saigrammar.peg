@@ -1499,7 +1499,7 @@ Value
  / ISNAN Sep v:Value _ { return 'isNaN('+v+')'; }
  / NUMBER Sep v:Value { return '(_$AI.number('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
- / COPY Sep v:Value _ { return '_$AI.copy('+v+')'; } // test 'copy'
+ / COPY Sep v:Value _ { return '_$AI.clone('+v+')'; } // test 'copy'
  / TASK Sep v:TaskClause _ { return v }
  / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }

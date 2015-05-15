@@ -200,7 +200,9 @@ Execute task
     return ~Array.isArray(a) and (a|0=1)
     
   @Test 'values comp list', task
-    set a to: 1, 2; values
+    set b to: 1, 2
+    set a to b values
+    set b|0 to 3
     return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
     
   @Test 'values comp traits', task
