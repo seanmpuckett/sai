@@ -23,6 +23,14 @@ While SAI appears to look much like Coffeescript (in particular due to their sem
 
 SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, SAI's _affordances_ tend to emphasise clear code, while making some of the more egregiously obnoxious Javascript hacks and idioms either impossible, or just very difficult. Just because you _can_ do something a certain way in JS doesn't mean you _should_.
 
+### Usage Notes
+
+Required modules: SAI relies on PEGjs to compile its grammar, and lodash for some support routines. JS-beautify has been included to tidy up the generated Javascript. However, its use is completely optional.
+
+Parser compilation: The first time SAI runs, the *saigrammar.peg* language specification (2k lines) is compiled by PEGjs, which takes several seconds. The resulting Javascript parser (~19K lines) is saved as *saigrammar.cached*, which will be reused on subsequent runs if possible.
+
+When creating SAI objects, the pre-compiled parser is used to create a native Javascript prototype for each object, just once. Subsequent calls to SAI.Require or SAI.Create for the same object run at Javascript speeds. You can re-use the prototypes once created just like any other Javascript prototype.
+
 ### Learn More
 
 Refer to the samples and docs!

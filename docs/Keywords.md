@@ -1887,10 +1887,10 @@ The **into** comprehension, like other comprehensions, has an inline version wit
 
 A more complex example.  See if you can suss out how it works.
 
-	    debug friends into blank
-	  set sum[.province] to (self default 0) + 1
+	  debug friends into blank
+	    set sum[.province] to (self default 0) + 1
 	
-	> { ON: 5, QC: 3 }
+	  > { ON: 5, QC: 3 }
 
 Here’s a hint: **self** is a _magic variable_ used only in **set** statements. It is initialized to the previous value of the variable being changed by **set**. 
 
@@ -1902,11 +1902,11 @@ Last hint: **blank** initializes an object with no traits; it is the SAI equival
 
 The addition of **using** lets you call an external function.  The function must always `return` the value you wish to be used as the sum so the value can be preserved across function calls.  (The block version of **into** takes care of this for you.)
 
-	    set ageTotal to task as accumulator, row
-	      return accumulator + row.age
-	debug friends into 0 using ageTotal 
+	  set ageTotal to task as accumulator, row
+	    return accumulator + row.age
+	  debug friends into 0 using ageTotal 
 	
-	> 185
+	  > 185
 
 
 ### inc _statement_
