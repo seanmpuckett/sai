@@ -4,33 +4,18 @@ var SAILib = exports = module.exports = {}
 var canIterate=function(i) {
   if (!i) return false;
   if (i[Symbol.iterator]) return true;
-  if (typeof i === 'function') return true; // close enough for our purposes
-  var next=i.next;
-  if (!next) return false; 
-  if ((typeof next) === 'function') return true; // close enough for our purposes
-  return false;
+  if (typeof i === 'function') return true; // possibly a generator?
+  return (typeof i.next)==='function';
 }
 
 var mustIterate=function(i) {
   if (!i) return false;
-  if (typeof i === 'function') return true;
-  var next=i.next;
-  if (!next) return false; 
-  if ((typeof next) === 'function') return true; // close enough for our purposes
+  return (typeof i.next)==='function';
 }
 
 var isObject=function(i) {
   if (i===null) return false;
-  if (typeof i !== 'object') return false;
-  return true;
-}
-
-var isMap=function(i) {
-  return (i instanceof Map);
-}
-
-var isSet=function(i) {
-  return (i instanceof Set);
+  return (typeof i)==='object';
 }
 
 var isArray=Array.isArray;
@@ -58,7 +43,6 @@ SAILib.generator=function(i) {
   var iter=i[Symbol.iterator];
   return iter ? iter : i;
 }
-
 
 SAILib.assert=function(test,msg) {
   if (!test) {
@@ -109,7 +93,7 @@ SAILib.enlist=function(a) {
 SAILib.entrait=function(a) {
   if (a===undefined) return undefined;
   var out={};
-  var assign=function(k,v) { if (k!==undefined) out[k]=v===undefined?true:v; }
+  var assign=function(k,v) { if (k!==undefined && v!==undefined) out[k]=v; }
   if (mustIterate(a)) for (var j=a.next(); !j.done; j=a.next()) assign(j.value[0],j.value[1]);
   else if (isArray(a)) for (var i in a) assign(a[i][0],a[i][1]);
   else if (isObject(a)) return a;

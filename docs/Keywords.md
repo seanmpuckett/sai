@@ -439,6 +439,16 @@ Evaluates **true** if lexpr is numerically or lexically lower than rexpr, **fals
 
 If you want a case insensitive comparison, you must ensure both expressions are of the same case.
 
+### \<< (left shift) _operator_
+
+    .. [expr] << [bitcount]
+
+Convert the expression into a 32 bit signed integer and perform a binary left shift *bitcount* times.
+
+     debug 4 << 1   // 8
+     debug -8 << 2  // -32
+     debug 2.8 << 0 // 2
+  
 
 ### \<= (less or equal) _operator_
 
@@ -447,7 +457,7 @@ If you want a case insensitive comparison, you must ensure both expressions are 
 Evaluates to **true** if lexpr is numerically or lexically lower or equal to rexpr, **false** otherwise.
 
 
-### \<=\> (compare) _operator_
+### \<=> (compare) _operator_
 
 	.. [lexpr] <=> [rexpr]
 
@@ -470,18 +480,38 @@ Evaluates to **true** if the two expressions are equivalent. This compiles direc
 Use **is** or **isnt** to compare objects or object types, except when dealing with **NaN** in which case the only reliable way to test for its existence is to use **isNaN**. That’s Javascript for you.
 
 
-### \> (greater than) _operator_
+### > (greater than) _operator_
 
 	.. [lexpr] > [rexpr]
 
 Evaluates to **true** if lexpr is numerically or lexically greater than rexpr, **false** otherwise.
 
 
-### \>= (greater or equal) _operator_
+### >= (greater or equal) _operator_
 
 	.. [lexpr] <= [rexpr]
 
 Evaluates to **true** if lexpr is numerically or lexically greater or equal to rexpr, **false** otherwise.
+
+
+### >> (signed right shift) _operator_
+
+    .. [expr] >> [bitcount]
+  
+Convert the expression to a 32 bit signed integer, then shift it right bitcount times, maintaining the sign of the expression.
+
+    debug 8 >> 1   // 4
+    debug -32 >> 2 // -8
+
+
+### >>> (unsigned right shift) _operator_
+
+    .. [expr] >> [bitcount]
+
+Convert the expression to a 32 bit *unsigned* integer, then shift it right bitcount times. Zeros are added from the left.
+
+    debug 8 >>> 1   // 4
+    debug -32 >>> 2 // 1073741816
 
 
 ### ? (safe fetch) _operator_
@@ -508,7 +538,7 @@ Evaluates to whichever expression is numerically or lexically lower.
 	debug 2 ?< 1   // returns 1
 
 
-### ?\> (maximum) _operator_
+### ?> (maximum) _operator_
 
 	.. [lexpr] ?> [rexpr]
 
@@ -1489,7 +1519,7 @@ Converts various collection types into traits/fields using the following rules:
     value -> { value: true }
     list -> { [0][0]: [0][1], [1][0]: [1][1], ... }
     object -> self
-    iterable -> { value[0]: value[1], value[0]: value[1] }
+    iterable -> { first[0]: first[1], next[0]: next[1]... }
 
 **Entrait** is designed primarily to losslessly restore the results of enlist and iterators that produce arrays of key/value pairs.
 
@@ -1506,7 +1536,9 @@ Converts various collection types into traits/fields using the following rules:
     
     > [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
     > { cats: 7, dogs: 12 }
-  
+
+**Entrait** ignores input data that does not conform to expectations; if given a list that does not contain two-element key/value lists, it will not create traits.
+ 
 
 ### enum _literal_
 

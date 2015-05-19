@@ -628,6 +628,8 @@ Instantiate task
   // entrait
   debug '\nENTRAIT'
   debug 'Coyote' entrait
+  debug fruit thru: it, true; entrait
+  
   
   set data to:
     list cats, 7
@@ -635,6 +637,16 @@ Instantiate task
   
   debug data
   debug data entrait
+
+  // shift
+  debug  '\SHIFTS'
+  debug 4 << 1
+  debug -8 << 2
+  debug 4.8 << 0
+  debug 8 >> 1
+  debug -32 >> 2
+  debug -32 >>> 2
+
 
 
 Dump task 

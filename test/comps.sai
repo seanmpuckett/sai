@@ -437,7 +437,7 @@ Execute task
     
   @Test 'entrait array 1', task
     set a to:(:1,4),(:2); entrait
-    return a[1]=4 and a[2]=true
+    return a[1]=4 and a[2] is undefined
     
   @Test 'entrait object', task
     set a to: #a,  b 2; entrait
@@ -445,7 +445,7 @@ Execute task
     
   @Test 'entrait iterable', task
     set a to :(:1,'a'),(:3,1),(:5); iterate entrait
-    return a|1='a' and a|3=1 and a|5=true
+    return a|1='a' and a|3=1 and a|5 is undefined
   
   
   @Test 'enlist entrait', task
