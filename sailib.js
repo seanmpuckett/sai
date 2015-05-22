@@ -1,5 +1,6 @@
 
-var SAILib = exports = module.exports = {}
+var SAILib = exports = {}
+try { module.exports=SAILib; } catch(e) {}
 
 var canIterate=function(i) {
   if (!i) return false;

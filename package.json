@@ -22,8 +22,6 @@
   },
   "homepage": "https://github.com/seanmpuckett/sai",
   "dependencies": {
-    "js-beautify": "^1.5.5",
-    "lodash": "^3.5.0",
     "pegjs": "^0.8.0"
   }
 }

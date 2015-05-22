@@ -1,5 +1,5 @@
 reference:
-  lodash from require 'lodash'
+  pegjs from require 'pegjs'
   Simple 'Simple'
 
 object HelloHTTP
@@ -9,8 +9,8 @@ inherit list
 
 Execute task
   
-  @Test 'lodash required', task
-    return ~lodash.clone isnt undefined
+  @Test 'pegjs required', task
+    return ~pegjs.buildParser isnt undefined
 
   @Test 'Simple reference', task
     set a to create ~Simple

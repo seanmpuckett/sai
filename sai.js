@@ -1,7 +1,7 @@
 var fs = require('fs');
 var PEG = require('pegjs');
 
-var Beautify=require('js-beautify').js_beautify; // optional
+//var Beautify=require('js-beautify').js_beautify; // optional
 if (!Beautify) var Beautify=function(a) { return a; }
 
 
@@ -37,14 +37,13 @@ var _$AI=require('./sailib');
 //  object prototype
 
 var SAIproto = function() {
+  this.Constructor=function(){};
   this.__tobelocked=[];
   this.__tobefrozen=[];
   this.__contracts=[];
   this.__unverified=true;
   this.isof={};
 }
-
-SAIproto.prototype.Constructor=function() {}
 
 
 
@@ -55,6 +54,7 @@ SAIproto.prototype.Constructor=function() {}
 var SAI = exports = module.exports = function() {}
   
 SAI.prototypes={};
+SAI.source={};
 SAI.protogens={};
 SAI.isa={};
 SAI.config=SAIconfig;
@@ -201,6 +201,10 @@ SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
   };
 }
 
+SAI.Compile = function(source) {
+  return new Function('prototype','options','require','_$AI',source);
+}
+
 SAI.GetProtogen = function(name) {
   var protogen=SAI.protogens[name];
   if (!protogen) {
@@ -211,48 +215,81 @@ SAI.GetProtogen = function(name) {
     }
     var source=SAI.Parse(load.source,undefined,load.info);
     source='var __loadinfo=decodeURI("'+encodeURI(load.info)+'");\n'+source;
-    protogen=new Function('prototype','options','require','_$AI',source);
-    if (!protogen) {
-      throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
-    }
+    protogen=SAI.Compile(source);
+    if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
     var s2=new Date();
     if (SAI.config.options.speedometer) console.log("Compiled "+name+" in "+(s2-s1)+"ms.");
     SAI.protogens[name]=protogen;
+    SAI.source[name]=source;
   }  
   return protogen;
+}
+
+
+SAI.GetAncestors = function(name) {
+  var heritage=[name]
+  var ancestors={};
+  var nodupes={};
+  
+  while (heritage.length) {
+    var leaf=heritage.shift();
+    if (!nodupes[leaf]) {
+      nodupes[leaf]=true;
+      var obj=new SAIproto(name); 
+      var protogen=SAI.GetProtogen(leaf);
+      protogen(obj,{name:leaf},require,_$AI); 
+      obj.Constructor();
+      if (!obj.isa) {
+        throw new Error("SAI.GetPrototype: object loaded as "+leaf+" does not have an 'isa' type identifier in its manifest.")
+      }
+      //console.log("object "+leaf);
+      var inherits=obj.__inherits;
+      if (inherits) {
+        //console.log("  inherits "+inherits);
+        ancestors[leaf]=inherits;
+        for (var i in inherits) {
+          var parent=inherits[i];
+          heritage.push(parent);
+        }
+      }
+    }
+  }
+  return ancestors;
+}
+
+
+SAI.FinalizePrototype = function(proto) {
+  for (var i in proto.__tobelocked)
+    Object.defineProperty(proto,proto.__tobelocked[i],{configurable:false});
+  delete proto.__tobelocked;
+  for (var i in proto.__tobefrozen) 
+    _$AI.deepFreeze(proto[proto.__tobefrozen[i]]);
+  delete proto.__tobefrozen;
+  if (proto.__unverified) {
+    for (var i in proto.__contracts) {
+      var l=proto.__contracts[i];
+      if (undefined===proto[l]) {
+        throw new Error("SAI: Contractually required trait '"+l+"' does not exist in object '"+proto.isa+"'.");
+      } else {
+        //console.log("Contract test: "+proto.isa+" does indeed have a "+l+" property.");
+      }
+    }
+    delete proto.__unverified;
+    delete proto.__contracts;
+  }
+  proto.constructor=function() {
+    var obj=Object.create(proto);
+    if (obj.Constructor) obj.Constructor();
+    if (obj.Instantiate) obj.Instantiate.apply(obj,arguments);
+    return obj;
+  };
 }
 
 
 SAI.GetPrototype = function(name,bindings) {
   var proto=SAI.prototypes[name];
   if (!proto) {
-    var heritage=[name]
-    var ancestors={};
-    var nodupes={};
-    
-    while (heritage.length) {
-      var leaf=heritage.shift();
-      if (!nodupes[leaf]) {
-        nodupes[leaf]=true;
-        var obj=new SAIproto(name); 
-        var protogen=SAI.GetProtogen(leaf);
-        protogen(obj,{name:leaf},require,_$AI); 
-        obj.Constructor();
-        if (!obj.isa) {
-          throw new Error("SAI.GetPrototype: object loaded as "+leaf+" does not have an 'isa' type identifier in its manifest.")
-        }
-        //console.log("object "+leaf);
-        var inherits=obj.__inherits;
-        if (inherits) {
-          //console.log("  inherits "+inherits);
-          ancestors[leaf]=inherits;
-          for (var i in inherits) {
-            var parent=inherits[i];
-            heritage.push(parent);
-          }
-        }
-      }
-    }
+    var ancestors=SAI.GetAncestors(name);
 
     //console.log("Creating prototype for "+name);
     var proto=new SAIproto(name);
@@ -273,31 +310,11 @@ SAI.GetPrototype = function(name,bindings) {
     if (SAI.isa[proto.isa]) {
       throw new Error("SAI: Object defined by '"+name+"' has a duplicate .isa type identifier '"+proto.isa+"',  identical to "+SAI.isa[proto.isa]);
     }
-    
     SAI.isa[proto.isa]=name;
-    for (var i in proto.__tobelocked) {
-      var l=proto.__tobelocked[i];
-      Object.defineProperty(proto,l,{configurable:false});
-    }
-    delete proto.__tobelocked;
-    for (var i in proto.__tobefrozen) {
-      var l=proto.__tobefrozen[i];
-      _$AI.deepFreeze(proto[proto.__tobefrozen[i]]);
-    }
-    delete proto.__tobefrozen;
-    if (proto.__unverified) {
-      for (var i in proto.__contracts) {
-        var l=proto.__contracts[i];
-        if (undefined===proto[l]) {
-          throw new Error("SAI: Contractually required trait '"+l+"' does not exist in object '"+proto.isa+"'.");
-        } else {
-          //console.log("Contract test: "+proto.isa+" does indeed have a "+l+" property.");
-        }
-      }
-      delete proto.__unverified;
-    }
 
-    if (bindings) {
+    SAI.FinalizePrototype(proto);
+    
+/*    if (bindings) {
       for (var i in bindings.properties) {
         Object.defineProperty(proto,i,{ get: bindings.properties[i]});
       }
@@ -305,18 +322,39 @@ SAI.GetPrototype = function(name,bindings) {
         proto[i]=bindings.functions[i];
       }
     }
-    
-    proto.constructor=function() {
-      var obj=Object.create(proto);
-      obj.Constructor();
-      if (obj.Instantiate) {
-        obj.Instantiate.apply(obj,arguments)
-      }
-      return obj;
-    }
+*/    
     SAI.prototypes[name]=proto;
   }
   return proto;
+}
+
+
+SAI.GetSource = function(name) {
+  var ancestors=SAI.GetAncestors(name);
+  var source=
+//    'var _$AI=require("./sailib");\n'+
+    'var proto='+SAIproto.toString()+';\n'+
+    'var prototype=new proto();\n';
+    
+  var adopt=function(name) {
+    var list=ancestors[name];
+    if (list) {
+      for (var i in list) {
+        adopt(list[i]);
+      }
+    }
+    source+=SAI.source[name]+'\n';
+  }
+  adopt(name);
+
+  source+='var fn='+SAI.FinalizePrototype.toString()+'(prototype);\n';
+  source+='var pro=prototype.constructor;\n';
+  source+='exports=pro; try { module.exports=pro; } catch(e) {}\n';
+  source+='console.log("hey");\n';
+  source+='return pro;\n';
+  console.log(source);
+  
+  return source;
 }
 
 SAI.Require = function(name) {
@@ -329,7 +367,7 @@ SAI.Create = _$AI.new = function(name,parameters) {
   var proto=SAI.GetPrototype(name);
   if (!proto) throw new Error('SAI.Create: Do not know how to create SAI object "'+name+'".');
   var obj=Object.create(proto); 
-  obj.Constructor();
+  if (obj.Constructor) obj.Constructor();
   if (obj.Instantiate) obj.Instantiate.apply(obj,parameters);
   return obj;
 }
