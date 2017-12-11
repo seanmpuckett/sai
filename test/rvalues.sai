@@ -14,6 +14,15 @@ Execute task
     set c to 'b'
     return @|c
 
+  @Test '@.', task
+    set a to: "2" true
+    return a.2
+
+  @Test 'it.3', task
+    set a to: "3" true
+    with a
+      return .3 and it.3 and a.3
+
   @Test '@[]', task
     set @b to true
     set c to 'b'

@@ -284,9 +284,10 @@
     if (FunctionChain) { addLocal('$_c'); addLocal('$_d'); FunctionChain=false; }
     addLocal('$','=this');
     var head='', tail='';
+    var sup=GlobVar();
     if (o.prefix!='get' && o.prefix!='set') {
       addToList('lock',fn);
-      head='var ^{super}=prototype['+fn+'];\n';
+      head='var '+sup+'=prototype['+fn+'];\n';
       head+='prototype['+fn+']=';
       tail=';\n';
     }
@@ -301,7 +302,7 @@
     if (o.name) {
       if (fun.indexOf('^{this}')>-1) error("Cannot use unrooted . accessor without a context\n\n"+fun);
     }
-    r=RV(head+fun+tail,{this:false,super:false});
+    r=RV(head+fun+tail,{this:false,super:sup});
   
     return r;
 
@@ -358,7 +359,9 @@
     return v;
   }
   
-  
+  function GlobVar() {
+    return '$'+(options.persist.globalcount++)+'g';
+  }
   function FunStart() {
     return '';
     //return ' /*:FUNSTART:*/ ';
@@ -402,10 +405,10 @@ Object
     var isa=quoted(k);
     addToList('lock','isa')
     addToList('freeze','isof')
-    code+='prototype.isa='+isa+';\n';
+    code+='var isa=prototype.isa='+isa+';\n';
     isof+='version:'+v+',';
-    isof+='isa:'+isa+',';
-    isof+='load:__loadinfo';
+    isof+='isa:isa,';
+    isof+='load:__loadinfo,';
     code+='prototype.isof['+isa+']={'+isof+'};\n';
     var l;
     if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
@@ -656,7 +659,7 @@ SetTerm
  = local:LocalAdj? _ l:LValues _ (TO/&FROM/&CHAIN) _ e:Expression {
    local=local?'var ':'';
    if (l.length==1) return local+l[0]+'='+RV(e,{self:l[0]})+';\n';
-   var code='var $_=[].concat('+e+');\n';
+   var code='var $_='+e+';\n';
    for (var i in l) {
      code+=local+l[i]+'=$_['+i+'];\n';
    }
@@ -949,21 +952,23 @@ Attribute
  = DOT v:IdentifierProto { return [[ 'attribute', v ]] }
  
 Call
- = '(' _ p:ParameterList? _ ')' _ { 
+ = LPAREN _ p:ParameterList? _ RPAREN _ { 
    return [[ 'function', p?p[1]:'' ]] 
 }
  
 Root
  = DOT !DOT v:IdentifierProto { return [[ 'it', ''],[ 'attribute', v ]] }
+ / DOT v:PositiveInteger { return [[ 'it', ''],[ 'index', v ]] }
  / DOT !DOT { return [[ 'it', '']] }
  / '|' v:SimpleValue { return [['it',''],['index',v]] }
 
 Index
  = '[' _ v:Expression _ ']' _ { return [[ 'index', v ]] }
  / '|' v:SimpleValue { return [[ 'index', v ]] }
+ / '.' v:PositiveInteger { return [[ 'index', v ]] }
 
 Parenthetic
- = '(' _ v:Expression _ ')' { return [[ 'paren', v ]] }
+ = LPAREN _ v:Expression _ RPAREN { return [[ 'paren', v ]] }
 
 Local
  = v:Identifier { 
@@ -1010,7 +1015,8 @@ Define
   }
   / INSTANCE _ v:Definition EOLs { 
     var proof='var t='+v[1]+';\nfor (var i in t) { prototype[i]="instance"; };\n'; 
-    var setup= 'var Constructor=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n  Constructor.call(this);\n  for (var i in t) this[i]=t[i];\n};\n'; 
+    var sup=GlobVar();
+    var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  for (var i in t) this[i]=t[i];\n};\n'; 
     return proof+setup;
   }
 
@@ -1025,8 +1031,8 @@ SemVer
 ParameterList
  = COLON _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields', '{'+w.join(',')+'}',v] }
  / COLON _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
- / v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
  / v:Items ';'? { return ['array',v.join(','),v] }
+ / v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
  / ';' { return null }
 
 Definition
@@ -1154,8 +1160,7 @@ MultiOutput
 
 Expression
  = v:ListQualify
-
-
+ 
 
 ListQualify
  = v:Logical _ c:(c:Comprehension _ {return c})* {
@@ -1164,6 +1169,7 @@ ListQualify
    }
    return v;
  } 
+
 
 Comprehension
  = MapComprehension 
@@ -1215,7 +1221,11 @@ SortComprehension2
 MapComprehension
  = THRU Sep x:MapComprehension2 { return x }
 MapComprehension2
- = x:Logical { // test 'thru inline *'
+ = LPAREN _ x:Logical _ RPAREN _ { // test 'thru inline *'
+     var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
+     return ['_$AI.map(' , ','+block+' )']; 
+  }
+ / x:Logical  { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
@@ -1230,7 +1240,11 @@ MapComprehension2
 AuditComprehension
  = AUDIT Sep x:AuditComprehension2 { return x }
 AuditComprehension2
- = x:Logical { // test 'audit inline *'
+ = LPAREN _ x:Logical _ RPAREN _ { // test 'audit inline *'
+     var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
+     return ['_$AI.audit(' , ','+block+' )']; 
+  }
+ / x:Logical { // test 'audit inline *'
      var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
      return ['_$AI.audit(' , ','+block+' )']; 
   }
@@ -1588,7 +1602,6 @@ VerbChain
    c[0].base=v;
    return AssembleVerb(c);
  }
-
 
 VerbChainBlock
  = EOLs INDENT EOLs l:(VerbChainLine)+ DEDENT { 
@@ -1948,5 +1961,7 @@ COLON  = ':' !':' { return ':' }
 INDENT = '{'
 DEDENT = '}'
 EQUALS = '='
- 
+LPAREN = '('
+RPAREN = ')'
+
  

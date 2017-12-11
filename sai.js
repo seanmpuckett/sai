@@ -1,7 +1,7 @@
 var fs = require('fs');
 var PEG = require('pegjs');
 
-//var Beautify=require('js-beautify').js_beautify; // optional
+var Beautify=require('js-beautify').js_beautify; // optional
 if (!Beautify) var Beautify=function(a) { return a; }
 
 
@@ -58,7 +58,7 @@ SAI.source={};
 SAI.protogens={};
 SAI.isa={};
 SAI.config=SAIconfig;
-  
+SAI.persist={globalcount:1}; // internal
   
 // converts semantic whitespace into braces for easier parsing.
 SAI.Dedenter=function(src) {
@@ -121,7 +121,7 @@ SAI.Contexualize=function(source,offset) {
     else if (line=='}') ind--;
     else newcontext+=dup('  ',ind)+line+'\n';
   }
-  return newcontext;
+  return newcontext+"\n"+context;
 }
   
   
@@ -160,6 +160,7 @@ SAI.GetParser = function() {
       js=mainParser.parse(source,{
         bound:bound,
         globals:SAI.config.verbs,
+        persist:SAI.persist,
         filename:fn}
       );
     } catch (e) {
@@ -171,7 +172,6 @@ SAI.GetParser = function() {
     if (SAIconfig.options.beautify) {
       js=Beautify(js,{ indent_size: 2, preserve_newlines: false});
     }
-    //console.log(js);
     return js;
   }
 };
@@ -215,6 +215,7 @@ SAI.GetProtogen = function(name) {
     }
     var source=SAI.Parse(load.source,undefined,load.info);
     source='var __loadinfo=decodeURI("'+encodeURI(load.info)+'");\n'+source;
+    console.log(source);
     protogen=SAI.Compile(source);
     if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
     var s2=new Date();
@@ -352,7 +353,8 @@ SAI.GetSource = function(name) {
   source+='exports=pro; try { module.exports=pro; } catch(e) {}\n';
   source+='console.log("hey");\n';
   source+='return pro;\n';
-  console.log(source);
+  var lines=source.split('\n');
+  for (var i in lines) console.log((1+parseInt(i))+': '+lines[i]);
   
   return source;
 }

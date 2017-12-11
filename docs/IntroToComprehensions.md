@@ -10,7 +10,7 @@ In Javascript, most comprehensions only work on lists, that is, the **Array** ty
 
 A notable exception is the application of a sorting operator to traits (e.g. an **object**); you get in return a list of the trait values without the associated trait names, because JS’s specification holds that the enumeration order of an object’s properties is uncertain.
 
-_Critical note: comprehensions **do not modify** collections they are applied to, instead returning an altered copy. If you want a comprehension result to replace its source data, specifically make that assignment yourself._
+_Critical note: comprehensions **do not modify** collections they are applied to, instead returning an altered shallow copy. If you want a comprehension result to replace its source data, specifically make that assignment yourself._
 
 #### Collection Data Types
 
@@ -244,7 +244,7 @@ You can also call another function indirectly with **thru using**, which operate
 
 #### KEYS / VALUES
 
-The **keys** and **values** unary operators can also be used as comprehensions. **Keys** transforms a set of traits into a list of the trait names, discarding the values. **Values** transforms a set of traits into a list of the trait values, discarding the keys. The order of keys/values is the result is undefined.
+The **keys** and **values** unary operators can also be used as comprehensions. **Keys** transforms a set of traits into a list of the trait names, discarding the values. **Values** transforms a set of traits into a list of the trait values, discarding the keys. The order of keys/values in the result is undefined.
 
 > example needed
 

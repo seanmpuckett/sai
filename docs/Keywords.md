@@ -68,7 +68,7 @@ Uses the following data:
 Compares two values for value equality; returns **true** if the values appear to be the same, **false** otherwise. This is implemented with Javascript’s != operator and the behaviour is identical.
 
 
-### ‘ and “ (string)_literal_
+### ' and " (string) _literal_
 
 	.. 'Type your string literal here.'
 	.. 'Use a backslash to escape \' and \" and \\ in your strings.'
@@ -84,7 +84,7 @@ Use backslash as an escape for string delimiters `\'` and `\"`, dollar signs bef
 	> This here's is a test using ${} composition.
 
 
-### ‘’’ (multi-line string) _literal_
+### ''' (multi-line string) _literal_
 
 	.. '''
 	  Now you can type as much text as you want,
@@ -279,13 +279,15 @@ Used as a binary operator, subtracts the right expression from the left. Used as
 
 	.. [expression].[attribute]
 	.. .[attribute]
+	.. .[numeric array index]
 	
 	[value].[attribute]
 	.[attribute]
+	.[numeric array index]
 
 Looks up the trait named _attribute_ in the expression. When used without a leading value, references the named attribute in the **it** magic variable.
 
-	set friend to friends[0]
+	set friend to friends.0
 	debug friend.name
 	with friend 
 	  debug it.name
@@ -300,10 +302,10 @@ You can use the two-dot caboose to stitch a *single line* child code block onto 
 
 The following are functionally identical:
 
-    if error 
-      return -1
-      
-    if error .. return -1
+	if error 
+	  return -1
+	
+	if error .. return -1
 
 
 ### ... (continue) _style_
@@ -316,27 +318,27 @@ But should you really need it, it is there.
 
 The three dot continuation must start at the same indent as the line it continues.
 
-    debug traits
-      name Sally
-      age 32
-      province QC
-    ... overlay traits
-      #cat
-      province ON
-      
-    > { name: 'Sally', age: 32, province: 'ON', cat: true }
+	debug traits
+	  name Sally
+	  age 32
+	  province QC
+	... overlay traits
+	  #cat
+	  province ON
+	
+	> { name: 'Sally', age: 32, province: 'ON', cat: true }
 
 Or even:
 
-    debug 1
-    ... +
-    ... 2
-    ... +
-    ... 3
-    
-    > 6
+	debug 1
+	... +
+	... 2
+	... +
+	... 3
+	
+	> 6
   
-  Syntactically, the continue is equivalent to a whitespace character with a bonus ability to resent level of indent.
+  Syntactically, the continue is equivalent to a whitespace character with a bonus ability to reset level of indent.
   
   
 ### / (divide) _operator_
@@ -422,8 +424,8 @@ One can force **list** to parse incorrectly by using the **=** list element expr
 
 The semicolon can also close parameter lists if using the **from** form of function invocation. The following examples are identical:
 
-    set x to ~Math.sin(angle) * magnitude
-    set x from ~Math.sin angle; * magnitude
+	set x to ~Math.sin(angle) * magnitude
+	set x from ~Math.sin angle; * magnitude
 
 
 ### \< (less than) _operator_
@@ -439,15 +441,15 @@ Evaluates **true** if lexpr is numerically or lexically lower than rexpr, **fals
 
 If you want a case insensitive comparison, you must ensure both expressions are of the same case.
 
-### \<< (left shift) _operator_
+### \<\< (left shift) _operator_
 
-    .. [expr] << [bitcount]
+	.. [expr] << [bitcount]
 
 Convert the expression into a 32 bit signed integer and perform a binary left shift *bitcount* times.
 
-     debug 4 << 1   // 8
-     debug -8 << 2  // -32
-     debug 2.8 << 0 // 2
+	 debug 4 << 1   // 8
+	 debug -8 << 2  // -32
+	 debug 2.8 << 0 // 2
   
 
 ### \<= (less or equal) _operator_
@@ -457,7 +459,7 @@ Convert the expression into a 32 bit signed integer and perform a binary left sh
 Evaluates to **true** if lexpr is numerically or lexically lower or equal to rexpr, **false** otherwise.
 
 
-### \<=> (compare) _operator_
+### \<=\> (compare) _operator_
 
 	.. [lexpr] <=> [rexpr]
 
@@ -480,38 +482,38 @@ Evaluates to **true** if the two expressions are equivalent. This compiles direc
 Use **is** or **isnt** to compare objects or object types, except when dealing with **NaN** in which case the only reliable way to test for its existence is to use **isNaN**. That’s Javascript for you.
 
 
-### > (greater than) _operator_
+### \> (greater than) _operator_
 
 	.. [lexpr] > [rexpr]
 
 Evaluates to **true** if lexpr is numerically or lexically greater than rexpr, **false** otherwise.
 
 
-### >= (greater or equal) _operator_
+### \>= (greater or equal) _operator_
 
 	.. [lexpr] <= [rexpr]
 
 Evaluates to **true** if lexpr is numerically or lexically greater or equal to rexpr, **false** otherwise.
 
 
-### >> (signed right shift) _operator_
+### \>\> (signed right shift) _operator_
 
-    .. [expr] >> [bitcount]
+	.. [expr] >> [bitcount]
   
 Convert the expression to a 32 bit signed integer, then shift it right bitcount times, maintaining the sign of the expression.
 
-    debug 8 >> 1   // 4
-    debug -32 >> 2 // -8
+	debug 8 >> 1   // 4
+	debug -32 >> 2 // -8
 
 
-### >>> (unsigned right shift) _operator_
+### \>\>\> (unsigned right shift) _operator_
 
-    .. [expr] >> [bitcount]
+	.. [expr] >> [bitcount]
 
 Convert the expression to a 32 bit *unsigned* integer, then shift it right bitcount times. Zeros are added from the left.
 
-    debug 8 >>> 1   // 4
-    debug -32 >>> 2 // 1073741816
+	debug 8 >>> 1   // 4
+	debug -32 >>> 2 // 1073741816
 
 
 ### ? (safe fetch) _operator_
@@ -538,7 +540,7 @@ Evaluates to whichever expression is numerically or lexically lower.
 	debug 2 ?< 1   // returns 1
 
 
-### ?> (maximum) _operator_
+### ?\> (maximum) _operator_
 
 	.. [lexpr] ?> [rexpr]
 
@@ -558,7 +560,7 @@ Evaluates to expr1 if the left expression is _truthy_, otherwise evaluates to ex
 	debug false ?? 'True' :: 'False'  // prints 'False'
 
 
-### \[ ] (lookup) _syntax_
+### [ ] (lookup) _syntax_
 
 	.. [value] '[' [expr] ']'
 
@@ -750,10 +752,10 @@ As declares named locally scoped variables within a code block based on values p
 
 #### as with parameters
 
-    set [ident] (as [$ var]) // dynamic trait
-    .. task (as [parameter1], [parameter2], ...)
-    .. process (as [parameter1], [parameter2], ...)
-    .. promise (as [parameter1], [parameter2], ...)
+	set [ident] (as [$ var]) // dynamic trait
+	.. task (as [parameter1], [parameter2], ...)
+	.. process (as [parameter1], [parameter2], ...)
+	.. promise (as [parameter1], [parameter2], ...)
 
 An example of parameter naming:
 
@@ -778,12 +780,12 @@ An example of parameter naming:
 
 An example of **if** value reclamation with **as**:
 
-    if @keydown as charcode
-      switch charcode
-        case 27
-          @Escape
-        case 32
-          @Continue
+	if @keydown as charcode
+	  switch charcode
+	    case 27
+	      @Escape
+	    case 32
+	      @Continue
   
 
 #### as with iterators
@@ -795,13 +797,13 @@ An example of **if** value reclamation with **as**:
 
 An example, renaming **it** and **key** in an each iterator:
 
-    each friends first as value, field
-      debug `${field}: ${value}
-    
-    > name: Sara
-    > age: 23
-    > cat: true
-    > province: ON
+	each friends first as value, field
+	  debug `${field}: ${value}
+	
+	> name: Sara
+	> age: 23
+	> cat: true
+	> province: ON
 
 
 #### as with comprehensions
@@ -816,17 +818,17 @@ An example, renaming **it** and **key** in an each iterator:
 
 An example, renaming **it** and **key** in the block handler of a **thru** comprehension:
 
-    debug friends thru as friend, index
-      return `${index}) ${friend.name} lives in ${friend.province}
-    
-    > [ '0) Sara lives in ON',
-        '1) Jon lives in QC',
-        '2) Ellie lives in QC',
-        '3) Marshal lives in ON',
-        '4) Doug lives in ON',
-        '5) Ann lives in QC',
-        '6) Harry lives in QC',
-        '7) Jenna lives in ON' ]
+	debug friends thru as friend, index
+	  return `${index}) ${friend.name} lives in ${friend.province}
+	
+	> [ '0) Sara lives in ON',
+	    '1) Jon lives in QC',
+	    '2) Ellie lives in QC',
+	    '3) Marshal lives in ON',
+	    '4) Doug lives in ON',
+	    '5) Ann lives in QC',
+	    '6) Harry lives in QC',
+	    '7) Jenna lives in ON' ]
 
   
 #### as parenthetic
@@ -837,8 +839,8 @@ The parenthetic **as** assigns the value of the parenthesised expression to a na
 
 	  set six to (1+2 as three)+three
 	  debug array three, six
-    
-    > [ 3, 6 ]
+	
+	> [ 3, 6 ]
 
 
 ### ascending / asc _modifier_
@@ -853,8 +855,8 @@ Used with the **by** sort comprehension to indicate the sort order should be low
 Because sort order is by default ascending, this keyword is never truly needed except in the simplest case where sorting by value itself.
 
 	debug list Bob, Carol, Ted, Alice by ascending
-    
-    > [ 'Alice', 'Bob', 'Carol', 'Ted' ]
+	
+	> [ 'Alice', 'Bob', 'Carol', 'Ted' ]
 
 
 ### assert _verb_
@@ -863,9 +865,9 @@ Because sort order is by default ascending, this keyword is never truly needed e
 
 If the first expression is _falsy_, throw an exception with the second expression as a message.
 
-    assert everythingIsAwesome, 'I have some bad news...'
-    
-    Error: SAI: failed assertion: I have some bad news...
+	assert everythingIsAwesome, 'I have some bad news...'
+	
+	Error: SAI: failed assertion: I have some bad news...
 
 
 ### audit _comprehension_
@@ -884,16 +886,16 @@ A non-mutating chainable comprehension, audit is used to pass all values in a co
 	  observe debug('Post-sort')
 	  audit debug('Fruit #${key} is ${it}') 
 	debug b
-
-    > Pre-sort
-    > Fruit #0 is Apple
-    > Fruit #1 is Banana
-    > Fruit #2 is Citron
-    > Post-sort
-    > Fruit #0 is Citron
-    > Fruit #1 is Banana
-    > Fruit #2 is Apple
-    > [ 'Citron', 'Banana', 'Apple’ ] 
+	
+	> Pre-sort
+	> Fruit #0 is Apple
+	> Fruit #1 is Banana
+	> Fruit #2 is Citron
+	> Post-sort
+	> Fruit #0 is Citron
+	> Fruit #1 is Banana
+	> Fruit #2 is Apple
+	> [ 'Citron', 'Banana', 'Apple’ ] 
 
 This example shows how one could add instrumentation to a process in a light-weight fashion.
 
@@ -1058,17 +1060,17 @@ The **catch** clause heads a section of code that executes if and only if any co
 
 The exception thrown is caught and placed in the **error** magic variable (or the variable named in the **as** clause), as follows:
 
-    try
-      throw new ~Error 'This is an error message!'
-    catch 
-      return error.message
+	try
+	  throw new ~Error 'This is an error message!'
+	catch 
+	  return error.message
 
 Alternately:
 
-    try
-      throw new ~Error 'This is another error message!'
-    catch as e
-      return e.message
+	try
+	  throw new ~Error 'This is another error message!'
+	catch as e
+	  return e.message
 
 For details on how try/catch/finally exceptions work, see the Jasacript exception documentation.
 
@@ -1084,44 +1086,44 @@ The **chain** clause allows you to compose (string together) a series of operati
 
 **Chain** is another way of writing `value.method().method().method().method()` that offers cleaner code and more possibilities. You start with an object, then apply a sequence of verbs to it. Each verb is a new link in the chain.
 
-    set mirror to task 
-      return chain $
-        split ''
-        reverse
-        join ''
-    debug mirror('A man, a plan, a canal, Panama!')
-      
-    > !amanaP ,lanac a ,nalp a ,nam A  
+	set mirror to task 
+	  return chain $
+	    split ''
+	    reverse
+	    join ''
+	debug mirror('A man, a plan, a canal, Panama!')
+	
+	> !amanaP ,lanac a ,nalp a ,nam A  
 
 In the previous case, each verb was a trait (a method) of the string itself. 
 
 You can also chain comprehensions:
 
-    debug chain friends
-      #cat
-      by .name
-      thru 'My friend ${.name} likes cats.'
-    
-    > [ 'My friend Ann likes cats.',
-    >   'My friend Jon likes cats.',
-    >   'My friend Sara likes cats.' ]
+	debug chain friends
+	  #cat
+	  by .name
+	  thru 'My friend ${.name} likes cats.'
+	
+	> [ 'My friend Ann likes cats.',
+	>   'My friend Jon likes cats.',
+	>   'My friend Sara likes cats.' ]
 
 And because one of the comprehensions is **set**, you can actually chain any function at all.
 
-    set double to task
-      return chain empty
-        concat $
-        concat $
-    
-    debug chain fruit
-      set double(it)
-      
-    > [ 'Apple',
-        'Banana',
-        'Citron',
-        'Apple',
-        'Banana',
-        'Citron' ]
+	set double to task
+	  return chain empty
+	    concat $
+	    concat $
+	
+	debug chain fruit
+	  set double(it)
+	
+	> [ 'Apple',
+	    'Banana',
+	    'Citron',
+	    'Apple',
+	    'Banana',
+	    'Citron' ]
 
 Functions you use in **chain** typically return a value; this is used as the object to pass to the next link in the chain. However, some methods and functions don't return a value, instead modifying their context in-place. If a function returns **undefined**, **chain** will reuse the previous object for the next call.
 
@@ -1154,16 +1156,16 @@ The opposite of **collect** is **iterate**. The difference between **enlist** an
 
 In a loop or otherwise iterating block of code, **continue** short-cuts the remaining code in the block, causing the loop to continue its next iteration immediately.
 
-    count 10
-      unless key % 2
-        continue
-      debug key
-     
-    > 1
-    > 3
-    > 5
-    > 7
-    > 9
+	count 10
+	  unless key % 2
+	    continue
+	  debug key
+	
+	> 1
+	> 3
+	> 5
+	> 7
+	> 9
 
 
 ### contract _declaration_
@@ -1190,8 +1192,8 @@ Inheriting from an object that has contracts, and then not providing implementat
 	object pear
 	inherit:
 	  fruit
-    
-    > exception thrown: “SAI: Contractually required task ‘Consume’ does not exist in object ‘pear’.”
+	
+	> exception thrown: “SAI: Contractually required task ‘Consume’ does not exist in object ‘pear’.”
  
 
 ### copy _operator_
@@ -1200,26 +1202,26 @@ Inheriting from an object that has contracts, and then not providing implementat
 
 Use the **copy** unary operator to create a _shallow copy_ of the expression it precedes.  You sometimes need this because ordinarily SAI and Javascript assign objects, rather than copies of object values. 
 
-    set plate to fruit       // i want some fruit
-    plate.push 'Ice cream'   // and also dessert
-    debug fruit              // but now fruit has changed
-    
-    > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
-    
-    fruit.pop                 // get rid of the ice cream
-    debug fruit
-    
-    > [ 'Apple', 'Banana', 'Citron' ]
-    
-    set plate to copy fruit  
-    plate.push 'Ice cream'
-    debug fruit
-    
-    > [ 'Apple', 'Banana', 'Citron' ]
-    
-    debug plate               // there we go
-     
-    > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
+	set plate to fruit       // i want some fruit
+	plate.push 'Ice cream'   // and also dessert
+	debug fruit              // but now fruit has changed
+	
+	> [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
+	
+	fruit.pop                 // get rid of the ice cream
+	debug fruit
+	
+	> [ 'Apple', 'Banana', 'Citron' ]
+	
+	set plate to copy fruit  
+	plate.push 'Ice cream'
+	debug fruit
+	
+	> [ 'Apple', 'Banana', 'Citron' ]
+	
+	debug plate               // there we go
+	
+	> [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
 
 Note that **copy** only copies enumerable values.
 
@@ -1276,11 +1278,11 @@ Creates a SAI object by name.
 
 Will attempt to find the object’s source by using the `SAI.config.Loader` function, which defaults to `SAI.GetSourceFromPaths`, which tries to find a file named `[expr].sai` in the provided paths. 
 
-    reference:
-      Tally 'Tally ^1.0.0'
-    .. 
-    
-    set inventory to create ~Tally
+	reference:
+	  Tally 'Tally ^1.0.0'
+	.. 
+	
+	set inventory to create ~Tally
 
 The example follows best practices of placing object names in a **reference** section, aliasing versioned names into 
 
@@ -1333,21 +1335,21 @@ Undefines the named variable or attribute(s) of a variable.
 
 This just calls the underlying Javascript version of **delete**, with all the same rules and caveats. The only clever addition is the ability to delete multiple attributes at once by supplying a collection:
 
-    set obj to: a 1, b 2, c 3, d 4, e 5, f 6
-    set obj delete 'a'
-    debug obj
-    
-    > { b: 2, c: 3, d: 4, e: 5, f: 6 }
-     
-    set obj delete: 'c', 'f'
-    debug obj
-     
-    > { b: 2, d: 4, e: 5 }
-     
-    set obj delete: b 'B is for Bonobo.', d 'D is for Dixie cups.'
-    debug obj
-    
-    > { e: 5 }
+	set obj to: a 1, b 2, c 3, d 4, e 5, f 6
+	set obj delete 'a'
+	debug obj
+	
+	> { b: 2, c: 3, d: 4, e: 5, f: 6 }
+	
+	set obj delete: 'c', 'f'
+	debug obj
+	
+	> { b: 2, d: 4, e: 5 }
+	
+	set obj delete: b 'B is for Bonobo.', d 'D is for Dixie cups.'
+	debug obj
+	
+	> { e: 5 }
 
 
 ### descending / desc _modifier_
@@ -1403,12 +1405,12 @@ Used only with **count**; signifies the count is to proceed by _decrementing_ th
 
 **Down** can seem freaky because you never get the value you begin with, and it seems to be even freakier when you're using a step value other than 1.
 
-    count down 15 step -4
-      debug key 
-      
-    > 11
-    > 7
-    > 3
+	count down 15 step -4
+	  debug key 
+	
+	> 11
+	> 7
+	> 3
 
 Here's an important safety tip, illustrated above: if you're using **down** with **step**, be sure the step value is negative. Otherwise the loop will never terminate.
 
@@ -1428,29 +1430,29 @@ See also: **count** and **step**.
 
 If the collection is empty, executes the (optional) **else** block instead. Unlike **ply**, which works well with length-based arrays, **each** is intended for use with objects containing arbitrary traits/fields. 
 
-    set friend to friends first
-    each friend
-      debug `${key}: ${it}
-    else
-      debug `You have no friends.
-      
-    > name: Jon
-    > age: 19
-    > cat: true
-    > dog: true
-    > province: QC
+	set friend to friends first
+	each friend
+	  debug `${key}: ${it}
+	else
+	  debug `You have no friends.
+	
+	> name: Jon
+	> age: 19
+	> cat: true
+	> dog: true
+	> province: QC
   
 Recall that you can rename **it** and **key** with the **as** clause:
 
-    each friend as value, field
-      debug `${field}: ${value}
+	each friend as value, field
+	  debug `${field}: ${value}
 
 **Each** can also call out to a function with the **each using** variation.
 
-    set handler to task as value, field
-      debug `${field}: ${value}
-    
-    each friend using handler
+	set handler to task as value, field
+	  debug `${field}: ${value}
+	
+	each friend using handler
 
 
 ### else _clause_
@@ -1481,28 +1483,27 @@ Specifies a block of code that will be executed if the condition leading to the 
 
 ### enlist _comprehension_
 
-    .. [expr] enlist
+	.. [expr] enlist
 
 Converts various collection types into a list/array using the following rules:
 
-    undefined -> undefined
-    value -> [ value ]
-    list -> self
-    object -> [ [ key, value ], [ key, value ], ... ]
-    iterable -> [ value, value, value, ... ]
+	undefined -> undefined
+	value -> [ value ]
+	list -> self
+	object -> [ [ key, value ], [ key, value ], ... ]
+	iterable -> [ value, value, value, ... ]
 
 Note specifically that **enlist** will turn a set of key, value pairs into an array of [key,value] arrays thus no data is lost in the conversion.
 
-    set data to:
-      cats 7
-      dogs 12
-      
-    debug data
-    debug data enlist
-     
-    > { cats: 7, dogs: 12 }
-    > [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
-     
+	set data to:
+	  cats 7
+	  dogs 12
+	
+	debug data
+	debug data enlist
+	
+	> { cats: 7, dogs: 12 }
+	> [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
 
 Such a result can be turned back into traits with **entrait**.
 
@@ -1511,34 +1512,40 @@ The difference between **enlist** and **collect** is that **enlist** will always
 
 ### entrait _comprehension_
 
-    .. [expr] entrait
+	.. [expr] entrait
 
 Converts various collection types into traits/fields using the following rules:
 
-    undefined -> undefined
-    value -> { value: true }
-    list -> { [0][0]: [0][1], [1][0]: [1][1], ... }
-    object -> self
-    iterable -> { first[0]: first[1], next[0]: next[1]... }
+	undefined -> undefined
+	value -> { value: true }
+	list -> { [0][0]: [0][1], [1][0]: [1][1], ... }
+	object -> self
+	iterable -> { first[0]: first[1], next[0]: next[1]... }
 
 **Entrait** is designed primarily to losslessly restore the results of enlist and iterators that produce arrays of key/value pairs.
 
-    debug 'Coyote' entrait
-    
-    > { Coyote: true }
-    
-    set data to:
-      list cats, 7
-      list dogs, 12
-      
-    debug data
-    debug data entrait
-    
-    > [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
-    > { cats: 7, dogs: 12 }
+	debug 'Coyote' entrait
+	
+	> { Coyote: true }
+	
+	set data to:
+	  list cats, 7
+	  list dogs, 12
+	
+	debug data
+	debug data entrait
+	
+	> [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
+	> { cats: 7, dogs: 12 }
 
 **Entrait** ignores input data that does not conform to expectations; if given a list that does not contain two-element key/value lists, it will not create traits.
  
+You can use **thru** to craft suitable lists easily, however:
+
+	 debug fruit thru: it, true; entrait
+	
+	 > { Apple: true, Banana: true, Citron: true, Durian: true }
+
 
 ### enum _literal_
 
@@ -1591,15 +1598,15 @@ Executes the indented code if the expression is a defined value, e.g. if it is n
 
 **Exists** is quite handy when working with caches and lookups.
 
-    exists @cache|$key
-      return it
-    else
-      set @cache|key from @ExpensiveCalculation $key
-      return @cache|key
+	exists @cache|$key
+	  return it
+	else
+	  set @cache|key from @ExpensiveCalculation $key
+	  return @cache|key
 
 Though an even slicker way of dealing with that particular idiom is to use **initialized**:
 
-    return @cache|$key initialized from @ExpensiveCalculation $key
+	return @cache|$key initialized from @ExpensiveCalculation $key
 
 ...Though it's only actually useful if you really have nothing else to do besides look something or calculate it. **Exists** gives you a lot more flexibility.
 
@@ -1627,27 +1634,27 @@ Rules for **expects** take the form of a set of traits. Their names correspond t
  
 Any violations to the rules are returned in a list; that list being made up of plain objects with the following fields:
 
-    .trait - name expected
-    .expects - type expected
-    .found - type found
+	.trait - name expected
+	.expects - type expected
+	.found - type found
   
 Here are some examples, finally:
 
-    AddStudent task expects $name string, $age number
-      @students.push copy $ 
-    ..
-    @AddStudent name 'Sally', age '12'
-    
-    > Error: SAI: parameter exception in AddStudent
-    > age should be number, but it's string
+	AddStudent task expects $name string, $age number
+	  @students.push copy $ 
+	..
+	@AddStudent name 'Sally', age '12'
+	
+	> Error: SAI: parameter exception in AddStudent
+	> age should be number, but it's string
 
 Performing this same test in an ad-hoc fashion using the **expects** operator would look like this:
 
-    set newStudent to: name 'Sally', age '12'
-    set studentRules to: name 'string', age 'number'
-    debug newStudent expects studentRules
-     
-    > [ { trait: 'age', expects: 'number', found: 'string' } ]    
+	set newStudent to: name 'Sally', age '12'
+	set studentRules to: name 'string', age 'number'
+	debug newStudent expects studentRules
+	
+	> [ { trait: 'age', expects: 'number', found: 'string' } ]    
 
 N.B. the **expects** clause rule format is identical to that of a single-line **traits** definition, with the additional requirement of a **$** before every trait name.
 
@@ -1683,7 +1690,7 @@ For details, see the Jasacript exception documentation.
 
 Used to specify the creation of a plain object with a set of key/value pairs. (Contrast with **traits**.)  In general, the **colon** structure constructor will figure out what you want, but when you want to be specific about creating a plain object with of keyed values & expressions, use **fields**. Compare with **list**, **array** and **traits**.
 
-The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\\\\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **expr** is any valid literal, variable, object or expression.
+The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\\\\\\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **expr** is any valid literal, variable, object or expression.
 
 Fields may be specified on one line:
 
@@ -1751,8 +1758,8 @@ Neither **From** nor parenthesis are not needed when the verb begins the line as
 
 If you wish to use **from** in a continuing expression, close the parameter clause with a semicolon (like you'd close a structural literal). The following two examples are equivalent.
 
-    set @x to ~Math.sin($angle) * $magnitude
-    set @x from ~Math.sin $angle; * $magnitude    
+	set @x to ~Math.sin($angle) * $magnitude
+	set @x from ~Math.sin $angle; * $magnitude    
 
 
 ### get _declaration_
@@ -1992,7 +1999,7 @@ An object can have multiple parents at each level of inheritance, as in the foll
 	set myCar to create 'Sedan'
 	debug myCar 
 	> { licenseTag: false, paxCount: 0, paxMaximum: 6 }
-	 
+	
 	debug myCar.isa
 	> Sedan
 	
@@ -2128,10 +2135,10 @@ You can trace an object’s creation in order recursively by starting at the **i
 Returns true if the object is an instance of a class that is, or inherits from, the given class name.  
 
 	class Parent 1.0.0
-	 
+	
 	class Child 1.0.0
 	inherits: Parent
-	 
+	
 	set a to create 'Child'
 	debug a isof 'Child'   // true
 	debug a isof 'Parent'  // true
@@ -2170,15 +2177,15 @@ Step through each result of an _iterable expression_, passing it through a block
 
 A disadvantage of using **iterate** is that you don’t get a **key** value, you only get the **it** value. There is also a performance penalty when compared to imperative types of processing.
 
-    set seen to new ~Set
-    seen.add 'horse'
-    seen.add 'pig'
-    seen.add 'horse'
-    iterate seen
-      debug it
-    
-    > horse
-    > pig
+	set seen to new ~Set
+	seen.add 'horse'
+	seen.add 'pig'
+	seen.add 'horse'
+	iterate seen
+	  debug it
+	
+	> horse
+	> pig
 
 The example uses the new *Set* collection from ES6.
 
@@ -2186,9 +2193,9 @@ The example uses the new *Set* collection from ES6.
 #### iterate comprehension
 
 	.. [collection] iterate
-    
-    .. chain [collection]
-      iterate
+	
+	.. chain [collection]
+	  iterate
 
 Ensures the collection is an iterable. If it already is an iterable, return it unchanged. If it has a **Iterate** method, call it and return that iterable. If it's an Array, produce an iterator over its values. If it's an object, produce an iterator that returns for each trait a 2-element array with trait name, trait value. If it's just a plain value, produce an iterator that returns that value.
 
@@ -2196,22 +2203,22 @@ Using **iterate** in this way allows you to guarantee that processing is being d
 
 The following example follows the one in **Iterator**:
 
-    ply inventory by it|1
-      debug it
-      
-    > [ apple: 2, banana: 1 ]  // undesired result
-    
-    ply inventory iterate by it|1
-      debug it
-      
-    > [ 'banana', 1 ]          // correct result
-    > [ 'apple', 2 ]
+	ply inventory by it|1
+	  debug it
+	
+	> [ apple: 2, banana: 1 ]  // undesired result
+	
+	ply inventory iterate by it|1
+	  debug it
+	
+	> [ 'banana', 1 ]          // correct result
+	> [ 'apple', 2 ]
 
 The example wants to print out a sorted list of inventory items. 
 
 The undesired result comes about because **by**, like most comprehensions, would prefer to process imperatively. So, even if you give **by** an object with a **Iterate** method, which all objects and arrays do, whether you put it there yourself or not, that method will not naturally be called. 
 
-So, **by** converts the `inventory ` object into an array so it can be sorted. The array conversion produces an array of all enumerable traits; in the case of `Tally` objects, the only enumerable trait is `bag`, and so an array that looks like `[ bag ]` is sorted (to no effect) and then printed one element at a time.
+So, **by** converts the `inventory` object into an array so it can be sorted. The array conversion produces an array of all enumerable traits; in the case of `Tally` objects, the only enumerable trait is `bag`, and so an array that looks like `[ bag ]` is sorted (to no effect) and then printed one element at a time.
 
 When you force a call to **Iterator** with the **iterate** comprehension, you get the correct result you're expecting, as you thereby force **by** to use your custom iterator rather than a naive array conversion.
 
@@ -2220,8 +2227,8 @@ The upshot is that right now SAI favours imperative collections rather than lazy
 
 ### Iterator _syntax_
 
-    Iterator process (as [parameter list])
-      [block]
+	Iterator process (as [parameter list])
+	  [block]
 
 This will be a little gritty, because ES6 is gritty. When you name an object process **Iterator** (note the specific uppercase initial), the function won't be assigned to the object trait `object.Iterator`. Instead, it will be assigned to `object[Symbol.iterator]`. 
 
@@ -2229,24 +2236,24 @@ The bad news is that this means you can't specifically refer to that trait by na
 
 The good news is this means you probably won't ever *have to* refer to it by name, because all of SAI's comprehensions, as well as the **iterate** statement, and ES6's `for-of` loop, all implicitly check for the existence of the magic `Symbol.iterator` function and will use it if present.
 
-    object Tally 1.0.0
-    instance:
-      bag empty
-    Count task 
-      set bag|$ to (self default 0) + 1
-    Iterator process
-      each bag
-        yield: key, it
-      
-    set inventory to create 'Tally'
-    inventory.Count 'apple'
-    inventory.Count 'banana'
-    inventory.Count 'apple'
-    iterate inventory
-      debug it
-      
-    > [ 'apple', 2 ]
-    > [ 'banana', 1 ]
+	object Tally 1.0.0
+	instance:
+	  bag empty
+	Count task 
+	  set bag|$ to (self default 0) + 1
+	Iterator process
+	  each bag
+	    yield: key, it
+	
+	set inventory to create 'Tally'
+	inventory.Count 'apple'
+	inventory.Count 'banana'
+	inventory.Count 'apple'
+	iterate inventory
+	  debug it
+	
+	> [ 'apple', 2 ]
+	> [ 'banana', 1 ]
 
 In the example, when we **iterate** over `inventory`, a check is made to see if the object to iterate has an **Iterator** process, which in this case it does, so it is called, and then iteration takes place over the result. See the previous entry, **iterate comprehension**, for more on this.
 
@@ -2532,27 +2539,27 @@ Instantiates a new object with the given prototype. If parameters are supplied, 
 
 **Create** is used for SAI objects; objects where you have in-hand an object name (as a string). **Create** doesn't assume pre-compiled prototypes; if the prototype isn't cached, it will attempt to load it via the `SAI.config.Loader` function. 
 
-Since **new**'s prototypes are often created with **require**, and require is often found in **reference**, it is also often the case that the prototype is a *global* value, thus you will need to reference it with the **~** global scoping prefix:
+Since **new**'s prototypes are often created with **require**, and require is often found in **reference**, it is also often the case that the prototype is a *global* value, thus you will need to reference it with the **\~** global scoping prefix:
 
-    reference:
-      express from require 'express'
-      
-    object HelloHTTP 1.0.0
-    
-    Instantiate task
-      set @app from ~express // <--- note the use of ~ to access global
-      
-      @app.get '/', task as req, res
-        res.send 'Hello HTTP!'
-      
-      set @server from @app.listen 3000, 'localhost', task
-        with @server.address()
-          debug 'Example app listening at http://${.address}:${.port}'
+	reference:
+	  express from require 'express'
+	
+	object HelloHTTP 1.0.0
+	
+	Instantiate task
+	  set @app from ~express // <--- note the use of ~ to access global
+	
+	  @app.get '/', task as req, res
+	    res.send 'Hello HTTP!'
+	
+	  set @server from @app.listen 3000, 'localhost', task
+	    with @server.address()
+	      debug 'Example app listening at http://${.address}:${.port}'
 
-You'll also need to use **~** when creating Javascript built-in objects such as `Error`:
+You'll also need to use **\~** when creating Javascript built-in objects such as `Error`:
 
-    if crocodiles
-      throw new ~Error "Why do we even have that lever?"
+	if crocodiles
+	  throw new ~Error "Why do we even have that lever?"
 
 
 ### nop _statement_
@@ -2635,10 +2642,10 @@ Begins the definition of an object. Only one object definition is permitted per 
 In an object definition, the following sections are supported. See each keyword for more details. Also review the _Defining an Object_ document.
 
 	reference:
-    [object references]
-    
+	[object references]
+	
 	object [identifier] [version]
-    
+	
 	inherit:
 	  [list of objects to inherit from]
 	
@@ -2672,9 +2679,9 @@ Evaluates the right expression using the left expression value as the **it** mag
 	set b to 'Fred'
 	set c to b observe debug '${it.length} letters.'
 	debug c
-  
-    > 4 letters.
-    > Fred
+	
+	> 4 letters.
+	> Fred
 
 A warning: while you can **observe** an iterable expression, be careful that you don't drain it through observation. Heisenberg's uncertainty principle is very much at play with iterables: you can either have it or know what's in it.
 
@@ -2783,28 +2790,28 @@ Wraps the code block in a Promise-like function shell. Along with **resolve** an
 
 This is probably best explained by just showing you what happens when you use it.
 
-    set doThing to promise as url
-      HeyServer url, task as request, result
-        if result.success
-          resolve result
-        else
-          reject result
-    ..
-    debug doThing.toString()
-     
-    function (p) {
-      return new Promise(function($_resolve, $_reject) {
-        var $url = p;
-        $HeyServer($url, function(p, $result) {
-          var $request = p;
-          if (($56 = ($result.success))) {
-            $_resolve($result);
-          } else {
-            $_reject($result);
-          }
-        });
-      });
-    }
+	set doThing to promise as url
+	  HeyServer url, task as request, result
+	    if result.success
+	      resolve result
+	    else
+	      reject result
+	..
+	debug doThing.toString()
+	
+	function (p) {
+	  return new Promise(function($_resolve, $_reject) {
+	    var $url = p;
+	    $HeyServer($url, function(p, $result) {
+	      var $request = p;
+	      if (($56 = ($result.success))) {
+	        $_resolve($result);
+	      } else {
+	        $_reject($result);
+	      }
+	    });
+	  });
+	}
 
 So basically it throws a **Promise** wrapper around the function and allows you to use **resolve** and **reject** as statements. (The $56 in there is housekeeping for the **trial** mvar; V8 optimizes unused assignments like this away.)
 
@@ -2823,23 +2830,23 @@ Creates a function that is expected to **yield** one or more values. This is an 
 
 If you're not familiar with generators/yielding, here is a very simplified overview.
 
-    set Candidates to process
-      count 1 to 100 as x
-        count 1 to 100 as y
-          if 1<x and x<y and x+y<100
-            yield: x x, y y, s x+y, p x*y
+	set Candidates to process
+	  count 1 to 100 as x
+	    count 1 to 100 as y
+	      if 1<x and x<y and x+y<100
+	        yield: x x, y y, s x+y, p x*y
 
 The Candidates process, when invoked, runs all of the code in the process up until the first **yield**, then returns, handing you a process object, here stored in the variable `iter`:
 
-    set iter from Candidates
+	set iter from Candidates
 
 That object is an _iterator_; it is a stateful representation of a `Candidates` process. Each time you call a process, you get a new iterator. Once you have an iterator, you can _iterate_ through it. Each iteration returns the next value _yielded_ by the process.
 
 Iteration takes place by calling the **.next** task on the iterator.
 
-    debug from iter.next
-     
-    > { value: { x: 2, y: 3, s: 5, p: 6 }, done: false }
+	debug from iter.next
+	
+	> { value: { x: 2, y: 3, s: 5, p: 6 }, done: false }
 
 You can see that **.next** returns a simple object with two fields, **.value** and **.done**.  (In our iterator, the value is the first qualified candidate represented by a simple object with four fields: x, y, s and p.)
 
@@ -2847,26 +2854,26 @@ You can see that **.next** returns a simple object with two fields, **.value** a
 
 Each time you call **.next** you will get a new value.
 
-    debug from iter.next
-    debug from iter.next
-    debug from iter.next
-     
-    > { value: { x: 2, y: 4, s: 6, p: 8 }, done: false }
-    > { value: { x: 2, y: 5, s: 7, p: 10 }, done: false }
-    > { value: { x: 2, y: 6, s: 8, p: 12 }, done: false }
+	debug from iter.next
+	debug from iter.next
+	debug from iter.next
+	
+	> { value: { x: 2, y: 4, s: 6, p: 8 }, done: false }
+	> { value: { x: 2, y: 5, s: 7, p: 10 }, done: false }
+	> { value: { x: 2, y: 6, s: 8, p: 12 }, done: false }
 
 Here is a bit of code that will keep calling **.next** until the **.done** flag is set, saving the result in a four item list.
 
-    set cache to empty            // empty array
-    do until result.done          // check .done at the end of each loop
-      set result from iter.next   // next iteration to result
-      cache.push result           // save result in cache
-    debug cache limit -4          // print last four rows
-     
-    > [ { value: { x: 48, y: 50, s: 98, p: 2400 }, done: false },
-        { value: { x: 48, y: 51, s: 99, p: 2448 }, done: false },
-        { value: { x: 49, y: 50, s: 99, p: 2450 }, done: false },
-        { value: undefined, done: true } ]
+	set cache to empty            // empty array
+	do until result.done          // check .done at the end of each loop
+	  set result from iter.next   // next iteration to result
+	  cache.push result           // save result in cache
+	debug cache limit -4          // print last four rows
+	
+	> [ { value: { x: 48, y: 50, s: 98, p: 2400 }, done: false },
+	    { value: { x: 48, y: 51, s: 99, p: 2448 }, done: false },
+	    { value: { x: 49, y: 50, s: 99, p: 2450 }, done: false },
+	    { value: undefined, done: true } ]
  
 Once the **.done** flag is set, the iterator is said to be _exhausted_. Notice that **.value** is *undefined* when the **.done** flag is set.
 
@@ -2874,12 +2881,12 @@ Processes, generators and iterators are very powerful tools because they allow c
 
 SAI has many affordances for processes and iterators, including native support with all comprehensions. As a very simple example, all of the above code could be replaced with this simple expression:
 
-    debug Candidates() limit -4
-    
-    > [ { x: 48, y: 49, s: 97, p: 2352 },
-        { x: 48, y: 50, s: 98, p: 2400 },
-        { x: 48, y: 51, s: 99, p: 2448 },
-        { x: 49, y: 50, s: 99, p: 2450 } ]
+	debug Candidates() limit -4
+	
+	> [ { x: 48, y: 49, s: 97, p: 2352 },
+	    { x: 48, y: 50, s: 98, p: 2400 },
+	    { x: 48, y: 51, s: 99, p: 2448 },
+	    { x: 49, y: 50, s: 99, p: 2450 } ]
  
  (Notice how the limit comprehension itself deals silently with **.next** and **.done**, and automatically gives you just a list with only the **.value** of each iteration.)
 
@@ -2892,20 +2899,20 @@ SAI has many affordances for processes and iterators, including native support w
 
 Declare global variables at the top of a **.SAI** source file. This is the only way to make global variables; inside a reference declaration. The syntax is the same as a **fields** structure definition, with name/value pairs separated by commas or newlines.
 
-    reference:
-      MIN 0, MAX 100
-      express require('express')
-      Vector2D 'Vector2D ^1.0.0'
+	reference:
+	  MIN 0, MAX 100
+	  express require('express')
+	  Vector2D 'Vector2D ^1.0.0'
 
-Recall that all global variables can only be referenced in code by use of the **~** global scoping prefix. So while you define globals as above, you use them as below:
+Recall that all global variables can only be referenced in code by use of the **\~** global scoping prefix. So while you define globals as above, you use them as below:
 
-    count to ~MAX
-      debug key
-    ..  
-    set @app from ~express
-    ..
-    set origin to create ~Vector2D 0, 0
-    ..
+	count to ~MAX
+	  debug key
+	..  
+	set @app from ~express
+	..
+	set origin to create ~Vector2D 0, 0
+	..
 
 
 ### reject _statement_
@@ -2923,10 +2930,10 @@ For an example, see **promise**.
 
 As in Javascript, and for clarity should be exclusively reserved for use in **reference** sections.
 
-    reference:
-      express require('express')
-    ..
-    set @app to ~express()
+	reference:
+	  express require('express')
+	..
+	set @app to ~express()
 
 
 ### resolve _statement_
@@ -2944,12 +2951,12 @@ For an example, see **promise**.
 
 Return a value to the caller of a **task**. Works just like Javascript.
 
-    set multiply to task as a, b
-      return a*b
-      
-    debug from multiply 2, 4
-    
-    > 8
+	set multiply to task as a, b
+	  return a*b
+	
+	debug from multiply 2, 4
+	
+	> 8
 
 
 ### select _statement_
@@ -2975,8 +2982,8 @@ A magic variable used only in a **set** statement that contains the original val
 
 The following lines are equivalent; one of them is easier to read than the other.
 
-    set totals|key to (cache|key default 0) + amount
-    set totals|key to (self default 0) + amount
+	set totals|key to (cache|key default 0) + amount
+	set totals|key to (self default 0) + amount
   
 
 ### set _declaration_ / _statement_ / _operator_
@@ -2994,48 +3001,48 @@ Declare a _setter_ for a dynamic object trait. Cannot be used inside a function 
 
 This example object implements *Distance*, storing the value normalized to meters. You can get and set the value in centimeters and miles through the use of dynamic traits.
 
-    object Distance 1.0.0
-    instance: meters 0
-    
-    centimeters set as val
-      set @meters to val/100
-    get
-      return @meters * 100
-    
-    miles set as val
-      set @meters to val * 1609.344
-    get
-      return @meters / 1609.344
+	object Distance 1.0.0
+	instance: meters 0
+	
+	centimeters set as val
+	  set @meters to val/100
+	get
+	  return @meters * 100
+	
+	miles set as val
+	  set @meters to val * 1609.344
+	get
+	  return @meters / 1609.344
  
  And in use:
  
-    set trip to create 'Distance'
-    set trip.meters to 500
-    debug trip.meters       // > 500
-    debug trip.centimeters  // > 50000
-    debug trip.miles        // > 0.31068559611867
-    set trip.miles to 10
-    debug trip.meters       // > 16093.44
+	set trip to create 'Distance'
+	set trip.meters to 500
+	debug trip.meters       // > 500
+	debug trip.centimeters  // > 50000
+	debug trip.miles        // > 0.31068559611867
+	set trip.miles to 10
+	debug trip.meters       // > 16093.44
 
 
 #### set value assignment
 
 	  set [ident] to [expr]
 	  set [ident] from [function] ( [parameters] )
-    set [ident] via [function]
+	set [ident] via [function]
 	  set [ident] [operator] [expr]  
 	  set [ident] [unary operator]
 
 Assign a value to an identifier. That's right, you don't use the equals sign for assignment. Ugh, whose idea was that anyway? 
 
-    set a to 2
-    set a from ~Math.pow self, 2
-    set a via ~Math.sqrt
-    set a * 4
-    set a -
-    debug a
-    
-    > -8    
+	set a to 2
+	set a from ~Math.pow self, 2
+	set a via ~Math.sqrt
+	set a * 4
+	set a -
+	debug a
+	
+	> -8    
 
 Note: The **self** mvar refers to the current value of the variable presently being set.
 
@@ -3067,14 +3074,13 @@ _If you don’t specifically **return** a value or object from within an **set**
 
 **Set** supports the **using** clause, in which case the function specified receives the original value as its first parameter, and the return value is passed forward. The two debug statements below are equivalent
 
-    set ExtractFirst to task
-      return $[0]
-      
-    debug friends #cat set Extract(it)    
-    debug friends #cat set using Extract  
-    
-    > { name: 'Sara', age: 23, cat: true, province: 'ON' }
-    > { name: 'Sara', age: 23, cat: true, province: 'ON' }
+	set ExtractFirst to task
+	  return $[0]
+	
+	debug friends #cat set Extract(it)    
+	debug friends #cat set using Extract  
+	> { name: 'Sara', age: 23, cat: true, province: 'ON' }
+	> { name: 'Sara', age: 23, cat: true, province: 'ON' }
 
 You must specifically return a value in the function called by **set using**.
 
@@ -3105,28 +3111,28 @@ Call the previous ancestral version of the current object method. This doesn't h
 
 Note there is *no other way* to access an overridden ancestral object method than by using **super** within that specific overriding method itself. SAI is very strict about inheritance that way. Don't even bother exploring the prototype chain.
 
-    object Parent 
-    instance: name 'unknown'
-    Instantiate task as name
-      set @name to name
-      
-    object Child
-    inherit: 'Parent'
-    instance: age 'unknown'
-    Instantiate task as name, age
-      super name
-      set @age to age
-      
-    set billy to create 'Child' 'Billy', 12
-    debug billy
-    
-    > { name: 'Billy', age: 12 }    
+	object Parent 
+	instance: name 'unknown'
+	Instantiate task as name
+	  set @name to name
+	
+	object Child
+	inherit: 'Parent'
+	instance: age 'unknown'
+	Instantiate task as name, age
+	  super name
+	  set @age to age
+	
+	set billy to create 'Child' 'Billy', 12
+	debug billy
+	
+	> { name: 'Billy', age: 12 }    
 
 Contrary to what you might expect, **super** _does not_ use the **@** scoping prefix; that's because super _always and only_ refers to the current object. You cannot call **super** on any other object.
 
 If you want to pass arguments to a **super** method without specifying them discretely, the following really ugly idiom gets the job done.
 
-    super.apply @ $$
+	super.apply @ $$
 
 
 ### switch _statement_
@@ -3182,7 +3188,7 @@ Generated code:
 	    $ = this;
 	  console.log('' + $.context + ' ' + $name + ': ' + $value);
 	}
-	
+ 
 
 You’ll note that the first parameter in a SAI-generated function is always `p`, which is explained below. More importantly, however, note the assignation `$ = this`.
 
@@ -3282,10 +3288,10 @@ Refer to the entry on **expects** for more on what it does.
 
 Trigger exception handling.
 
-    try
-      throw new ~Error 'Oh no!'
-    catch 
-      return error.message
+	try
+	  throw new ~Error 'Oh no!'
+	catch 
+	  return error.message
 
 You should probably look at the Javascript documentation.
 
@@ -3305,14 +3311,14 @@ Pass each element of a collection “thru’ an expression, code block, or previ
 Conversion to uppercase:
 
 	debug fruit thru .toUpperCase()
-	 
+	
 	> [ 'APPLE', 'BANANA', 'CITRON' ]
 
 A more complex formatting that could be an expression but I needed a block example:
 
 	debug friends #cat thru
 	  return '${key+1}) ${.name}, age ${.age}, lives in ${.province}'
-	 
+	
 	> [ '1) Sara, age 23, lives in ON',
 	     '2) Jon, age 19, lives in QC',
 	     '3) Ann, age 23, lives in QC' ]
@@ -3336,7 +3342,7 @@ Passing values **thru** a function:
 	  return out
 	
 	debug fruit thru using rot13
-	 
+	
 	> [ 'Nccyr', 'Onanan', 'Pvgeba' ]
   
 The function called by the **using** variant receives two parameters:
@@ -3344,7 +3350,7 @@ The function called by the **using** variant receives two parameters:
 	set instrument to task
 	  debug $$ 
 	  return $
-	 
+	
 	debug fruit thru using instrument
 	
 	> { '0': 'Apple', '1': 0 }
@@ -3363,7 +3369,7 @@ The function called by the **using** variant receives two parameters:
 
 Used to specify the creation of a plain object with a set of key/term pairs. (Contrast with **fields**.)  When you want to be specific about creating a plain object from a set of of keyed values & literal terms, use **traits**. 
 
-The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **term** is any valid term (see **list** for a description of valid terms).
+The **key** is an identifying word or other string, specified without quotes (although quotes may be used if desired/necessary). If a **\\\\#** preceeds the key (a hashtag), the key will be assigned a value of **true**. The **term** is any valid term (see **list** for a description of valid terms).
 
 See **fields** for examples.
 
@@ -3372,7 +3378,7 @@ See **fields** for examples.
 
 	if [expr] 
 	  .. trial ..
-	 
+	
 	switch [expr] 
 	  case [match] 
 	    .. trial ..
@@ -3438,14 +3444,14 @@ The boolean value true.
 
 Exception handling construct. For details, see the Jasacript exception documentation.
 
-    set file to new File 'output.log'
-    try
-      file.Open
-      file.Write 'Hey, it's a log'
-    catch 
-      return error.message
-    finally
-      file.Close
+	set file to new File 'output.log'
+	try
+	  file.Open
+	  file.Write 'Hey, it's a log'
+	catch 
+	  return error.message
+	finally
+	  file.Close
   
   
 ### to _clause_
@@ -3593,7 +3599,7 @@ A syntactical shortcut for `function(expr)`; the following are synonymous:
 
 Much more useful in this case, though:
 
-    set b via ~Math.sin
+	set b via ~Math.sin
 
 I'm not real happy with **via**, let's see how it ages.
 
@@ -3679,28 +3685,28 @@ Performs a bitwise XOR operation on two 32-bit integers.
 
 Used with functions defined as **process**; see that keyword in this documentation, and the EcmaScript 6 documentation for details.
 
-    set OddNumbers to process
-      set i to 1
-      while true
-        yield i
-        set i + 2
-        
-    set myOdds from OddNumbers
-    debug myOdds.next
-    debug myOdds.next
-    debug myOdds.next
-    
-    > { value: 1, done: false }
-    > { value: 3, done: false }
-    > { value: 5, done: false }
-    
-    iterate OddNumbers() limit 4
-      debug it
-    
-    > 1
-    > 3
-    > 5
-    > 7
+	set OddNumbers to process
+	  set i to 1
+	  while true
+	    yield i
+	    set i + 2
+	
+	set myOdds from OddNumbers
+	debug myOdds.next
+	debug myOdds.next
+	debug myOdds.next
+	
+	> { value: 1, done: false }
+	> { value: 3, done: false }
+	> { value: 5, done: false }
+	
+	iterate OddNumbers() limit 4
+	  debug it
+	
+	> 1
+	> 3
+	> 5
+	> 7
 
 
 ### yielding _verb_
@@ -3710,31 +3716,31 @@ Used with functions defined as **process**; see that keyword in this documentati
 
 Yields to another process until that process is done yielding. Equivalent to Javascript’s `yield *` syntax. Essentially, **yielding** calls another process as a subroutine.
 
-    // The Mirror process yields its first argument
-    // then reverses it (in ASCII), yields that
-    // then terminates
-    
-    set Mirror to process as str
-      yield str
-      yield str.split('').reverse().join('')
-    
-    // FruitSalad process is yielding an invocation of Mirror 
-    // for each fruit, then terminates
-    
-    set FruitSalad to process
-      ply fruit
-        yielding Mirror(it)
-      
-    // access each generated value in FruitSalad in turn
-    iterate FruitSalad()
-      debug it
-      
-    > Apple
-    > elppA
-    > Banana
-    > ananaB
-    > Citron
-    > nortiC
+	// The Mirror process yields its first argument
+	// then reverses it (in ASCII), yields that
+	// then terminates
+	
+	set Mirror to process as str
+	  yield str
+	  yield str.split('').reverse().join('')
+	
+	// FruitSalad process is yielding an invocation of Mirror 
+	// for each fruit, then terminates
+	
+	set FruitSalad to process
+	  ply fruit
+	    yielding Mirror(it)
+	
+	// access each generated value in FruitSalad in turn
+	iterate FruitSalad()
+	  debug it
+	
+	> Apple
+	> elppA
+	> Banana
+	> ananaB
+	> Citron
+	> nortiC
 
 In the example, Mirror yields twice, and FruitSalad yields to Mirror three times (once for each fruit), so the final iteration result is six values. 
 
