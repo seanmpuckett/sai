@@ -32,7 +32,7 @@ Execute task
 
   set SimpleCounter to process as a
     count a
-      yielding from Twice key
+      yielding from Twice counter
 
   @Match 'generators', 6, task
     set b to 0

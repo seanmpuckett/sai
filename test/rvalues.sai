@@ -66,11 +66,11 @@ Execute task
 
   @Test 'key = 1 (count up)', task
     count 1 to 2
-      return key = 1
+      return counter = 1
 
   @Test 'key = 1 (count down)', task
     count down 2 
-      return key = 1
+      return counter = 1
 
   @Test 'b=1', task
     set local b to 1

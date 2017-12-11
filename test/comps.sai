@@ -49,7 +49,7 @@ Execute task
   @Test 'filter iterator odds', task
     set b to: 1,2,3,4,5; iterate has it%2
     count 3
-      unless b.next().value = key*2+1
+      unless b.next().value = counter*2+1
         return false
     return true
   

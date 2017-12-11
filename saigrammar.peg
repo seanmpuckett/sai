@@ -74,6 +74,7 @@
       parameters: [ 'p','' ],
       it: [ '^{this}','' ],
       key: [ '^{key}','' ],
+      counter: [ '^{counter}','' ],
       trial: [ '^{trial}','' ],
       sum: [ '^{sum}','' ],
       error: [ '^{error}','' ],
@@ -770,18 +771,18 @@ IterateStatement
   }
  / COUNT Sep DOWN Sep start:Expression stop:(TO Sep x:Expression {return x})? step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
      if (!stop) stop=0;
-     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false),step:(step?step:'-1')};
-     var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
-     var alternate=none ? 'if (^{key}<=^{dest}) { ^{none} } else ' : '';
-     var iterate='for (^{key}+=^{step}; ^{key}>=^{dest}; ^{key}+=^{step}) { ^{block} }\n';
+     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),counter:(out?out[0]:false),step:(step?step:'-1')};
+     var setup='var ^{counter}=^{start},^{dest}=^{stop};\n ';
+     var alternate=none ? 'if (^{counter}<=^{dest}) { ^{none} } else ' : '';
+     var iterate='for (^{counter}+=^{step}; ^{counter}>=^{dest}; ^{counter}+=^{step}) { ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
   }
  / COUNT Sep start:(x:Expression _ TO Sep { return x })? stop:Expression step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
      if (!start) start=0;
-     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),key:(out?out[0]:false),step:(step?step:'1')};
-     var setup='var ^{key}=^{start},^{dest}=^{stop};\n ';
-     var alternate=none ? 'if (^{key}>=^{dest}) { ^{none} } else ' : '';
-     var iterate='for (; ^{key}<^{dest}; ^{key}+=^{step}) { ^{block} }\n';
+     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),counter:(out?out[0]:false),step:(step?step:'1')};
+     var setup='var ^{counter}=^{start},^{dest}=^{stop};\n ';
+     var alternate=none ? 'if (^{counter}>=^{dest}) { ^{none} } else ' : '';
+     var iterate='for (; ^{counter}<^{dest}; ^{counter}+=^{step}) { ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
   }
   / WHILE Sep v:Expression o:IterateOutput? b:Block {
@@ -943,6 +944,7 @@ ParenStem
 It
  = IT Sep { return [['it','']] }
  / KEY Sep { return [['key','']]}
+ / COUNTER Sep { return [['counter','']]}
  / TRIAL Sep { return [['trial','']]}
  / SUM Sep { return [['sum','']]}
  / SELF Sep { return [['self','']]}
@@ -1851,6 +1853,7 @@ COPY = 'copy'
 CONTINUE = 'continue'
 CONTRACT = 'contract'
 COUNT = 'count'
+COUNTER = 'counter'
 CREATE = 'create'
 DEC = 'dec'
 DEFAULT = 'default'

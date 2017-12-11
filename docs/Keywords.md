@@ -1228,26 +1228,30 @@ Note that **copy** only copies enumerable values.
 
 ### count _statement_
 
-	count [high expr] ( step [expr] ) ( as [key ident] )
+	count [high expr] ( step [expr] ) ( as [counter ident] )
 	  [block]
 	( none 
 	  [none block] )
 	
 	// variants
-	count [low expr] to [high expr] ( step [expr] ) ( as [key ident] )
-	count down [high expr] ( step [expr] ) ( as [key ident] )
-	count down [high expr] to [low expr] ( step [expr] ) ( as [key ident])
+	count [low expr] to [high expr] ( step [expr] ) ( as [counter ident] )
+	count down [high expr] ( step [expr] ) ( as [counter ident] )
+	count down [high expr] to [low expr] ( step [expr] ) ( as [counter ident])
 
 Specifically designed as an integer iterator for list elements, **count** always counts 1 at a time (unless a **step** clause is provided), and its highest value is always the step value less than the high value provided (both when counting up and down). To reiterate, **count** _never_ outputs the high value.
 
+**Count** uses the magic variable **counter** for the value.
+
 	count 10
-	  debug it
+	  debug counter
 	// prints numbers from 0 to 9 
 	
 	count 5 to 10
+	  debug counter
 	// prints numbers 5 to 9
 	
-	count down 10
+	count down 10 as i
+	  debug i
 	// prints numbers from 9 to 0
 	
 	count down 25 to 15
@@ -1263,11 +1267,58 @@ When using the **step** clause with **count down**, be sure that the step expres
 
  
 	count aList.length
-	  debug 'List element ${key} is ${aList|key}'
+	  debug 'List element ${counter} is ${aList|counter}'
 	else
 	  debug 'The list is empty.'
 
 The optional **else** clause is executed instead of the main block if the **count** range length computes to 0 (or less). 
+
+### counter _mvar_
+
+	.. counter
+
+A partner to **count**, **counter** is a _magic variable_, populated by the **count** iterator, if no other variable is specified in an **as** clause. Like all mvars, **counter** is only visible in attached expressions or code blocks, not in any functions that may be called within those expressions.
+
+A complete list of **counter** enabled events:
+
+	count [expr] // key: the number being counted
+
+An example:
+
+	ply friends
+	  debug key
+	
+	// prints: 0 1 2 3 4 5 6 7
+	
+	each friends[0]
+	  debug key
+	
+	// prints: name age cat province
+
+Similar to **it** in nested contexts, you are unable to access “outer” values of **counter** within inner contexts unless you assign them to a name other than **counter** using the **as** clause.
+
+	count 3
+	  count 3
+	    debug counter
+	    // only the inner loop's 'counter' is visible here. 
+	
+	// prints 0 1 2 0 1 2 0 1 2
+	
+	count 3 as i
+	  count 3
+	    debug i+','+counter
+	    // outer loop's 'counter' now available here as 'i'
+	
+	// prints 0,0  0,1  0,2  1,0  1,1  1,2  2,0  2,1  2,2
+	
+	count 3
+	  count 3 as j
+	    debug counter+','+j
+	    // no, this doesn't work, you still can't access the outer 'counter'
+	    // 'counter' always has the value of the innermost context
+	
+	// prints 0,0  1,1  2,2  0,0  1,1  2,2  0,0  1,1  2,2
+
 
 
 ### create _operator_
@@ -2362,30 +2413,7 @@ An example:
 	
 	// prints: name age cat province
 
-Similar to **it** in nested contexts, you are unable to access “outer” values of **key** within inner contexts unless you assign them to a name other than **key** using the **as** clause.
-
-	count 3
-	  count 3
-	    debug key
-	    // only the inner loop's 'key' is visible here. 
-	
-	// prints 0 1 2 0 1 2 0 1 2
-	
-	count 3 as i
-	  count 3
-	    debug i+','+key
-	    // outer loop's 'key' now available here as 'i'
-	
-	// prints 0,0  0,1  0,2  1,0  1,1  1,2  2,0  2,1  2,2
-	
-	count 3
-	  count 3 as j
-	    debug key+','+j
-	    // no, this doesn't work, you still can't access the outer 'key'
-	    // 'key' always has the value of the innermost context
-	
-	// prints 0,0  1,1  2,2  0,0  1,1  2,2  0,0  1,1  2,2
-
+Similar to **it** and **counter** in nested contexts, you are unable to access “outer” values of **key** within inner contexts unless you assign them to a specific variable using the **as** clause. See **counter** for an example of this issue.
 
 ### last _comprehension_
 
