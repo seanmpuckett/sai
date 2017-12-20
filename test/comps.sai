@@ -317,8 +317,31 @@ Execute task
     set b to list a,b,c; iterate into it sum+it
     return b.next().value
 
-  
-
+  @Match 'into nested', 4, task
+    set a to:
+      :1, 2
+      :3, 4
+    set a to self thru . thru . * 2
+    return a.0.1
+    
+  @Match 'count undefined', 0, task
+    return undefined count
+    
+  @Match 'count scalar', 1, task
+    return 99 count
+    
+  @Match 'count array', 2, task
+    return list a, b; count
+    
+  @Match 'count traits', 3, task
+    set b to: a 1, b 2, c 3
+    return b count
+    
+  @Match 'count iterable', 4, task
+    set b array 1,2,3,4; iterate
+    return b count
+    
+    
 
 
 

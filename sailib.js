@@ -542,6 +542,24 @@ SAILib.keys = function(a) {
   return result;
 }
 
+SAILib.count = function(a) {
+  var result=0;
+  if (isArray(a)) { 
+    result=a.length;
+  } else if (mustIterate(a)) {
+    a=SAILib.iterator(a);
+    for (var v of a) result++;
+  } else if (isObject(a)) {
+    for (var i in a) result++;
+  } else if (a===undefined) {
+    result=0;
+  } else {
+    result=1;
+  }
+  // test 'keys value' & 'keys undefined'
+  return result;
+}
+
 SAILib.values = function(a) {
   var result=[];
   if (isArray(a)) { // test 'values list'

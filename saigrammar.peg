@@ -47,12 +47,34 @@
     if (!code.replace) {
       code=code.toString();
     }
-    for (var i in varnames) {
-      var val=varnames[i];
+    var repl=function(key) {
+      var val=varnames[key];
       if (undefined===val || null===val || false===val) val=tempvar();
-      var re=reCache[i]; if (!re) re=reCache[i]=new RegExp('\\^\\{'+i+'\\}','g');
+      var re=reCache[key]; if (!re) re=reCache[i]=new RegExp('\\^\\{'+key+'\\}','g');
+      //console.log(" -- replace "+key+" with "+val)
       code=code.replace(re,val);
+    };
+    //console.log("###############################")
+    //console.log(code);
+    //console.log("........................");
+    //console.log(varnames);
+    var completed={};
+    var precedence=['block','this','key','list','counter'];
+    for (var j in precedence) {
+      var i=precedence[j];
+      if (varnames.hasOwnProperty(i)) {
+        //console.log("intercept "+i+" with "+varnames[i]);
+        repl(i);
+        completed[i]=true;
+      }
     }
+    for (var i in varnames) {
+      if (undefined===completed[i]) {
+        repl(i);
+      }
+    }
+    //console.log(code)
+    //console.log("---------------------------------")
     return code;
   }
   
@@ -551,14 +573,15 @@ SwitchStatement // test 'switch*'
  = s:SwitchClause o:Output? EOLs INDENT c:(EOLs c:CaseClause {return c})+ d:(EOLs d:DefaultClause {return d})? EOLs DEDENT {
    o=o?o:tempvar();
    addLocal(o);
-   var r=RV('switch (^{trial}=('+s+')) {\n',{trial:o});
+   repl={trial:o};
+   var r=RV('switch (^{trial}=('+s+')) {\n',repl);
    for (var i in c) {
      for (var j in c[i][0]) {
        r+='case ('+c[i][0][j]+'): ';
      }
-     r+=c[i][1]+' break; \n';
+     r+=RV(c[i][1]+' break; \n',repl);
    }
-   if (d) r+='default: '+d+' break; \n';
+   if (d) r+=RV('default: '+d+' break; \n',repl);
    r+='}\n';
    return r;
  }
@@ -657,20 +680,20 @@ SetBlock
  = v:(SetLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
 SetTerm
- = local:LocalAdj? _ l:LValues _ (TO/&FROM/&CHAIN) _ e:Expression {
+ = local:LocalAdj? _ l:RValues _ o:Itselfop _ e:Expression {
+   local=local?'var ':'';
+   code='';
+   for (var i in l) {
+     code+=local+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
+   }
+   return code;
+ }
+ / local:LocalAdj? _ l:LValues _ (TO?/&FROM/&CHAIN) _ e:Expression {
    local=local?'var ':'';
    if (l.length==1) return local+l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
      code+=local+l[i]+'=$_['+i+'];\n';
-   }
-   return code;
- }
- / local:LocalAdj? _ l:RValues _ o:Itselfop _ e:Expression {
-   local=local?'var ':'';
-   code='';
-   for (var i in l) {
-     code+=local+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
    }
    return code;
  }
@@ -744,9 +767,9 @@ IterateStatement
    return RV(setup+none+iterate,w); 
   }
  / EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-     var w={b:b,j:tempvar(),v:v,n:n,k:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
+     var w={block:b,j:tempvar(),v:v,n:n,k:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
      var setup='var ^{list}=^{v};\nif (undefined===^{list}) ^{list}=[];';
-     var iterate='for (var ^{key} in ^{list}) { var ^{this}=^{list}[^{key}];\n^{b}}\n'+(n?'if (undefined===^{key}) { ^{n} }\n':'');
+     var iterate='for (var ^{key} in ^{list}) { var ^{this}=^{list}[^{key}];\n^{block}}\n'+(n?'if (undefined===^{key}) { ^{n} }\n':'');
      return RV(setup+iterate,w); 
   }
  / EACH Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
@@ -757,9 +780,9 @@ IterateStatement
      return RV(setup+iterate+final,w); 
   }
  / PLY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-     var w={b:b,i:i,j:tempvar(),v:v,n:n,k:tempvar(),l:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
+     var w={block:b,i:i,j:tempvar(),v:v,n:n,k:tempvar(),l:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
      var setup='var ^{list}=^{v};\nif (undefined===^{list}) ^{list}=[]; ';
-     var iterate='var ^{l}=^{list}.length; if (^{l}) { var ^{this},^{key}=0; for (;^{key}<^{l};^{key}++) { ^{this}=^{list}[^{key}];\n^{b}\n} } '+(n?'else { ^{n} }':'')+'\n';
+     var iterate='var ^{l}=^{list}.length; if (^{l}) { var ^{this},^{key}=0; for (;^{key}<^{l};^{key}++) { ^{this}=^{list}[^{key}];\n^{block}\n} } '+(n?'else { ^{n} }':'')+'\n';
      return RV(setup+iterate,w); 
   }
  / PLY Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
@@ -786,7 +809,7 @@ IterateStatement
      return RV(setup+alternate+iterate,w); 
   }
   / WHILE Sep v:Expression o:IterateOutput? b:Block {
-    return RV('var ^{this}; while (^{this}=('+v+')) { '+b+' }\n',{this:(o?o[0]:false)});
+    return RV('var ^{this}; while (^{this}=( ^{v})) { ^{block} }\n',{v:v,block:b,this:(o?o[0]:false)});
   }
   / UNTIL Sep v:Expression b:Block {
     return 'while (!('+v+')) { '+b+' }\n';
@@ -1223,11 +1246,11 @@ SortComprehension2
 MapComprehension
  = THRU Sep x:MapComprehension2 { return x }
 MapComprehension2
- = LPAREN _ x:Logical _ RPAREN _ { // test 'thru inline *'
+ = LPAREN _ x:Expression _ RPAREN _ { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
- / x:Logical  { // test 'thru inline *'
+ / x:Expression  { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
@@ -1242,11 +1265,11 @@ MapComprehension2
 AuditComprehension
  = AUDIT Sep x:AuditComprehension2 { return x }
 AuditComprehension2
- = LPAREN _ x:Logical _ RPAREN _ { // test 'audit inline *'
+ = LPAREN _ x:Expression _ RPAREN _ { // test 'audit inline *'
      var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
      return ['_$AI.audit(' , ','+block+' )']; 
   }
- / x:Logical { // test 'audit inline *'
+ / x:Expression { // test 'audit inline *'
      var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
      return ['_$AI.audit(' , ','+block+' )']; 
   }
@@ -1274,7 +1297,7 @@ ReduceComprehension2
       return ['_$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
- / into:IntoClause b:Logical {
+ / into:IntoClause b:Expression {
     var block=RV('function(^{sum},^{this},^{key}){ return '+b+';}',{sum:'$sum',this:'$_v',key:'$_k'});
     if (into=='it') {
       return ['_$AI.reduce(' , ','+block+')' ];
@@ -1305,7 +1328,7 @@ FilterComprehension2
 SetComprehension
  = SET Sep x:AlterComprehension2 { return x }
 AlterComprehension2
- = x:Logical { // test 'alter inline*'
+ = x:Expression { // test 'alter inline*'
      var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
      return [ '_$AI.alter(' , ','+block+')']; 
   }
@@ -1320,7 +1343,7 @@ AlterComprehension2
 ObserveComprehension
  = OBSERVE Sep x:ObserveComprehension2 { return x }
 ObserveComprehension2
- = x:Logical { // test 'observe inline'
+ = x:Expression { // test 'observe inline'
      var block=RV('function(^{this}){ '+x+'; }',{this:'$_v'});
      return [ '_$AI.observe(' , ','+block+')']; 
   }
@@ -1355,7 +1378,7 @@ OtherComprehension
      var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
    }
    if (conds.length) {
-     code=RV('_$AI.filter(^{v},function($_v,$_k){ return ^{c}; })',{v:code,c:conds.join(' && '),this:'$_v',key:'$_k'});
+     code=RV('_$AI.filter(^{source},function($_v,$_k){ return ^{block}; })',{source:code,block:conds.join(' && '),this:'$_v',key:'$_k'});
    }
    if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
      code='_$AI.reduce('+code+',function(a,b) { if (undefined===a) return b; var r; ';
@@ -1390,6 +1413,9 @@ OtherComprehension
        if (l.extract) { 
          code='_$AI.element('+code+',0)';
        }
+       if (l.count) {
+         code='_$AI.count('+code+')';
+       }
      }
    } 
    return code.split('{<>}');
@@ -1402,6 +1428,7 @@ Limit
  / LAST _ { return ['limit',{extract:true,slice:true,start:-1}]; } 
  / LIMIT _ s:Logical _ COMMA _ c:Logical _ { return ['limit',{slice:true,start:s,len:c}]; } 
  / LIMIT _ s:Logical _ { return ['limit',{slice:true,start:0,len:s}]; } 
+ / COUNT _ { return ['limit',{count:true}]; }
  
 Quality
  = HASH v:Keyword _ { return ['quality', '^{this}["'+v+'"]'] }
@@ -1623,7 +1650,7 @@ NewObject
    return '_$AI.new('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
  / NEW Sep _ v:Value _ o:ParameterList? {
-   return 'new '+v+'('+(o?o[1]:'undefined')+')'; 
+   return 'new '+v+'('+(o?o[1]:'')+')'; 
  }
 
 VerbTerminal

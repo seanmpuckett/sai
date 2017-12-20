@@ -21,7 +21,7 @@ Execute task
     return a
     
   @Test 'delete b', task
-    set a to: b 1
+    set a: b 1
     if a.b = 1
       delete a.b
       return a.b is undefined

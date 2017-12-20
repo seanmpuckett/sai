@@ -62,6 +62,13 @@ Execute task
       return true
     return false
 
+  @Test 'nested count', task
+    set total to 0
+    count 5
+      count counter+1
+        count counter+1
+          inc total
+    return total=35
 
   set tdata to: a 1, b 2
   set ldata to: 1, 2

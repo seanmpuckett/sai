@@ -121,7 +121,7 @@ SAI.Contexualize=function(source,offset) {
     else if (line=='}') ind--;
     else newcontext+=dup('  ',ind)+line+'\n';
   }
-  return newcontext+"\n"+context;
+  return newcontext;//+"\n"+context;
 }
   
   
@@ -351,10 +351,10 @@ SAI.GetSource = function(name) {
   source+='var fn='+SAI.FinalizePrototype.toString()+'(prototype);\n';
   source+='var pro=prototype.constructor;\n';
   source+='exports=pro; try { module.exports=pro; } catch(e) {}\n';
-  source+='console.log("hey");\n';
+  //source+='console.log("hey");\n';
   source+='return pro;\n';
   var lines=source.split('\n');
-  for (var i in lines) console.log((1+parseInt(i))+': '+lines[i]);
+  //for (var i in lines) console.log((1+parseInt(i))+': '+lines[i]);
   
   return source;
 }

@@ -130,7 +130,7 @@ The following two comprehensions are identical:
 	set results1 to friends #cat
 	set results2 to friends has .cat
 
-A negated hashtag createsa  filter that returns only records that have a _falsy_ value for the named field. Not having that field at all is also a match.
+A negated hashtag creates a filter that returns only records that have a _falsy_ value for the named field. Not having that field at all is also a match.
 
 These comprehensions are identical:
 
@@ -1273,6 +1273,21 @@ When using the **step** clause with **count down**, be sure that the step expres
 
 The optional **else** clause is executed instead of the main block if the **count** range length computes to 0 (or less). 
 
+### count _comprehension_
+
+	.. [collection] count
+
+Returns the number of elements in the collection. If the collection is an iterator, it will be drained.
+
+	debug undefined count  
+	debug 1 count 
+	debug fruit count
+   
+	> 0
+	> 1
+	> 3
+
+
 ### counter _mvar_
 
 	.. counter
@@ -1598,7 +1613,7 @@ You can use **thru** to craft suitable lists easily, however:
 	 > { Apple: true, Banana: true, Citron: true, Durian: true }
 
 
-### enum _literal_
+### empty _literal_
 
 	.. empty
 
@@ -2431,7 +2446,7 @@ Returns the last element in a collection as a stand-alone value or object. (If t
 	.. [collection] limit [qty]
 	.. [collection] limit [index], [qty]
 
-Returns the first **qty** elements in the collection if **qty** is positive. If negative, returns the last (absolute) **qty** number of elemens.
+Returns the first **qty** elements in the collection if **qty** is positive. If negative, returns the last (absolute) **qty** number of elements.
 
 If an **index** is supplied, return **qty** elements starting at **index**.  Negative index values are not supported for index.
 
@@ -2685,6 +2700,10 @@ In an object definition, the following sections are supported. See each keyword 
 	
 	instance:
 	  [list of initial trait values for each instance]
+    // Note that the initial values are shallow copied from a template on instantiation.
+    // Objects/Functions are created/executed just once, without scope, on prototype creation.
+    // Thus INSTANCE is best used for scalar values only.
+    // Any more complex initializers (objects, function calls, etc) should go in the Instantiate task.
 	
 	get [trait name to implement dynamically]
 	  [code]
@@ -2694,6 +2713,7 @@ In an object definition, the following sections are supported. See each keyword 
 	[name] task/process/promise
 	  [code that implements this task/process/promise] 
 
+When a SAI object is created, the **Instantiate** task is executed on that obejct, allowing you to perform instance-level initialization code.
 
 ### observe _operator_
 
