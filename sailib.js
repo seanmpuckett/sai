@@ -127,6 +127,74 @@ SAILib.audit = function(a,f) {
   return a;
 }
 
+SAILib.concat = function(a,b,inplace) {
+  if (a===undefined) {
+    if (b===undefined) {
+      //console.log("**A");
+      return undefined;
+    }
+    if (isArray(b) || mustIterate(b)) {
+      //console.log("**B");
+      return b;
+    }
+    //console.log("**C");
+    return [b];
+  }
+  if (b===undefined) {
+    if (isArray(a) || mustIterate(a)) {
+      //console.log("**D");
+      return a;
+    }
+    //console.log("**E");
+    return [a];
+  }
+  // promote values to single element arrays
+  if (mustIterate(a)) {
+    if (mustIterate(b)) { // test 
+      //console.log("**F");
+      return function *() {
+        for (var val of a) yield val;
+        for (var val of b) yield val;
+      }();
+    } else if (isArray(b)) { // test
+      b=b.slice(0);
+      //console.log("**G");
+      return function *() {
+        for (var val of a) yield val;
+        for (var i in b) yield b[i];
+      }();
+    } else { // test
+      //console.log("**H");
+      return function *() {
+        for (var val of a) yield val;
+        yield b;
+      }();
+    }
+    console.log("SHOULD NOT BE ABLE TO GET HERE");
+  } 
+  if (!isArray(a)) { // test
+    //console.log("**I");
+    a=[a];
+  } else if (!inplace) {  // test 
+    //console.log("**J");
+    a=a.slice(0);
+  } else { // in place concatenation, used only for 'set a concat b'
+    //console.log("**J2");
+  }
+  if (mustIterate(b)) { // test
+    //console.log("**K");
+    for (var val of b) a.push(val);
+  } else if (isArray(b)) { // test
+    //console.log("**L");
+    a=a.concat(b);
+  } else {  // test 
+    //console.log("**M");
+    a.push(b);
+  }
+  //console.log("**N");
+  return a;
+}
+
 SAILib.map = function(a,f) {
   if (a===undefined) return undefined; // test 'map undef'
   if (isArray(a)) { // test 'map list'

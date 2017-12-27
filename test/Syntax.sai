@@ -55,5 +55,9 @@ Execute task
       reverse
     return a|0=3
     
-    
+  @Test 'swap', task
+    set a to 1
+    set b to 2
+    swap a b
+    return a=2 and b=1
 

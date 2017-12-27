@@ -5,7 +5,7 @@ SAI.Configure({
 });
 var Test=SAI.Require('Test');
 
-console.log(SAI.GetSource('ITChild'));
+//console.log(SAI.GetSource('ITChild'));
 //process.exit();
 
 var results=new Test();

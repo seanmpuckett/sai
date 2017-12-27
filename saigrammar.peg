@@ -151,7 +151,7 @@
       code+=VarUse(v[0][1]);
     }
     var patternbase=accessors.firstfetch;
-    i=0; while (i<v.length) {
+    var i=0; while (i<v.length) {
       var pattern=patternbase[v[i][0]]; 
       patternbase=accessors.nextfetch;
       if (!pattern) error("RV Couldn't construct dereference from "+v[i]+' because '+pattern+' is false');
@@ -194,7 +194,8 @@
     via: '^{1} = ^{2}(^{1})', // test 'self via'
     update: '_$AI.update(^{1},^{2})', // test 'self update'
     delete: '_$AI.delete(^{1},^{2})', // test 'self delete*'
-    default: 'if (undefined===^{1}) ^{1}=^{2}' // test 'self default*'
+    default: 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
+    concat: '^{1} = _$AI.concat(^{1},^{2}, true)', // test 'self concat inplace*'
   };
 
   var unops={
@@ -203,7 +204,8 @@
     'notb': '^{1}=~(^{1})', // test 'self notb'
     'inc': '^{1}++', // test 'self inc'
     'dec': '^{1}--', // test 'self dec'
-    'delete': 'delete ^{1}' // test 'self delete'
+    'delete': 'delete ^{1}', // test 'self delete'
+    'collect': '^{1} = _$AI.collect(^{1})' // test 'self collect*'
   }; 
 
   
@@ -325,7 +327,7 @@
     if (o.name) {
       if (fun.indexOf('^{this}')>-1) error("Cannot use unrooted . accessor without a context\n\n"+fun);
     }
-    r=RV(head+fun+tail,{this:false,super:sup});
+    var r=RV(head+fun+tail,{this:false,super:sup});
   
     return r;
 
@@ -404,7 +406,7 @@
 
 start
   = OptionalEOLs r:Reference? o:Object+ {
-    code='';//var __source=decodeURI('+quoted(encodeURI(input))+');\n';
+    var code='';//var __source=decodeURI('+quoted(encodeURI(input))+');\n';
     if (r) code+=r;
     code+=o.join('\n')
     return code;
@@ -413,7 +415,7 @@ start
 Reference 
 = REFERENCE _ v:ParameterList EOLs {
   if (v[0]!='fields') error("REFERENCE requires a trait list.");
-  code='';
+  var code='';
   for (var i in v[2]) {
     var r=v[2][i];
     code+='var '+r[0]+'='+r[1]+';\n';
@@ -554,6 +556,7 @@ Line
  / SwitchStatement
  / TryStatement
  / ThrowStatement
+ / SwapStatement
  / LocalStatement
  / MiscStatement
  / VerbStatement
@@ -573,7 +576,7 @@ SwitchStatement // test 'switch*'
  = s:SwitchClause o:Output? EOLs INDENT c:(EOLs c:CaseClause {return c})+ d:(EOLs d:DefaultClause {return d})? EOLs DEDENT {
    o=o?o:tempvar();
    addLocal(o);
-   repl={trial:o};
+   var repl={trial:o};
    var r=RV('switch (^{trial}=('+s+')) {\n',repl);
    for (var i in c) {
      for (var j in c[i][0]) {
@@ -649,7 +652,7 @@ ElseClause
 LocalStatement
  = LOCAL _ l:(l:Local _ ',' _ { return l } )* o:Local _ {
    l=l||[]; l.push(o);
-   j=[]; for (i in l) j.push(l[i][0][1]);
+   var j=[]; for (i in l) j.push(l[i][0][1]);
    return 'var '+j.join(',')+';\n';
  } 
  
@@ -661,7 +664,10 @@ WithStatement
       return code; 
   }
  
-
+SwapStatement
+ = SWAP _ a:LValue _ b:LValue {
+   return RV('var ^{t1}=^{v1}; var ^{t2}=^{v2}; ^{v2}=^{t1}; ^{v1}=^{t2};',{t1:tempvar(),t2:tempvar(),v1:a,v2:b});
+ }
  
 SetStatement
  = SET Sep t:SetTerms { return t }
@@ -682,7 +688,7 @@ SetBlock
 SetTerm
  = local:LocalAdj? _ l:RValues _ o:Itselfop _ e:Expression {
    local=local?'var ':'';
-   code='';
+   var code='';
    for (var i in l) {
      code+=local+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
    }
@@ -698,7 +704,7 @@ SetTerm
    return code;
  }
  / local:LocalAdj? _ l:RValues _ o:UnOp {
-   code='';
+   var code='';
    local=local?'var ':'';
    for (var i in l) {
      code+=local+RV(unops[o],{'1':l[i]})+';\n';
@@ -712,7 +718,7 @@ LocalAdj
 
 
 UnOp // test 'self*'
- = '-' / INC / DEC  / DELETE / NOTB / NOT
+ = '-' / INC / DEC  / DELETE / NOTB / NOT / COLLECT
 
 Itselfop // test 'self*'
  = '+' / '-' 
@@ -722,6 +728,7 @@ Itselfop // test 'self*'
  / '?>' / '?<'
  / UPDATE / DELETE
  / VIA / DEFAULT
+ / CONCAT / COLLECT 
 
 
 
@@ -780,7 +787,7 @@ IterateStatement
      return RV(setup+iterate+final,w); 
   }
  / PLY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-     var w={block:b,i:i,j:tempvar(),v:v,n:n,k:tempvar(),l:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
+     var w={block:b,j:tempvar(),v:v,n:n,k:tempvar(),l:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
      var setup='var ^{list}=^{v};\nif (undefined===^{list}) ^{list}=[]; ';
      var iterate='var ^{l}=^{list}.length; if (^{l}) { var ^{this},^{key}=0; for (;^{key}<^{l};^{key}++) { ^{this}=^{list}[^{key}];\n^{block}\n} } '+(n?'else { ^{n} }':'')+'\n';
      return RV(setup+iterate,w); 
@@ -834,7 +841,7 @@ LValueSep
 LValue 
  = v:LStem
   {
-    j=v.length;
+    var j=v.length;
     if (!j) error("Expected something to assign into");
     if (j==1) {
       var pattern=accessors.firststore[v[0][0]];
@@ -844,7 +851,7 @@ LValue
     j--;
     var code='';
     var patternbase=accessors.firstfetch;
-    i=0; while (i<j) {
+    var i=0; while (i<j) {
       var pattern=patternbase[v[i][0]]; patternbase=accessors.nextfetch;
       if (!pattern) error("Couldn't construct recipient from "+v);
       code+=pattern[0] + v[i][1] + pattern[1];
@@ -888,7 +895,7 @@ VerbValue
       }
     }
     var patternbase=accessors.firstfetch;
-    i=0; while (i<v.length) {
+    var i=0; while (i<v.length) {
       var pattern=patternbase[v[i][0]]; 
       patternbase=accessors.nextfetch;
       if (!pattern) error("VV Couldn't construct dereference from "+v[i]+' because '+pattern+' is false');
@@ -993,7 +1000,7 @@ Index
  / '.' v:PositiveInteger { return [[ 'index', v ]] }
 
 Parenthetic
- = LPAREN _ v:Expression _ RPAREN { return [[ 'paren', v ]] }
+ = LPAREN Sep v:Expression Sep RPAREN { return [[ 'paren', v ]] }
 
 Local
  = v:Identifier { 
@@ -1138,7 +1145,10 @@ TraitSep
 
 Traits
  = v:(TraitSep)* t:(Trait) { 
-   var r=[]; for (var i in v) r=r.concat(v[i]); r=r.concat(t);  return r; 
+   var r=[]; 
+   for (var i in v) r=r.concat(v[i]); 
+   r=r.concat(t);  
+   return r; 
 }
  
 TraitLine
@@ -1173,7 +1183,7 @@ Output
 IterateOutput
  = o:MultiOutput {
    var v=[];
-   for (i in o) v.push(o[i][0][1]);
+   for (var i in o) v.push(o[i][0][1]);
    return v;
  }
  
@@ -1207,8 +1217,10 @@ Comprehension
  / IterateComprehension
  / CollectComprehension
  / SetComprehension
+ / ViaComprehension
  / ObserveComprehension
  / OtherComprehension
+ / ConcatComprehension
 
 
 IterateComprehension
@@ -1225,6 +1237,11 @@ ValuesComprehension
  = VALUES { // test 'values comp*'
      return ['_$AI.values(',')'];
    }
+
+ConcatComprehension
+ = CONCAT Sep x:Expression {
+   return ['_$AI.concat(' , ','+x+')' ];
+ }
 
 CollectComprehension
  = COLLECT { return ['_$AI.collect(',')']; }
@@ -1246,11 +1263,11 @@ SortComprehension2
 MapComprehension
  = THRU Sep x:MapComprehension2 { return x }
 MapComprehension2
- = LPAREN _ x:Expression _ RPAREN _ { // test 'thru inline *'
+ = x:Expression  { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
- / x:Expression  { // test 'thru inline *'
+ / LPAREN _ x:Expression _ RPAREN _ { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
      return ['_$AI.map(' , ','+block+' )']; 
   }
@@ -1324,6 +1341,14 @@ FilterComprehension2
     return ['_$AI.filter(' , ','+x+')' ];
   }
 
+
+ViaComprehension
+ = VIA Sep x:ViaComprehension2 { return x }
+ViaComprehension2
+ = x:Expression { // test 'via inline*'
+    return [ '_$AI.alter(' , ','+x+')']; 
+  }
+  
 
 SetComprehension
  = SET Sep x:AlterComprehension2 { return x }
@@ -1615,12 +1640,12 @@ VerbSentence
 
 VerbClause
 = v:(VerbValue) _ o:ParameterList?  { 
-     composite=v[0]+v[1];
+     var composite=v[0]+v[1];
      if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'$'+(o?(','+o[1]):'') }]; 
      return [{ base:v[0], verb:v[1], param:(o?o[1]:'') }]
   }
  / v:(VerbValue) _ { 
-     composite=v[0]+v[1];
+     var composite=v[0]+v[1];
      if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'$' }]; 
      return [{ base:v[0], verb:v[1], param:'' }]
    }
@@ -1788,6 +1813,7 @@ ReservedWords
  / CHAIN
  / CREATE
  / COLLECT
+ / CONCAT
  / COPY
  / DEC
  / DEFAULT
@@ -1839,6 +1865,7 @@ ReservedWords
  / PROCESS
  / SELECT
  / SELF
+ / SWAP
  / TASK
  / TRIAL
  / THROW
@@ -1877,6 +1904,7 @@ CATCH = 'catch'
 CHAIN = 'chain'
 COLLECT = 'collect'
 COPY = 'copy'
+CONCAT = 'concat'
 CONTINUE = 'continue'
 CONTRACT = 'contract'
 COUNT = 'count'
@@ -1958,6 +1986,7 @@ SET = 'set'
 SOW = 'sow'
 STEP = 'step'
 SUM = 'sum'
+SWAP = 'swap'
 SUPER = 'super'
 SWITCH = 'switch'
 TASK = 'task'

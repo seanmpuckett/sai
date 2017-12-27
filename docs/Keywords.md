@@ -1131,6 +1131,7 @@ Functions you use in **chain** typically return a value; this is used as the obj
 ### collect _comprehension_
 
 	.. [iterator] collect
+	set [variable] collect
 
 If the expression on the left is an iterator, converts it to an array/list by draining the iterator; otherwise do nothing. If the iterator never ends, your system will lock up until you run out of memory. (You could use a **limit** comprehension to keep that from happening.)
 
@@ -1146,6 +1147,36 @@ If the expression on the left is an iterator, converts it to an array/list by dr
 	> [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 ]
 
 The opposite of **collect** is **iterate**. The difference between **enlist** and **collect** is that collect will only transform an iterator, while **enlist** will transform all values.
+
+
+### concat _operator_
+
+	.. [array/iterable 1] concat [array/iterable 2]    // return new array concatenating array 1 and 2
+	set var concat [array/iterable 2]                  // append array 2 to var
+
+A list operator, not a string operator, **concat** returns a list that consists of a copy of set 1 followed by a copy of set 2. Set 1 is not modified, a new array or iterable is returned.
+
+Undefined values are ignored, and scalar values are promoted to single element arrays.  As follows:
+
+	[1, 2] concat [3, 4] -> [1, 2, 3, 4]
+	[1, 2] concat [[3, 4], [5, 6]] -> [1, 2, [3, 4], [5, 6]]
+	[1, 2] concat 3 -> [1, 2, 3]
+	[1, 2] concat {c:3, d:4} -> [1, 2, {c:3, d:4}]
+	[1, 2] concat undef -> [1, 2]
+	1 concat [3, 4] -> [1, 3, 4]
+	1 concat 3 -> [1, 3]
+	1 concat {c:3, d:4} -> [1, {c:3, d:4}]
+	1 concat undef -> [1]
+	{a:1, b:2} concat [3, 4] -> [{a:1, b:2}, 3, 4]
+	{a:1, b:2} concat 3 -> [{a:1, b:2}, 3]
+	{a:1, b:2} concat {c:3, d:4} -> [{a:1, b:2}, {c:3, d:4}]
+	{a:1, b:2} concat undef -> [{a:1, b:2}]
+	undef concat undef -> undef
+	undef concat 3 -> [3]
+	undef concat {c:3, d:4} -> [{c:3, d:4}]
+	undef concat [3, 4] -> [3, 4]
+
+If the first set is an iterable, **concat** will return an iterable, otherwise it returns a list (draining the second list if it is an iterable). 
 
 
 ### continue _statement_
@@ -3182,7 +3213,19 @@ If you want to pass arguments to a **super** method without specifying them disc
 
 	super.apply @ $$
 
+### swap _verb_
 
+	swap [lvalue1] [lvalue2]
+  
+Exchanges the values. Intended as syntactic sugar, collapsing three ugly lines into one simple line. 
+
+Functionally equivalent to the following Javascript:
+
+	var temp1=[lvalue1];
+	var temp2=[lvalue2];
+	lvalue2=temp1;
+	lvalue1=temp2;
+  
 ### switch _statement_
 
 	switch [expr] ( as [trial ident] )
@@ -3636,21 +3679,32 @@ Returns the values of a collection’s elements.
 	> [ 'Sara', 23, true, 'ON' ]
 
 
-### via _operator_
+### via _operator_ / _comprehension_
 
 	.. [expr] via [function]
+	.. [collection] via [function]
+
+	chain [collection]
+	  via [function]
 
 A syntactical shortcut for `function(expr)`; the following are synonymous:
 
 	  set a from ~Math.sin b
 	  set a to b via ~Math.sin
 
-Much more useful in this case, though:
+More useful in this case, though:
 
 	set b via ~Math.sin
+	
+And very useful when chaining:
 
-I'm not real happy with **via**, let's see how it ages.
+	chain a
+    via b
 
+	// the following is the same, but uglier
+	chain a
+    set b(.)
+	
 
 ### while _statement_
 

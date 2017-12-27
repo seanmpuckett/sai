@@ -131,7 +131,7 @@ SAI.GetParser = function() {
     var parserFile=__dirname + "/saigrammar.cached";
     if (!fs.existsSync(parserFile) || fs.statSync(grammarFile).mtime>fs.statSync(parserFile).mtime) {
       var grammar=fs.readFileSync(grammarFile).toString();
-      var mainParser=PEG.buildParser(grammar,{output:'source',optimize:'speed',cache:true});
+      var mainParser=PEG.generate(grammar,{output:'source',optimize:'speed',cache:true});
       fs.writeFileSync(parserFile,mainParser);
     } else {
       mainParser=fs.readFileSync(parserFile).toString();
@@ -165,8 +165,12 @@ SAI.GetParser = function() {
       );
     } catch (e) {
       var info='\nSAI: Syntax error <HERE> in '+fn+'\n\n';
-      var context=SAI.Contexualize(source,e.offset);
+      var context=SAI.Contexualize(source,e.location.start.offset,e.location.end.offset);
       info+=context+'\n\n'+e.message+'\n\n';
+//      for (var i in e) info+=i+": "+e[i]+"\n";
+//      for (var i in e.location) info+="location."+i+": "+e.location[i]+"\n";
+//      for (var i in e.location.start) info+="location.start."+i+": "+e.location.start[i]+"\n";
+//      for (var i in e.location.end) info+="location.end."+i+": "+e.location.end[i]+"\n";
       throw new Error(info);
     }
     if (SAIconfig.options.beautify) {

@@ -341,11 +341,119 @@ Execute task
     set b array 1,2,3,4; iterate
     return b count
     
+  // CONCAT  
     
+  @Match 'concat undef undef', true, task
+    set a undefined concat undefined
+    return a is undefined
 
+  @Match 'concat undef val', true, task
+    set a 1 concat undefined
+    return a[0]=1 and a.length=1
 
+  @Test 'concat undef list', task
+    set a undef concat: 1, 2
+    return a.0=1 and a.1=2 and a.length=2
+    
+  @Test 'concat undef iterable', task
+    set a undef concat ((array 1, 2) iterate)
+    set a collect
+    return a.0=1 and a.1=2 and a.length=2
 
-     
+  @Test 'concat list undef', task
+    set a (array 1, 2) concat undef
+    set a collect
+    return a.0=1 and a.1=2 and a.length=2
+    
+  @Test 'concat iterable undef', task
+    set a ((array 1, 2) iterate) concat undef
+    set a collect
+    return a.0=1 and a.1=2 and a.length=2
+
+  @Test 'concat inplace self', task
+    set a: 1, 2
+    set a concat: 3, 4
+    return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
+
+  @Match 'concat val undef', true, task
+    set a undefined concat 1
+    return a[0]=1 and a.length=1
+
+  @Match 'concat val val', true, task
+    set a 1 concat 2
+    return a.0=1 and a.1=2 and a.length=2
+
+  @Test 'concat val list', task
+    set a 1 concat: 2, 3
+    return a.0=1 and a.1=2 and a.2=3 and a.length=3
+    
+  @Test 'concat list val', task
+    set a (array 1, 2) concat 3
+    return a.0=1 and a.1=2 and a.2=3 and a.length=3
+
+  @Test 'concat val obj', task
+    set b: a 1
+    set a 2 concat b
+    return a.0=2 and a.1.a=1 and a.length=2
+    
+  @Test 'concat obj val', task
+    set b: a 1
+    set a b concat 2
+    return a.0.a=1 and a.1=2 and a.length=2
+
+  @Test 'concat obj obj', task
+    set c: a 1
+    set d: b 2
+    set a c concat d
+    return a.0.a=1 and a.1.b=2 and a.length=2
+    
+  @Test 'concat list list', task
+    set a (array 1, 2) concat (array 3, 4)
+    return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
+    
+  @Test 'concat iter iter', task
+    set q (array 1, 2) iterate
+    set r (array 3, 4) iterate
+    set i q concat r
+    set a i collect
+    return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
+    
+  @Test 'concat list iter', task
+    set q (array 1, 2) 
+    set r (array 3, 4) iterate
+    set i q concat r
+    set a i collect
+    return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
+
+  @Test 'concat iter list', task
+    set q (array 1, 2) iterate
+    set r (array 3, 4) 
+    set i q concat r
+    set a i collect
+    return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
+
+  @Test 'concat iter val', task
+    set q (array 1, 2) iterate
+    set i q concat 3
+    set a i collect
+    return a.0=1 and a.1=2 and a.2=3 and a.length=3
+
+  @Test 'concat val iter', task
+    set q (array 3, 4) iterate
+    set a 1 concat q
+    return a.0=1 and a.1=3 and a.2=4 and a.length=3
+
+  @Test 'concat obj iter', task
+    set q (array 3, 4) iterate
+    set a (: a 1) concat q
+    return a.0.a=1 and a.1=3 and a.2=4 and a.length=3
+
+  @Test 'concat iter obj', task
+    set q (array 1, 2) iterate
+    set i q concat (: d 4)
+    set a i collect
+    return a.0=1 and a.1=2 and a.2.d=4 and a.length=3
+  
      
   // test data
 

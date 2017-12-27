@@ -10,7 +10,7 @@ inherit list
 Execute task
   
   @Test 'pegjs required', task
-    return ~pegjs.buildParser isnt undefined
+    return ~pegjs.generate isnt undefined
 
   @Test 'Simple reference', task
     set a to create ~Simple
