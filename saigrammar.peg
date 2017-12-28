@@ -669,9 +669,12 @@ SwapStatement
    return RV('var ^{t1}=^{v1}; var ^{t2}=^{v2}; ^{v2}=^{t1}; ^{v1}=^{t2};',{t1:tempvar(),t2:tempvar(),v1:a,v2:b});
  }
  
+
 SetStatement
  = SET Sep t:SetTerms { return t }
  / SET Sep EOLs INDENT EOLs t:SetBlock DEDENT { return t.join(''); } 
+ / LOCAL Sep t:LocalTerms { return t }
+ / LOCAL Sep EOLs INDENT EOLs t:LocalBlock DEDENT { return t.join(''); } 
  / INC Sep v:LValue _ { return v+'++;\n'; } // test 'inc a'
  / DEC Sep v:LValue _ { return v+'--;\n'; } // test 'dec a'
  / DELETE Sep v:RValue _ { return 'delete '+v+';\n'; }
@@ -711,6 +714,41 @@ SetTerm
    }
    return code;
  }
+
+
+LocalTerms
+ = t:LocalTerm _ v:(',' _ v:LocalTerm _ { return v })*  { return v.concat(t) }
+  
+LocalLine
+ = v:LocalTerms EOLs { return v }
+
+LocalBlock
+ = v:(LocalLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
+
+LocalTerm
+ = l:RValues _ o:Itselfop _ e:Expression {
+   var code='';
+   for (var i in l) {
+     code+='var '+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
+   }
+   return code;
+ }
+ / l:LValues _ (TO?/&FROM/&CHAIN) _ e:Expression {
+   if (l.length==1) return 'var '+l[0]+'='+RV(e,{self:l[0]})+';\n';
+   var code='var $_='+e+';\n';
+   for (var i in l) {
+     code+='var '+l[i]+'=$_['+i+'];\n';
+   }
+   return code;
+ }
+ / l:RValues _ o:UnOp {
+   var code='';
+   for (var i in l) {
+     code+='var '+RV(unops[o],{'1':l[i]})+';\n';
+   }
+   return code;
+ }
+
 
 
 LocalAdj

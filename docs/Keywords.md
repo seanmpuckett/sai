@@ -2545,14 +2545,17 @@ Or enclose the array in parenthesis:
 Arrays can be nested by use of either parenthesis or semicolons, or by using multiple levels of indent. Note that commas separate expressions on one line but are not included at the end of a line.
 
 
-### local _declaration_
+### local _declaration_, _statement_
 
-	local [varname] (, [varname], ... )
 	set local [varname] to [expr]
-
+    // same as 
+	local [varname] to [expr]
+  
 Declare the modified variable to be limited to the current function scope. (Normally, variables are scoped to the object method they’re used in.)
 
-Generally only needed when providing callback functions in poorly architected code.
+**Local** can be used instead of **set**, which makes the declarations of the variables include the **var** keyword in the generated javascript.
+
+Javascript's scoping around global/local variables can be tricky and has caught many experienced programmers multiple times.
 
 
 ### lowest _comprehension_
