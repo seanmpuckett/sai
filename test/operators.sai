@@ -175,6 +175,7 @@ Execute task
 
 
 
+
 //  @Test 'keys unary undefined', task
 //    set a to keys undefined
 //    return ~Array.isArray(a) and (a.length = 0)
@@ -214,7 +215,37 @@ Execute task
     return ~Array.isArray(a) and (a.length=2) and (a|0=1) and (a|1=2)
 
 
+  @Match 'delete array undefined', 5, task
+    set a to: 0, 1, 2, 3, 4
+    set a to self delete undefined
+    return a.length
+    
+  @Test 'delete array value', task
+    set a to: 0, 1, 2, 3, 4
+    set a to self delete 1
+    return a.length=4 and a.0=0 and a.1=2
+    
+  @Test 'delete array list asc', task
+    set a to: 0, 1, 2, 3, 4
+    set a to self delete: 1, 2
+    return a.length=3 and a.0=0 and a.1=2 and a.2=4
 
+  @Test 'delete array list desc', task
+    set a to: 0, 1, 2, 3, 4
+    set a to self delete: 2, 1
+    return a.length=3 and a.0=0 and a.1=3 and a.2=4
+
+  @Test 'delete array fields', task
+    set a to: 0, 1, 2, 3, 4
+    set a to self delete traits '1' 2
+    return a.length=4 and a.0=0 and a.1=2
+    
+  @Test 'delete array iterator', task
+    set a to: 0, 1, 2, 3, 4
+    set a to self delete ((list 1, 2) iterate)
+    return a.length=3 and a.0=0 and a.1=2 and a.2=4
+
+//  @Test 'delete array iterator', task
     
   @Test 'overlay static', task
     set a to traits a 1, b 2

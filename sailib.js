@@ -83,8 +83,8 @@ SAILib.sort=function(a,f) {
 
 SAILib.enlist=function(a) {
   if (a===undefined) return undefined;
-  var out=[];
   if (isArray(a)) return a;
+  var out=[];
   if (mustIterate(a)) for (var j=a.next(); !j.done; j=a.next()) out.push(j.value);
   else if (isObject(a)) for (var i in a) out.push([i,a[i]]);
   else out.push(a);
@@ -548,21 +548,46 @@ SAILib.update = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
 }
 
 SAILib.delete = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
-  if (!isObject(dest)) throw new Error("SAI: Attempt to REMOVE from something that's not traits.");
-  if (!isMergable(keys)) {
-    delete dest[keys];
-  } else if (isArray(keys)) {
-    for (var i in keys) { var v=keys[i]; if (v!==undefined) delete dest[keys[i]]; }
-  } else if (mustIterate(keys)) {
-    keys=SAILib.iterator(keys);
-    for (var v of keys) { if (v!==undefined) delete dest[v]; }
-  } else {
-    if (isObject(keys)) {
-      for (var i in keys) delete dest[i];
+  if (mustIterate(dest)) throw new Error("SAI: Attempt to DELETE from an iterator, which is not presently supported.")
+  if (!isObject(dest)) throw new Error("SAI: Attempt to DELETE from something that's not a list or traits.");
+  if (isArray(dest)) {
+    if (!isMergable(keys)) {
+      if (keys !== undefined) {
+        //console.log("PATH A");
+        dest.splice(keys,1);
+      } else {
+        //console.log("PATH Ab");
+      }
+    } else if (isArray(keys)) {
+      //console.log("PATH B");
+      for (var i in keys) { var v=keys[i]; if (v!==undefined) dest.splice(keys[i],1); }
+    } else if (mustIterate(keys)) {
+      //console.log("PATH C");
+      keys=SAILib.iterator(keys);
+      for (var v of keys) { if (v!==undefined) dest.splice(v,1); }
+    } else if (isObject(keys)) {
+      //console.log("PATH D"); 
+      for (var i in keys) dest.splice(i,1);
     } else {
+      throw new Error("SAI: Unexpected execution path in SAILib.delete what the heck is the destination value?!")
+    }
+  } else {
+    if (!isMergable(keys)) {
       delete dest[keys];
+    } else if (isArray(keys)) {
+      for (var i in keys) { var v=keys[i]; if (v!==undefined) delete dest[keys[i]]; }
+    } else if (mustIterate(keys)) {
+      keys=SAILib.iterator(keys);
+      for (var v of keys) { if (v!==undefined) delete dest[v]; }
+    } else {
+      if (isObject(keys)) {
+        for (var i in keys) delete dest[i];
+      } else {
+        delete dest[keys];
+      }
     }
   }
+  return dest;
 }
 
 SAILib.deepFreeze = function(o) {

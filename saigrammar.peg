@@ -346,7 +346,7 @@
 //       }
      } else {
        if (v.test) {
-         return RV('((undefined===($_c=($_d=^{base})^{verb}(^{param})))?$_d:$_c)',v);
+         return RV('((undefined===($_c=(($_d=^{base})^{verb}(^{param}))))?$_d:$_c)',v);
        } else {
          return v.base+v.verb+'('+v.param+')';
        }
@@ -658,14 +658,14 @@ LocalStatement
  
  
 WithStatement
-  = WITH _ value:Expression out:Output? block:Block {
+  = WITH Sep value:Expression out:Output? block:Block {
       var r={this:(out?out:tempvar())};
       var code=RV('var ^{this}=',r)+value+RV(';\n'+block+'\n',r);
       return code; 
   }
  
 SwapStatement
- = SWAP _ a:LValue _ b:LValue {
+ = SWAP Sep a:LValue Sep b:LValue {
    return RV('var ^{t1}=^{v1}; var ^{t2}=^{v2}; ^{v2}=^{t1}; ^{v1}=^{t2};',{t1:tempvar(),t2:tempvar(),v1:a,v2:b});
  }
  
@@ -859,10 +859,10 @@ IterateStatement
   / UNTIL Sep v:Expression b:Block {
     return 'while (!('+v+')) { '+b+' }\n';
   }
-  / DO __ WHILE Sep v:Expression b:Block {
+  / DO Sep WHILE Sep v:Expression b:Block {
     return 'do { '+b+' } while ('+v+');\n';
   }
-  / DO __ UNTIL Sep v:Expression b:Block {
+  / DO Sep UNTIL Sep v:Expression b:Block {
     return 'do { '+b+' } while (!('+v+'));\n';
   }
 
@@ -1007,7 +1007,7 @@ ParenStem
     for (var i in y) stem=stem.concat(y[i]);
     return stem 
  }
- 
+
 
 It
  = IT Sep { return [['it','']] }
@@ -1033,12 +1033,12 @@ Root
  / '|' v:SimpleValue { return [['it',''],['index',v]] }
 
 Index
- = '[' _ v:Expression _ ']' _ { return [[ 'index', v ]] }
+ = '[' _ v:Expression _ ']' { return [[ 'index', v ]] }
  / '|' v:SimpleValue { return [[ 'index', v ]] }
  / '.' v:PositiveInteger { return [[ 'index', v ]] }
 
 Parenthetic
- = LPAREN Sep v:Expression Sep RPAREN { return [[ 'paren', v ]] }
+ = LPAREN _ v:Expression _ RPAREN { return [[ 'paren', v ]] }
 
 Local
  = v:Identifier { 
@@ -1248,8 +1248,6 @@ Comprehension
  = MapComprehension 
  / AuditComprehension
  / ReduceComprehension 
- / FilterComprehension 
- / SortComprehension 
  / KeysComprehension 
  / ValuesComprehension
  / IterateComprehension
@@ -1258,6 +1256,8 @@ Comprehension
  / ViaComprehension
  / ObserveComprehension
  / OtherComprehension
+ / FilterComprehension 
+ / SortComprehension 
  / ConcatComprehension
 
 
@@ -1371,7 +1371,12 @@ ReduceComprehension2
 FilterComprehension
  = HAS Sep x:FilterComprehension2 { return x }
 FilterComprehension2
- = o:IterateOutput? b:Block {
+ = x:Expression { // test 'filter inline *'
+     var block=RV('function(^{this},^{key}){ return '+x+'; }',{this:'$_v',key:'$_k'});
+     console.log("filter comp exp");
+     return ['_$AI.filter(' , ','+block+' )']; 
+  }
+ / o:IterateOutput? b:Block {
      var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
      return ['_$AI.filter(' , ','+block+')']; 
   }
@@ -1452,7 +1457,7 @@ OtherComprehension
        var x2=RV(c[0],{this:'b'});
        return RV('r=_$AI.compare(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
      });
-     code+=conds.join(' ')+'return a; },undefined)';
+     code+=conds.join(' ')+'return a; },undefined)';     
    } else {
      if (expr.by.length) {
        code='_$AI.sort('+code+',function(a,b) { var aa,bb; ';
@@ -1573,12 +1578,15 @@ Multiplication
  = l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
  / l:Value _ '**' _ r:Multiplication { // test '**'
    return 'Math.pow('+l+','+r+')' 
-} 
+ } 
  / l:Value _ OVERLAY Sep r:Multiplication { // test 'overlay *'
    return '_$AI.overlay('+l+','+r+')' 
  }
  / l:Value _ SELECT Sep r:Multiplication { // test 'select *'
    return '_$AI.select('+l+','+r+')' 
+ }
+ / l:Value _ DELETE Sep r:Multiplication { // test 'delete *'
+   return '_$AI.delete(_$AI.clone('+l+'),'+r+')' 
  }
  / l:Value _ EXPECTS Sep r:Multiplication { 
    return '_$AI.expects('+l+','+r+')' 

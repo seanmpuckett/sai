@@ -835,7 +835,7 @@ An example, renaming **it** and **key** in the block handler of a **thru** compr
 
 	.. ( [expr] as [var] )
 
-The parenthetic **as** assigns the value of the parenthesised expression to a named identifier. The assignment happens as soon as the parethesis is evaluated, so you can use the identifier in the same expression as the parenthetical, as long as the parenthetical is evaluated first.
+The parenthetic **as** assigns the value of the parenthesised expression to a named identifier. The assignment happens as soon as the parethesis is evaluated, so you can use the identifier in the same expression as the parenthetical, as long as the parenthetical is evaluated first.  _This is not a good style of coding_.
 
 	  set six to (1+2 as three)+three
 	  debug array three, six
@@ -1427,8 +1427,10 @@ Like **or** except instead of checking for _truthy_ tests to see if a value is a
 	delete [variable]
 	set [variable] delete
 	set [variable] delete [attribute(s)]
+	... [expr] delete [attribute(s)]
 
-Undefines the named variable or attribute(s) of a variable.
+
+When called on a variable or traits, undefines the named variable or attribute(s) of a variable.
 
 This just calls the underlying Javascript version of **delete**, with all the same rules and caveats. The only clever addition is the ability to delete multiple attributes at once by supplying a collection:
 
@@ -1447,7 +1449,22 @@ This just calls the underlying Javascript version of **delete**, with all the sa
 	debug obj
 	
 	> { e: 5 }
+  
+When **delete** operates on an array, it returns a copy of the array with the elements specified removed. 
 
+	debug (list 1,2,3,4,5) delete 1
+
+	> 1, 3, 4, 5
+
+	debug (list 1,2,3,4,5) delete (list 1,2)
+
+	> 1, 3, 5
+
+Elements are removed in first->last order, so sequence does matter.
+
+	debug (list 1,2,3,4,5) delete (list 2,1)
+
+	> 1, 4, 5
 
 ### descending / desc _modifier_
 
@@ -2040,6 +2057,7 @@ The addition of **using** lets you call an external function.  The function must
 
 	  set ageTotal to task as accumulator, row
 	    return accumulator + row.age
+      
 	  debug friends into 0 using ageTotal 
 	
 	  > 185
