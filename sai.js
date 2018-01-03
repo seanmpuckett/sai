@@ -135,7 +135,7 @@ SAI.GetParser = function() {
     var parserFile=__dirname + "/saigrammar.cached";
     if (!fs.existsSync(parserFile) || fs.statSync(grammarFile).mtime>fs.statSync(parserFile).mtime) {
       var grammar=fs.readFileSync(grammarFile).toString();
-      var mainParser=PEG.generate(grammar,{output:'source',optimize:'speed',cache:true});
+      var mainParser=PEG.generate(grammar,{output:'source',optimize:'size',cache:true});
       fs.writeFileSync(parserFile,mainParser);
     } else {
       mainParser=fs.readFileSync(parserFile).toString();
@@ -223,7 +223,7 @@ SAI.GetProtogen = function(name) {
     }
     var source=SAI.Parse(load.source,undefined,load.info);
     source='var __loadinfo=decodeURI("'+encodeURI(load.info)+'");\n'+source;
-    console.log(source);
+    //console.log(source);
     protogen=SAI.Compile(source);
     if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
     var s2=new Date();

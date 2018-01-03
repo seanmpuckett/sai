@@ -15,7 +15,6 @@ Instantiate task
   set tests to list
     Literals
     Syntax
-    Inheritance
     Generators
     Comps
     RValues
@@ -27,6 +26,7 @@ Instantiate task
     Loops
     Reference
     CompOrderOps
+    Inheritance
     
 //  set inactive to list
 

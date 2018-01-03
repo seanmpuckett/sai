@@ -206,7 +206,7 @@
     'dec': '^{1}--', // test 'self dec'
     'delete': 'delete ^{1}', // test 'self delete'
     'collect': '^{1} = _$AI.collect(^{1})' // test 'self collect*'
-  }; 
+  };  
 
   
   function assembleLiteral(v) {
@@ -1084,9 +1084,11 @@ Define
     return code;
   }
   / INSTANCE _ v:Definition EOLs {
-    var proof='prototype.__ivars=function(){ return '+v[1]+';}\n;\nfor (var i in prototype.__ivars()) { prototype[i]="instance"; };\n'; 
+    var ivar=GlobVar();
+    var proof='var '+ivar+'=function(){ return '+v[1]+'; }\nfor (var i in '+ivar+'()) { prototype[i]="uninitialized instance attribute"; };\n'; 
+    //prototype.__ivars=function(){ return '+v[1]+';}\n;\nfor (var i in prototype.__ivars()) { prototype[i]="uninitialized instance attribute"; };\n'; 
     var sup=GlobVar();
-    var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  var t=this.__ivars();\n  for (var i in t) this[i]=t[i];\n};\n'; 
+    var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  var t='+ivar+'();\n  for (var i in t) this[i]=t[i];\n};\n'; 
     return proof+setup;
   }
 

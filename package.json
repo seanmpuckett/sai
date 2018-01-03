@@ -1,7 +1,7 @@
 {
   "name": "sai",
   "version": "0.1.0",
-  "description": "Javascript with less spaghetti and more meat.",
+  "description": "An object-oriented language designed to afford understandable code and easy maintenance. Transpiles in-place to Javascript.",
   "main": "sai.js",
   "scripts": {
     "test": "cd test && node index.js && cd .."
