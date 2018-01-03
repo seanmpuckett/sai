@@ -3,7 +3,7 @@ An attempt to add rigour, elegance and clarity to programs in the Javascript eco
 
 ### About
 
-SAI is a transpiler for the Node/IO.JS Javascript environment. 
+SAI is a transpiler for the Node Javascript environment. 
 
 Your source files are written in another programming language (called SAI) and _transpiled_ into the equivalent Javascript, which is then executed like any other Javascript. SAI objects are compatible with regular JS objects, and a project can mix SAI and JS code on a file-level basis. 
 
@@ -29,9 +29,8 @@ Required modules: SAI relies on PEGjs to compile its grammar. JS-beautify has be
 
 Parser compilation: The first time SAI runs, the *saigrammar.peg* language specification (2k lines) is compiled by PEGjs, which takes several seconds. The resulting Javascript parser (~19K lines) is saved as *saigrammar.cached*, which will be reused on subsequent runs if possible.
 
-When creating SAI objects, the pre-compiled parser is used to create a native Javascript prototype for each object, just once. Subsequent calls to SAI.Require or SAI.Create for the same object run at Javascript speeds. You can re-use the prototypes once created just like any other Javascript prototype.
+When creating SAI objects, the pre-compiled parser is used to create a native Javascript prototype for each object, just once. This may take several to hundreds of milliseconds based on the complexity of the file. Subsequent calls to SAI.Require or SAI.Create for the same object run at Javascript speeds. You can re-use the prototypes once created just like any other Javascript prototype. 
 
 ### Learn More
 
-Refer to the samples and docs!
 

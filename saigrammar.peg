@@ -1083,10 +1083,10 @@ Define
     code+='var t='+v[1]+';\nfor (var i in t) { prototype.__tobelocked.push(i); prototype[i]=t[i]; };\n'; 
     return code;
   }
-  / INSTANCE _ v:Definition EOLs { 
-    var proof='var t='+v[1]+';\nfor (var i in t) { prototype[i]="instance"; };\n'; 
+  / INSTANCE _ v:Definition EOLs {
+    var proof='prototype.__ivars=function(){ return '+v[1]+';}\n;\nfor (var i in prototype.__ivars()) { prototype[i]="instance"; };\n'; 
     var sup=GlobVar();
-    var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  for (var i in t) this[i]=t[i];\n};\n'; 
+    var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  var t=this.__ivars();\n  for (var i in t) this[i]=t[i];\n};\n'; 
     return proof+setup;
   }
 

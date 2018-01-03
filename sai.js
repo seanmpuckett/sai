@@ -1,8 +1,12 @@
 var fs = require('fs');
 var PEG = require('pegjs');
 
-var Beautify=require('js-beautify').js_beautify; // optional
-if (!Beautify) var Beautify=function(a) { return a; }
+var Beautify=undefined;
+try {
+  Beautify=require('js-beautify').js_beautify; // optional
+} catch(e) {
+  Beautify=function(a) { return a; }
+}
 
 
 
@@ -219,7 +223,7 @@ SAI.GetProtogen = function(name) {
     }
     var source=SAI.Parse(load.source,undefined,load.info);
     source='var __loadinfo=decodeURI("'+encodeURI(load.info)+'");\n'+source;
-    //console.log(source);
+    console.log(source);
     protogen=SAI.Compile(source);
     if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
     var s2=new Date();
