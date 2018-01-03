@@ -1084,7 +1084,7 @@ Define
     return code;
   }
   / INSTANCE _ v:Definition EOLs {
-    var ivar=GlobVar();
+    var ivar=GlobVar(); 
     var proof='var '+ivar+'=function(){ return '+v[1]+'; }\nfor (var i in '+ivar+'()) { prototype[i]="uninitialized instance attribute"; };\n'; 
     //prototype.__ivars=function(){ return '+v[1]+';}\n;\nfor (var i in prototype.__ivars()) { prototype[i]="uninitialized instance attribute"; };\n'; 
     var sup=GlobVar();
