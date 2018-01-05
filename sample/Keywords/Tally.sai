@@ -7,5 +7,6 @@ Count task
   set @bag|$ to (self default 0) + 1
 
 Iterator process
+  //debug "Tally Iterator"
   each @bag
     yield: key, it

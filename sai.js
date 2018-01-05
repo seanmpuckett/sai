@@ -168,13 +168,16 @@ SAI.GetParser = function() {
         filename:fn}
       );
     } catch (e) {
-      var info='\nSAI: Syntax error <HERE> in '+fn+'\n\n';
-      var context=SAI.Contexualize(source,e.location.start.offset,e.location.end.offset);
-      info+=context+'\n\n'+e.message+'\n\n';
-//      for (var i in e) info+=i+": "+e[i]+"\n";
-//      for (var i in e.location) info+="location."+i+": "+e.location[i]+"\n";
-//      for (var i in e.location.start) info+="location.start."+i+": "+e.location.start[i]+"\n";
-//      for (var i in e.location.end) info+="location.end."+i+": "+e.location.end[i]+"\n";
+      var info='';
+      if (e.location) {
+        info+='\nSAI: Syntax error <HERE> in '+fn+'\n\n';
+        var context=SAI.Contexualize(source,e.location.start.offset,e.location.end.offset);
+        info+=context+'\n\n'+e.message+'\n\n';
+        
+      } else {
+        info+="\nSAI: Error creating prototype:\n\n";
+        info+=e.toString();
+      }
       throw new Error(info);
     }
     if (SAIconfig.options.beautify) {
@@ -223,7 +226,7 @@ SAI.GetProtogen = function(name) {
     }
     var source=SAI.Parse(load.source,undefined,load.info);
     source='var __loadinfo=decodeURI("'+encodeURI(load.info)+'");\n'+source;
-    //console.log(source);
+    // console.log(source);
     protogen=SAI.Compile(source);
     if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
     var s2=new Date();

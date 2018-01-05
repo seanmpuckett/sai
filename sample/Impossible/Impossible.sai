@@ -22,16 +22,12 @@
 // Declare a global variable
 
 reference:
-  MAX 100
+  max 100
 
 
 // Object declaration
 
 object Impossible 1.0.0
-
-
-// updates to language?
-//  -- reference: ~ should be required for keys
 
 
 // Object 'method' which runs once on object instantiation.
@@ -43,33 +39,46 @@ Instantiate task
   //
   // What is being YIELDed for each valid candidate is a plain
   // object with named traits for x, y, s (sum) and p (product).
+  //
+  // SAI does not use = for assignment. Every line of code begins with
+  // a verb. Here it is SET, used for variable assignment.
+  //
+  // Keywords can be all caps or all lowercase, as you prefer.
+  // Starting off with all caps can help you learn the syntax.
   
-  set Candidates to process
-    count 2 to ~MAX as x                    // greater than 1 
-      count x+1 to ~MAX as y               // greater than x
-        if x+y<~MAX                         // sum less than max 
-          yield: x x, y y, sum x+y, product x*y
-
+  SET Candidates TO PROCESS
+    COUNT 2 TO ~max AS x                    // greater than 1 
+      COUNT x+1 TO ~max AS y                // greater than x
+        IF x+y<~max                         // sum less than max 
+          YIELD FIELDS
+            x x
+            y y
+            sum x+y
+            product x*y
 
   // simple instrument to count the length of an array
 
-  set Countem to task as obj, label
-    debug '${label} candidate count: ${obj.length}'
+  SET Countem TO TASK AS obj, label
+    DEBUG '${label} candidate count: ${obj.length}'
 
 
   // Working storage.
-  // EMPTY means an array with no elements.
-  
-  set pgood to empty
-  set sbad to empty
-  set pgood2 to empty
-  set sgood to empty
+  // EMPTY means an array with no elements. (Must be lowercase.)
+  //
+  // The SET verb can perform multiple assignments when they
+  // are indented as below. This can make for clearer code.
+
+  SET
+    pgood TO empty
+    sbad TO empty
+    pgood2 TO empty    
+    sgood TO empty
 
 
   // Banner
   // Backtick specifies a string that runs to EOL.
   
-  debug `Mathemetician's "Impossible" puzzle solver.
+  DEBUG `Mathemetician's "Impossible" puzzle solver.
 
 
   // Print calculated result
@@ -81,7 +90,7 @@ Instantiate task
   // Nevertheless, it's clearer and more maintainable to abstract away the
   // candidate generator into a process and then extract candidates into a list 
   
-  debug chain from Candidates; collect
+  DEBUG CHAIN Candidates() COLLECT
     
     
     // Notice the indent level has changed, we're now in the "chain"
@@ -92,7 +101,7 @@ Instantiate task
     // the start of the chain, in this case the result of 'Candidates() collect',
     // which is an array.
 
-    observe from Countem it, 'Initial'
+    OBSERVE FROM Countem it, 'Initial'
 
 
     // Phase 1 -- establish P's knowledge
@@ -104,8 +113,8 @@ Instantiate task
     // the DEFAULT operator is used to ensure that uninitialized array elements
     // get a starting value of 0.
 
-    audit 
-      set pgood[.product] to (self default 0)+1
+    AUDIT 
+      SET pgood[.product] TO (self DEFAULT 0)+1
     
 
     // Phase 2 -- if P could have known, S knows it isn't the answer.
@@ -113,16 +122,16 @@ Instantiate task
     //
     // If pgood indicates a trivial solution for P, then flag S's solution as bad  
     
-    audit 
-      if pgood[.product]=1
-        set sbad[.sum] to true
+    AUDIT 
+      IF pgood[.product]=1
+        SET sbad[.sum] TO true
 
     // HAS is a filtration operator: if the expression is true, the row is kept.
     // We keep all solutions that are not marked bad.
     
-    has not sbad[.sum] 
+    HAS NOT sbad[.sum] 
 
-    observe from Countem it, 'Phase 2'
+    OBSERVE FROM Countem it, 'Phase 2'
 
 
     // phase 3 -- Since S didn't know either, P can eliminate non-trivial solutions
@@ -130,23 +139,23 @@ Instantiate task
     //
     // The remaining patterns should be familiar.
 
-    audit 
-      set pgood2[.product] to (self default 0)+1
+    AUDIT 
+      SET pgood2[.product] TO (self DEFAULT 0)+1
 
-    has pgood2[.product]=1
+    HAS pgood2[.product]=1
     
-    observe from Countem it, 'Phase 3'
+    OBSERVE FROM Countem it, 'Phase 3'
 
 
     // phase 4 -- Since P now knows, S can eliminate non-trivial solutions 
     // Filter for a new list of solutions where there is only one answer for .sum
 
-    audit 
-      set sgood[.sum] to (self default 0)+1
+    AUDIT 
+      SET sgood[.sum] TO (self default 0)+1
 
-    has sgood[.sum]=1
+    HAS sgood[.sum]=1
     
-    observe from Countem it, 'Results'
+    OBSERVE FROM Countem it, 'Results'
 
 
     // phase 5 -- Nicely format remaining solution(s)
@@ -156,7 +165,7 @@ Instantiate task
     // an expression to be evaluated; in this case a string literal 
     // that uses the ${} string composition tool.
      
-    thru `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
+    THRU `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
     
     
     // JOIN is not a keyword, it's a member method of Array. CHAIN knows how to

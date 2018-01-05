@@ -24,7 +24,7 @@ Instantiate task
 
   // ACCUM
   debug '\nACCUM'
-  debug friends gather into 0
+  debug friends into 0
     set sum + .age
 
   // SET
@@ -302,15 +302,15 @@ Instantiate task
     
   count 3
     count 3
-      debug key
+      debug counter
       
   count 3 as i
     count 3
-      debug i+','+key
+      debug i+','+counter
       
   count 3
     count 3 as j
-      debug key+','+j
+      debug counter+','+j
       
   // nan
   debug '\nNaN'
@@ -371,7 +371,7 @@ Instantiate task
   set rot13 to task
     set out to ''
     count $length
-      set char to $charCodeAt(key)
+      set char to $charCodeAt(counter)
       if char<65 or char>122 
         nop
       else if char > 109
@@ -436,9 +436,9 @@ Instantiate task
   // down
   debug '\nDOWN'
   count down 15 step -3
-    debug key
+    debug counter
   count down 15 
-    debug key
+    debug counter
   
   // delete
   debug '\nDELETE'
@@ -543,9 +543,9 @@ Instantiate task
   // continue
   debug '\nCONTINUE'
   count 10
-    unless key % 2
+    unless counter % 2
       continue
-    debug key
+    debug counter
     
   // chain
   debug '\nCHAIN'
@@ -584,12 +584,16 @@ Instantiate task
   inventory.Count 'apple'
   inventory.Count 'banana'
   inventory.Count 'apple'
+  
+  debug "iterate inventory"
   iterate inventory
     debug it
   
+  debug "ply inventory"
   ply inventory by it|1
     debug it
-    
+  
+  debug "ply inventory forcing iterator"
   ply inventory iterate by it|1
     debug it
   
@@ -669,7 +673,7 @@ Instrument task as name, value
 SetPolar task 
   set @x to $magnitude * ~Math.cos($angle)
   set @y to $magnitude * ~Math.sin($angle)
-  @SetPolar angle 45o, magnitude 3
+  @SetPolar: angle 45o, magnitude 3
   
   
   

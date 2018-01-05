@@ -31,9 +31,19 @@ var isCollection=function(i) {
 
 SAILib.iterator=function(i) {
   if (!i) return i;
-  if (typeof i.next === 'function') return i;
-  if (typeof i === 'function') return i();
-  if (i[Symbol.iterator]) return i[Symbol.iterator]();
+  if (typeof i.next === 'function') {
+    //console.log("MakeIterator1: i.next is function");
+    return i;
+  }
+  if (typeof i === 'function') {
+    //console.log("MakeIterator2: i is function");
+    return i();
+  }
+  if (i[Symbol.iterator]) {
+    //console.log("MakeIterator3: i has Symbol.iterator");
+    return i[Symbol.iterator]();
+  }
+  //console.log("MakeIterator4: i itself")
   return i;
 }
 

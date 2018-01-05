@@ -1,35 +1,30 @@
-
 object FizzBuzz 1.0.0
 
 Instantiate task
 
-
-  set words to:
-    :word 'Fizz', divisor 3
-    :word 'Buzz', divisor 5
+  set words to array
+    fields word 'Fizz', divisor 3
+    fields word 'Buzz', divisor 5
     
   count 1 to 101 as num
     set out to ''
     each words
       unless num % .divisor
         set out + .word
-    debug out.length ?? out :: num
+    debug out ?? out :: num
 
   return
   
-
   // array variation
   set out to empty
   count 3 to 101 step 3
-    set out|key to 'Fizz'
+    set out|counter to 'Fizz'
   count 5 to 101 step 5
-    set out|key to (self default '') + 'Buzz'
+    set out|counter to (self default '') + 'Buzz'
   count 1 to 101
-    debug out|key default key
+    debug out|counter default counter
   return
 
-
-  
   // Map
   set words to new ~Map
   words.set 'Fizz', 3
@@ -40,7 +35,6 @@ Instantiate task
       unless num % |1
         set out + |0
     debug out.length ?? out :: num
-
   return
 
   
