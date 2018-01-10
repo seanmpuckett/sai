@@ -1,3 +1,5 @@
+"use strict";
+
 var fs = require('fs');
 var PEG = require('pegjs');
 
@@ -132,10 +134,15 @@ SAI.Contexualize=function(source,offset) {
 SAI.GetParser = function() {
   try {
     var grammarFile=__dirname + "/saigrammar.peg";
-    var parserFile=__dirname + "/saigrammar.cached";
+    var parserFile=__dirname + "/saigrammar.js";
     if (!fs.existsSync(parserFile) || fs.statSync(grammarFile).mtime>fs.statSync(parserFile).mtime) {
       var grammar=fs.readFileSync(grammarFile).toString();
-      var mainParser=PEG.generate(grammar,{output:'source',optimize:'size',cache:true});
+      var mainParser=PEG.generate(grammar,{
+        allowedStartRules: ['startFile', 'startExpression'],
+        output:'source',
+        optimize:'size',
+        cache:true
+      });
       fs.writeFileSync(parserFile,mainParser);
     } else {
       mainParser=fs.readFileSync(parserFile).toString();
@@ -161,7 +168,9 @@ SAI.GetParser = function() {
     var source=dedent[0];
     var js='';
     try {
+      
       js=mainParser.parse(source,{
+        startRule:fn?'startFile':'startExpression',
         bound:bound,
         globals:SAI.config.verbs,
         persist:SAI.persist,
@@ -237,6 +246,12 @@ SAI.GetProtogen = function(name) {
   return protogen;
 }
 
+SAI.Expression = (source) => {
+  
+  var jssource="return "+SAI.Parse(source,undefined,undefined);
+  //console.log(jssource);
+  return SAI.Compile(jssource)(this,{},require,_$AI);
+}
 
 SAI.GetAncestors = function(name) {
   var heritage=[name]
@@ -325,22 +340,15 @@ SAI.GetPrototype = function(name,bindings) {
     SAI.isa[proto.isa]=name;
 
     SAI.FinalizePrototype(proto);
-    
-/*    if (bindings) {
-      for (var i in bindings.properties) {
-        Object.defineProperty(proto,i,{ get: bindings.properties[i]});
-      }
-      for (var i in bindings.functions) {
-        proto[i]=bindings.functions[i];
-      }
-    }
-*/    
     SAI.prototypes[name]=proto;
   }
   return proto;
 }
 
-
+// GetSource
+//
+// Get full native JS source code for an object, by name.
+//
 SAI.GetSource = function(name) {
   var ancestors=SAI.GetAncestors(name);
   var source=
@@ -370,8 +378,12 @@ SAI.GetSource = function(name) {
   return source;
 }
 
+// Require
+//
+// Return a prototype object
+
 SAI.Require = function(name) {
-  proto=SAI.GetPrototype(name).constructor;
+  var proto=SAI.GetPrototype(name).constructor;
   if (!proto) throw new Error('SAI.Require: Do not know how to create SAI object "'+name+'".');
   return proto;
 }
@@ -386,8 +398,6 @@ SAI.Create = _$AI.new = function(name,parameters) {
 }
 
 SAI.Configure = function(config) {
-  //console.log("SAI.configure");
-  //console.log(config);
   if (config.paths) {
     SAI.config.paths=config.paths;
   }

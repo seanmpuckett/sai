@@ -1,3 +1,4 @@
+"use strict";
 
 var SAILib = exports = {}
 try { module.exports=SAILib; } catch(e) {}
@@ -691,7 +692,7 @@ SAILib.number = function(x) {
 SAILib.expects = function(params,prototype) {
   var result=[];
   for (var j in prototype) {
-    type=prototype[j];
+    var type=prototype[j];
     if (j==='_root') {
       if (type===typeof params) {
         // good

@@ -11,7 +11,7 @@ SAI embraces Javascript's capabilities, including new features of ES6 such as pr
 
 SAI, like Python and CoffeeScript, treats whitespace as semantically relevant: level of indent is used to identify code blocks, and line breaks are always significant. Indeed, SAI's parser is quite rigid as to what constitutes a single 'statement'; run-on code with heavily nested calls is strongly discouraged (if not impossible) -- and this is intentional.
 
-SAI exists to encourage understandable and maintainable programs through the affordance of a straightforward programming style. While Javascript allows (and perhaps even encourages) heavily nested expressions, opaque idioms and clever uses of the prototyping system, and while many people find use of these techniques to be personally rewarding, the truth of the matter is that professional code should never strive to be clever or creative. Instead, SAI encourages simplicity and elegance.
+SAI exists to encourage understandable and maintainable programs through the affordance of a straightforward programming style. While Javascript allows (and perhaps even encourages) heavily nested expressions, opaque idioms and clever uses of the prototyping system, and while many people find use of these techniques to be personally rewarding, professional code should never strive to be clever. Instead, SAI encourages simplicity and elegance.
 
 My feeling is that if someone else of reasonable competency cannot easily understand what a program is doing on a cursory read-through, then one has failed as a professional programmer. James Joyce created some remarkable literary works of lasting significance, but when software used in a production environment is just as difficult to understand as _Finnegans Wake_, then as engineers we have utterly failed in our duty to our employers, co-workers and ultimately our customers. Good software should be written in the style of the New York Times, not Thomas Pynchon's _Gravity's Rainbow_. 
 
@@ -25,11 +25,74 @@ SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, S
 
 ### Usage Notes
 
-Required modules: SAI relies on PEGjs to compile its grammar. JS-beautify, if present, will be used to tidy up the generated Javascript. 
+#### To evaluate a SAI expression
 
-Parser compilation: The first time SAI runs, the *saigrammar.peg* language specification (2k lines) is compiled by PEGjs, which takes several seconds. The resulting Javascript parser (~3K lines) is saved as *saigrammar.cached*, which will be reused on subsequent runs if possible.
+    var SAI = require('SAI');
+    var fruit = SAI.Expression('list apple, banana, cherry');
+
+Result:
+
+    console.log(fruit);
+    
+    > [ 'apple', 'banana', 'cherry' ]
+
+#### To define a function using SAI
+
+    var SAI = require('SAI');
+    var ReverseItems=SAI.Expression(`task as items
+      return chain items
+        thru chain .
+          split ''
+          reverse
+          join ''
+    `);
+
+Result:
+    
+    console.log(ReverseItems(fruit));
+    
+    > [ 'elppa', 'ananab', 'yrrehc' ]
+
+#### To define a process (generator) using SAI
+
+    var SAI = require('SAI');
+    var FibonacciGenerator=SAI.Expression(`process as n
+      local stack array 1, 1
+      count n
+        yield stack.0
+        stack.push stack.0 + stack.1
+        stack.shift
+    `);
+
+Result:
+
+    var results=[];
+    for (var i of FibonacciGenerator(10)) {
+      results.push(i);
+    }
+    console.log(results);
+    
+    > [ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55 ]
+    
+
+#### To create a SAI object given a .SAI source file:
+
+    var SAI = require('SAI');
+    SAI.Configure({options:{},paths:[__dirname]});
+    var ObjectPrototype=SAI.Require('ObjectName'); // builds prototype from ObjectName.sai in __dirname
+    var Object = new ObjectPrototype(instantiation task parameters);
+
+    
+#### Notes
+
+Modules used: 
+- PEGjs, needed to compile the grammar (not necessary if it hasn't changed).
+- JS-beautify, if present, will be used to tidy up the generated Javascript. 
+
+Parser compilation: The first time SAI runs, the *saigrammar.peg* language specification (2k lines) is compiled by PEGjs, which takes several seconds. The resulting Javascript parser (~3K lines) is saved as *saigrammar.js*, which will be reused on subsequent runs if possible.
 
 When creating SAI objects, the pre-compiled parser is used to create a native Javascript prototype for each object, just once. This may take several to hundreds of milliseconds based on the complexity of the file. Subsequent calls to SAI.Require or SAI.Create for the same object run at Javascript speeds. You can re-use the prototypes once created just like any other Javascript prototype. 
+
 
 ### Documentation
 
@@ -37,7 +100,7 @@ The _docs_ directory contains the documentation.
 
 The 20.Keywords file is the reference documentation and is the most definitive information about SAI.
 
-SAI does not yet have a beautiful and competently written introduction to the language, e.g. "Learn you a SAI for Great Justice," which frankly sucks. Maybe someday this will happen.
+SAI does not yet have a beautiful and competently written introduction to the language, e.g. "Learn you a SAI for Great Justice," which sucks. Maybe someday this will happen.
 
 ### Samples
 

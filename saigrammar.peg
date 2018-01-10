@@ -403,20 +403,28 @@
   }
   function FixVars(code) {
   }
+
+  function MagicCheck(code) {
+    var lm=LeakedMagic.exec(code);
+    if (lm) error("Magic variable '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)");
+  }
 }
 
 
-start
+startFile
   = OptionalEOLs r:Reference? o:Object+ {
-    var code='';//var __source=decodeURI('+quoted(encodeURI(input))+');\n';
+    var code='';
     if (r) code+=r;
     code+=o.join('\n')
-    //console.log(code);
-    var lm=LeakedMagic.exec(code);
-    //console.log(lm);
-    if (lm) error("Magic variable '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)");
+    MagicCheck(code);
     return code;
   }
+  
+startExpression
+ = code:Expression EOLs {
+   MagicCheck(code); 
+   return code;
+ }
   
 Reference 
 = REFERENCE _ v:ParameterList EOLs {
