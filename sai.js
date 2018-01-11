@@ -11,10 +11,25 @@ try {
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////////////
 //
 //  default configuration
+//
+//  VERBS
+//  You can add your own case-sensitive verbs by adding them to the _verbs_ array.
+//  Verbs should be text that compiles to an executable function.
+//
+//  PATHS
+//  The list of paths is searched when calling SAI.Require when using the default loader.
+//
+//  OPTIONS
+//  as shown
+//
+//  LOADER
+//  The Loader is a function that, when passed the name of an object, returns the SAI
+//  source code for that object. Change the loader if you want to load code from somewhere
+//  other than the disk.
+//
 
 var SAIconfig = {
   verbs: {
@@ -66,7 +81,10 @@ SAI.isa={};
 SAI.config=SAIconfig;
 SAI.persist={globalcount:1}; // internal
   
-// converts semantic whitespace into braces for easier parsing.
+// Dedenter
+//
+// Converts semantic whitespace into braces for easier parsing.
+//
 SAI.Dedenter=function(src) {
   var lines=src.split(/\r\n|[\r\n\u0085\u2028\u2029]/);
   var indent=[0];
@@ -104,7 +122,10 @@ SAI.Dedenter=function(src) {
   return [out.join('\n')+'\n'];
 }
 
+// Contextualize
+//
 // transforms a segment of parse-ready code back into indented for inspection
+//
 SAI.Contexualize=function(source,offset) {
   var context=source.substring(offset-100,offset);
   context+='<HERE>';
@@ -130,7 +151,13 @@ SAI.Contexualize=function(source,offset) {
   return newcontext;//+"\n"+context;
 }
   
-  
+// GetParser
+//
+// Returns a function that will parse SAI code into Javascript
+//
+// If the grammar file (saigrammar.peg) is newer than the current parser
+// (saigrammar.js), uses PEGjs to recompile the grammar and save the parser.
+//
 SAI.GetParser = function() {
   try {
     var grammarFile=__dirname + "/saigrammar.peg";
@@ -196,12 +223,18 @@ SAI.GetParser = function() {
   }
 };
   
-// build and bind parser
-
+// Parse
+//
+// Build and bind parser
+//
 SAI.Parse = SAI.GetParser();
 
-// set default loader
 
+// GetSourceFromPaths -> config.Loader
+//
+// The basic loader which fetches SAI source by name from the provided list of 
+// directories.
+//
 SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
   var filename;
   var raw=undefined;
@@ -221,10 +254,19 @@ SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
   };
 }
 
+// Compile
+//
+// Create a function that compiles parsed SAI source, binding the variables
+// needed to integrate necessary scope and the SAI runtime library.
+//
 SAI.Compile = function(source) {
   return new Function('prototype','options','require','_$AI',source);
 }
 
+// ProtoGen
+//
+// Create a fully scoped Javascript prototype for a single object (ignoring inheritance)
+//
 SAI.GetProtogen = function(name) {
   var protogen=SAI.protogens[name];
   if (!protogen) {
@@ -246,13 +288,20 @@ SAI.GetProtogen = function(name) {
   return protogen;
 }
 
+// Expression
+//
+// Compile a single SAI expression, out of context except for the runtime library.
+//
 SAI.Expression = (source) => {
-  
   var jssource="return "+SAI.Parse(source,undefined,undefined);
   //console.log(jssource);
   return SAI.Compile(jssource)(this,{},require,_$AI);
 }
 
+// GetAncestors
+//
+// Build a list of objects that the given object depends on
+//
 SAI.GetAncestors = function(name) {
   var heritage=[name]
   var ancestors={};
@@ -284,7 +333,12 @@ SAI.GetAncestors = function(name) {
   return ancestors;
 }
 
-
+// FinalizePrototype
+//
+// Lock and freeze prototype attributes as needed.
+// Verify contracts are fulfilled
+// Bind and build an instantiation function.
+//
 SAI.FinalizePrototype = function(proto) {
   for (var i in proto.__tobelocked)
     Object.defineProperty(proto,proto.__tobelocked[i],{configurable:false});
@@ -312,13 +366,17 @@ SAI.FinalizePrototype = function(proto) {
   };
 }
 
-
+// GetPrototype
+// 
+// Given a name, locate all ancestors, create all prototypes,
+// initialize primary prototype object, describe properties,
+// save the result in a cache (SAI.prototypes) and return it.
+//
 SAI.GetPrototype = function(name,bindings) {
   var proto=SAI.prototypes[name];
   if (!proto) {
     var ancestors=SAI.GetAncestors(name);
 
-    //console.log("Creating prototype for "+name);
     var proto=new SAIproto(name);
     var adopt=function(name) {
       var list=ancestors[name];
@@ -327,7 +385,6 @@ SAI.GetPrototype = function(name,bindings) {
           adopt(list[i]);
         }
       }
-      //console.log("  from "+name);
       var protogen=SAI.GetProtogen(name);
       protogen(proto,{name:name},require,_$AI);
     }
@@ -370,24 +427,25 @@ SAI.GetSource = function(name) {
   source+='var fn='+SAI.FinalizePrototype.toString()+'(prototype);\n';
   source+='var pro=prototype.constructor;\n';
   source+='exports=pro; try { module.exports=pro; } catch(e) {}\n';
-  //source+='console.log("hey");\n';
   source+='return pro;\n';
-  var lines=source.split('\n');
-  //for (var i in lines) console.log((1+parseInt(i))+': '+lines[i]);
   
   return source;
 }
 
 // Require
 //
-// Return a prototype object
-
+// Return a prototype object by name
+//
 SAI.Require = function(name) {
   var proto=SAI.GetPrototype(name).constructor;
   if (!proto) throw new Error('SAI.Require: Do not know how to create SAI object "'+name+'".');
   return proto;
 }
 
+// Create
+//
+// Create an object by name (an alternative to using new on what Required gives you)
+//
 SAI.Create = _$AI.new = function(name,parameters) {
   var proto=SAI.GetPrototype(name);
   if (!proto) throw new Error('SAI.Create: Do not know how to create SAI object "'+name+'".');
@@ -397,6 +455,10 @@ SAI.Create = _$AI.new = function(name,parameters) {
   return obj;
 }
 
+// Configure
+//
+// Update configuration settings individually or as a group
+//
 SAI.Configure = function(config) {
   if (config.paths) {
     SAI.config.paths=config.paths;

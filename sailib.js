@@ -1,8 +1,17 @@
 "use strict";
 
+///////////////////////////////////////////////
+//
+// SAI Runtime Library
+//
+
 var SAILib = exports = {}
 try { module.exports=SAILib; } catch(e) {}
 
+// canIterate (utility)
+//
+// returns true if the candidate seems to be a true iterator, or at least acts like one
+//
 var canIterate=function(i) {
   if (!i) return false;
   if (i[Symbol.iterator]) return true;
@@ -10,26 +19,63 @@ var canIterate=function(i) {
   return (typeof i.next)==='function';
 }
 
+// mustIterate (utility)
+//
+// returns true if the candidate MUST be iterated
+//
 var mustIterate=function(i) {
   if (!i) return false;
   return (typeof i.next)==='function';
 }
 
+// isObject (utility)
+//
+// returns true if an actual Javascript object
+//
 var isObject=function(i) {
   if (i===null) return false;
   return (typeof i)==='object';
 }
 
+// isArray (utility)
+//
+// returns true if an actual Javascript array
+//
 var isArray=Array.isArray;
 
+// isMergable (utility)
+//
+// returns true if it has items, attributes, or is an iterator
+//
 var isMergable=function(i) {
   return isArray(i) || isObject(i) || canIterate(i);
 }
 
+// isCollection (utility)
+//
+// returns true if an array or an object
+//
 var isCollection=function(i) {
   return isArray(i) || isObject(i);
 }
 
+// assert
+//
+// throw an error if the test is false
+//
+SAILib.assert=function(test,msg) {
+  if (!test) {
+    if (!msg) msg='';
+    throw new Error("SAI: failed assertion: "+msg);
+  }
+}
+
+// iterator
+//
+// If the object seems an iterator ALREADY under iteration, return it.
+// Otherwise, attempt to invoke the generator to create an iteration
+// with blank parameters.
+//
 SAILib.iterator=function(i) {
   if (!i) return i;
   if (typeof i.next === 'function') {
@@ -48,6 +94,10 @@ SAILib.iterator=function(i) {
   return i;
 }
 
+// generator
+//
+// Force the parameter into being a generator.
+// 
 SAILib.generator=function(i) {
   if (!i) return i;
   if (typeof i.next === 'function') return function*(){yield*i}();
@@ -56,13 +106,10 @@ SAILib.generator=function(i) {
   return iter ? iter : i;
 }
 
-SAILib.assert=function(test,msg) {
-  if (!test) {
-    if (!msg) msg='';
-    throw new Error("SAI: failed assertion: "+msg);
-  }
-}
-
+// iterate
+//
+// given an object, create and invoke an iterator for it.
+//
 SAILib.iterate=function(a) { // test 'sow *'
   if (a===undefined) return undefined;
   if (mustIterate(a)) return a;
@@ -72,12 +119,20 @@ SAILib.iterate=function(a) { // test 'sow *'
   return function*(){ yield a; }();
 }
 
+// _collect (worker)
+//
+// given an iterator, create an array of all of its yielded values.
+//
 SAILib._collect=function(iterable) {
   var a=[]; 
   for (var val of iterable) a.push(val);
   return a;
 }
 
+// collect
+//
+// If an object must be iterated, return all of its yielded values.
+// Otherwise return it unchanged.
 SAILib.collect=function(a) {
   if (a===undefined) return undefined;
   if (!mustIterate(a)) return a;
@@ -85,6 +140,10 @@ SAILib.collect=function(a) {
   return SAILib._collect(a);
 }
 
+// sort
+//
+// Given a value, force it into an array, then sort it.
+//
 SAILib.sort=function(a,f) {
   if (isArray(a)) return a.slice(0).sort(f);
   if (mustIterate(a)) return SAILib._collect(a).sort(f);
@@ -92,6 +151,17 @@ SAILib.sort=function(a,f) {
   return a;
 };
 
+// enlist
+//
+// Given any object, array, iterator or value, return an
+// array with all of its values.
+//
+// undefined -> undefined
+// value -> [value]
+// array -> array
+// object -> [[key,value],[key,value],...]
+// iterator -> [yielded values]
+//
 SAILib.enlist=function(a) {
   if (a===undefined) return undefined;
   if (isArray(a)) return a;
@@ -102,6 +172,17 @@ SAILib.enlist=function(a) {
   return out;
 }
 
+// entrait
+// 
+// given any object, array, iterator or value, return an
+// object with all of its values.
+//
+// undefined -> undefined
+// value -> {value: true}
+// array -> {[0][0]:[0][1], [1][0]:[1][1], ...}
+// object -> object
+// iterator -> {y0[0]:y0[1], y1[0]:y1[1], ...}
+//
 SAILib.entrait=function(a) {
   if (a===undefined) return undefined;
   var out={};
@@ -113,15 +194,29 @@ SAILib.entrait=function(a) {
   return out;
 }
 
+// alter
+// 
+// return the value of a function
+//
 SAILib.alter = function(a,f) { // test 'alter *'
   return f(a);
 }
 
+// observe
+//
+// execute a function, leaving the object unaltered
+//
 SAILib.observe = function(a,f) {
   f(a); // test 'observe *'
   return a;
 }
 
+// audit
+//
+// Execute a function on every element of an array/list/generator
+// But DOES NOT produce the results or alter the original array
+// Returns the original array.
+//
 SAILib.audit = function(a,f) {
   if (isArray(a)) { 
     var k=0,l=a.length;
@@ -132,12 +227,36 @@ SAILib.audit = function(a,f) {
       for (var val of a) { f(val); yield val; }
     }(); 
   } else if (isObject(a)) { 
-    var r={};
     for (var k in a) f(a[k],k);
   }
   return a;
 }
 
+// concat
+//
+// Create an array by concatenating two arrays.
+// Forces things that are not arrays to be arrays.
+// Returns a new array, unless "inplace" is set, 
+// then will modify the first array inplace if possible.
+//
+//	[1, 2] concat [3, 4] -> [1, 2, 3, 4]
+//	[1, 2] concat [[3, 4], [5, 6]] -> [1, 2, [3, 4], [5, 6]]
+//	[1, 2] concat 3 -> [1, 2, 3]
+//	[1, 2] concat {c:3, d:4} -> [1, 2, {c:3, d:4}]
+//	[1, 2] concat undef -> [1, 2]
+//	1 concat [3, 4] -> [1, 3, 4]
+//	1 concat 3 -> [1, 3]
+//	1 concat {c:3, d:4} -> [1, {c:3, d:4}]
+//	1 concat undef -> [1]
+//	{a:1, b:2} concat [3, 4] -> [{a:1, b:2}, 3, 4]
+//	{a:1, b:2} concat 3 -> [{a:1, b:2}, 3]
+//	{a:1, b:2} concat {c:3, d:4} -> [{a:1, b:2}, {c:3, d:4}]
+//	{a:1, b:2} concat undef -> [{a:1, b:2}]
+//	undef concat undef -> undef
+//	undef concat 3 -> [3]
+//	undef concat {c:3, d:4} -> [{c:3, d:4}]
+//	undef concat [3, 4] -> [3, 4]
+//
 SAILib.concat = function(a,b,inplace) {
   if (a===undefined) {
     if (b===undefined) {
@@ -206,6 +325,12 @@ SAILib.concat = function(a,b,inplace) {
   return a;
 }
 
+// map
+//
+// execute a function on every element of an array/object/iterator
+// returning a new array/object/iterator with the product of that
+// repeatedly invoked function
+//
 SAILib.map = function(a,f) {
   if (a===undefined) return undefined; // test 'map undef'
   if (isArray(a)) { // test 'map list'
@@ -232,6 +357,12 @@ SAILib.map = function(a,f) {
   return f(a); // test 'map value'
 }
 
+// filter
+//
+// Evaluats a function on every element of an array/object/iterator
+// and returns a new array/object/iterator with only the elements
+// the function returned "true" on.
+//
 SAILib.filter = function(a,f) {
   if (a===undefined) return undefined; // test 'filter undef'
   if (isArray(a)) { // test 'filter list'
@@ -259,6 +390,12 @@ SAILib.filter = function(a,f) {
   return f(a,undefined)?a:undefined; // test 'filter value*'
 }
 
+// reduce
+//
+// With a starting value (accumulator) that persists through invocations,
+// invoke a function on every element of the provided array/object/iterator
+// and return the accumulator.
+//
 SAILib.reduce = function(a,f,accum) {
   if (a===undefined) return undefined; // test 'reduce undef'
   if (isArray(a)) {
@@ -311,6 +448,11 @@ SAILib.reduce = function(a,f,accum) {
   return SAILib.reduce([a],f,accum);
 }
 
+// slice
+//
+// return start - start+count-1 elements of the given list/iterator
+// If start is negative, counts from the end.
+// 
 SAILib.slice = function(a,start,count) {
   if (a===undefined) return undefined; 
 
@@ -381,6 +523,10 @@ SAILib.slice = function(a,start,count) {
   return undefined;
 }
 
+// element
+//
+// returns a single element from an array/iterator
+//
 SAILib.element = function(a,index) {
   if (isArray(a)) {
     return a[index];
@@ -393,6 +539,10 @@ SAILib.element = function(a,index) {
   throw new Error("SAI: Attempt to extract an element from something not a list.");
 }
 
+// clone
+//
+// create a shallow copy of an array or object
+//
 SAILib.clone = function(a) {
   if (isArray(a)) return a.slice(0);
   if (isObject(a)) {
@@ -405,6 +555,13 @@ SAILib.clone = function(a) {
   return a;
 }
 
+// overlay
+//
+// creates a new collection with the left collection overlaid by the right collection
+//
+// [1, 2, 3] overlay [4, undefined, 6] -> [4, 2, 6]
+// {a:1, b:2} overlay {c:3, b:4, a:undefined} -> {a:1, b:4, c:3}
+//
 SAILib.overlay = function(l,r) {// test 'overlay'
   if (!isMergable(l)) throw new Error("SAI: Attempt to OVERLAY onto something that's not a collection/iterable.");
   if (!isMergable(r)) throw new Error("SAI: Attempt to OVERLAY with something that's not a collection/iterable.");
@@ -459,7 +616,13 @@ SAILib.overlay = function(l,r) {// test 'overlay'
   throw new Error("SAI: unexpected code path in OVERLAY");
 }
 
+// select
+//
 // get only elements of src enumerated by keys
+//
+// ['Apple', 'Banana', 'Cherry', 'Durian'] select [2, 0] -> ['Cherry', 'Apple']
+// {a:1, b:2, c:3, d:4} select ["a","c"] -> {a:1, c:3}
+//
 SAILib.select = function(src,keys) {
   if (!isMergable(src)) throw new Error("SAI: Left argument to SELECT must be list/traits/iterable.");
   if (!isMergable(keys)) {
@@ -540,6 +703,13 @@ SAILib.select = function(src,keys) {
   return result;
 }
 
+// update
+//
+// Updates a collection of traits in-place.
+//
+// [1, 2, 3] update [4, undefined, 6] -> [4, 2, 6]
+// {a:1, b:2} update {c:3, b:4, a:undefined} -> {a:1, b:4, c:3}
+// 
 SAILib.update = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   if (!(isArray(dest)||isObject(dest))) throw new Error("Attempt to MERGE into something that's not a list or traits.");
   if (!isMergable(keys)) throw new Error("Attempt to MERGE from something that's not a list or traits.");
@@ -558,6 +728,14 @@ SAILib.update = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   }
 }
 
+// delete
+//
+// Delete, in place, specific items from a collectios
+//
+// [1, 2, 3, 4] delete [1, 2] -> [1, 3]
+// [a:1, b:2, c:3] delete ["a"] -> [b:2, c:3]
+// [a:1, b:2, c:3] delete {b:5} -> [a:1, c:3]
+//
 SAILib.delete = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   if (mustIterate(dest)) throw new Error("SAI: Attempt to DELETE from an iterator, which is not presently supported.")
   if (!isObject(dest)) throw new Error("SAI: Attempt to DELETE from something that's not a list or traits.");
@@ -601,6 +779,10 @@ SAILib.delete = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
   return dest;
 }
 
+// deepFreeze
+//
+// Freeze an object and all of its properties (ensure they cannot be changed)
+//
 SAILib.deepFreeze = function(o) {
   var prop, propKey;
   Object.freeze(o); // First freeze the object.
@@ -613,23 +795,46 @@ SAILib.deepFreeze = function(o) {
   }
 }
 
+// xor
+//
+// return true if a XOR b
+//
 SAILib.xor = function(a,b) { // test 'xor'
   return a?(b?false:a):(b?b:false);
 }
 
+// min
+//
+// return the lower value
+//
 SAILib.min = function(a,b) { // test 'min'
   return (a<b)?(a):(b);
 }
+
+// max
+//
+// return the higher value
+//
 SAILib.max = function(a,b) { // test 'max'
   return (a>b)?(a):(b);
 }
 
+// compare
+//
+// return -1 if a is less than b
+// return 1 if a is greater than b
+// otherwise return 0
+//
 SAILib.compare = function(a,b) { 
   if (a<b) return -1;
   if (a>b) return 1;
   return 0;
 }
 
+// keys
+// 
+// return the keys (item identifiers) from an object in an array.
+//
 SAILib.keys = function(a) {
   var result=[];
   if (isArray(a)) { // test 'keys list'
@@ -646,6 +851,10 @@ SAILib.keys = function(a) {
   return result;
 }
 
+// count
+//
+// return how many items are in a collection
+//
 SAILib.count = function(a) {
   var result=0;
   if (isArray(a)) { 
@@ -660,10 +869,13 @@ SAILib.count = function(a) {
   } else {
     result=1;
   }
-  // test 'keys value' & 'keys undefined'
   return result;
 }
 
+// values
+//
+// return a list of all of the item values in a collectios
+//
 SAILib.values = function(a) {
   var result=[];
   if (isArray(a)) { // test 'values list'
@@ -678,17 +890,29 @@ SAILib.values = function(a) {
   return result;
 }
 
+// newerror
+//
+// prepare an error object for throwing
+//
 SAILib.newerror = function(line,file,parameters) {
   var e = new Error(parameters.message,file,line);
   for (var i in parameters) e[i]=parameters[i];
   return e;
 }
 
+// number
+//
+// convert a value into a number, or zero if that's not possible.
+//
 SAILib.number = function(x) {
   var n=parseFloat(x);
   return isNaN(n)?0:n;
 }
 
+// expects
+//
+// (see 20.Keywords.md for description of purpose)
+//
 SAILib.expects = function(params,prototype) {
   var result=[];
   for (var j in prototype) {
@@ -701,15 +925,12 @@ SAILib.expects = function(params,prototype) {
       } else {
         if (!params.isof) {
           result.push({trait:j,expects:type,found:typeof params});
-          //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof params);
         } else {
           result.push({trait:j,expects:type,found:params.isa});
-          //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+params.isa);
         }
       }
     } else if (!params[j]) {
       result.push({trait:j,expects:type,found:'undefined'});
-      //throw new Error("SAI: Expected parameter "+j+" in call to "+name);
     } else if (type!==true) {
       var param=params[j];
       if (type===typeof param) {
@@ -719,10 +940,8 @@ SAILib.expects = function(params,prototype) {
       } else {
         if (!param.isof) {
           result.push({trait:j,expects:type,found:typeof param});
-          //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+typeof param);
         } else {
           result.push({trait:j,expects:type,found:param.isa});
-          //throw new Error("SAI: Expected parameter "+j+" to be of type "+type+" in call to "+name+", but it's a "+param.isa);
         }
       }
     }
@@ -730,6 +949,10 @@ SAILib.expects = function(params,prototype) {
   return result;
 }
 
+// expectsThrow
+//
+// Verify parameters match a prototype, throwing an exception if they don't.
+//
 SAILib.expectsThrow = function(params,prototype,name) {
   var x=SAILib.expects(params,prototype);
   if (!x.length) return;
