@@ -6,6 +6,7 @@ SAI.Configure({
 
 var Test=SAI.Require('Test');
 
+/* Bunch-a test code
 
 var X=SAI.Expression;
 
@@ -37,6 +38,22 @@ for (var i of FibonacciGenerator(10)) {
 }
 console.log(results);
 
-//console.log(SAI.GetSource('ITChild'));
+X(`task
+  set Permutations process as cards
+    local Pick to process as hand, deck
+      unless deck count
+        yield hand
+      else
+        ply deck as card, index
+          yielding from Pick hand concat card, deck delete index
+    yielding from Pick empty, cards
+
+  iterate from Permutations list apple, banana, cherry
+    debug .
+        `)();
+*/
+
 
 var results=new Test();
+
+

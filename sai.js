@@ -238,19 +238,27 @@ SAI.Parse = SAI.GetParser();
 SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
   var filename;
   var raw=undefined;
+  var mtime=0;
   for (var i in SAI.config.paths) {
     var path=SAI.config.paths[i];
     filename=path+'/'+name+'.sai';
     try {
       raw=fs.readFileSync(filename).toString();
+      mtime=fs.statSync(filename).mtime;
     } catch (e) {
       ;
     }
-    if (raw) return {success:true,source:raw,info:filename};
+    if (raw) return {success:true,source:raw,context:{
+      name:name,
+      loader:'SAI.GetSourceFromPaths',
+      path:filename,
+      mtime:mtime,
+      fetched:new Date()
+    }};
   }
   return {
     success:false,
-    info:'SAI.GetSourceFromPaths: Could not load '+name+'. Check SAI.config.paths: ['+SAI.config.paths.join(';')+']'
+    context:'SAI.GetSourceFromPaths: Could not load '+name+'. Check SAI.config.paths: ['+SAI.config.paths.join(';')+']'
   };
 }
 
@@ -273,10 +281,10 @@ SAI.GetProtogen = function(name) {
     var s1=new Date();
     var load=SAI.config.Loader(name);
     if (!load.success) {
-      throw new Error('SAI.GetProtogen: Could not load object '+name+', reason given: '+load.info);
+      throw new Error('SAI.GetProtogen: Could not load object '+name+', reason given: '+load.context);
     }
-    var source=SAI.Parse(load.source,undefined,load.info);
-    source='var __loadinfo=decodeURI("'+encodeURI(load.info)+'");\n'+source;
+    var source=SAI.Parse(load.source,undefined,load.context);
+    source='var __context='+JSON.stringify(load.context)+';\n'+source;
     // console.log(source);
     protogen=SAI.Compile(source);
     if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
@@ -294,7 +302,6 @@ SAI.GetProtogen = function(name) {
 //
 SAI.Expression = (source) => {
   var jssource="return "+SAI.Parse(source,undefined,undefined);
-  //console.log(jssource);
   return SAI.Compile(jssource)(this,{},require,_$AI);
 }
 
@@ -340,19 +347,19 @@ SAI.GetAncestors = function(name) {
 // Bind and build an instantiation function.
 //
 SAI.FinalizePrototype = function(proto) {
-  for (var i in proto.__tobelocked)
+  for (var i in proto.__tobelocked) {
     Object.defineProperty(proto,proto.__tobelocked[i],{configurable:false});
+  }
   delete proto.__tobelocked;
-  for (var i in proto.__tobefrozen) 
+  for (var i in proto.__tobefrozen) {
     _$AI.deepFreeze(proto[proto.__tobefrozen[i]]);
+  }
   delete proto.__tobefrozen;
   if (proto.__unverified) {
     for (var i in proto.__contracts) {
       var l=proto.__contracts[i];
       if (undefined===proto[l]) {
         throw new Error("SAI: Contractually required trait '"+l+"' does not exist in object '"+proto.isa+"'.");
-      } else {
-        //console.log("Contract test: "+proto.isa+" does indeed have a "+l+" property.");
       }
     }
     delete proto.__unverified;
@@ -376,8 +383,8 @@ SAI.GetPrototype = function(name,bindings) {
   var proto=SAI.prototypes[name];
   if (!proto) {
     var ancestors=SAI.GetAncestors(name);
-
     var proto=new SAIproto(name);
+
     var adopt=function(name) {
       var list=ancestors[name];
       if (list) {
@@ -388,6 +395,7 @@ SAI.GetPrototype = function(name,bindings) {
       var protogen=SAI.GetProtogen(name);
       protogen(proto,{name:name},require,_$AI);
     }
+
     adopt(name);
     
     Object.defineProperty(proto,"isa",{enumerable: false, value:proto.isa}); // lock it down
@@ -409,9 +417,14 @@ SAI.GetPrototype = function(name,bindings) {
 SAI.GetSource = function(name) {
   var ancestors=SAI.GetAncestors(name);
   var source=
-//    'var _$AI=require("./sailib");\n'+
-    'var proto='+SAIproto.toString()+';\n'+
+    '// Javascript source for '+name+' transpiled by SAI\n'+
+    '//\n'+
+    '// You must provide access to a variable called _$AI with a reference to the sailib.js object\n'+
+    '// e.g. var _$AI=require("sailib.js");\n'+
+    '//\n'+
+    'var proto='+JSON.stringify(SAIproto)+';\n'+
     'var prototype=new proto();\n';
+    'prototype.isof={};\n';
     
   var adopt=function(name) {
     var list=ancestors[name];
@@ -424,7 +437,8 @@ SAI.GetSource = function(name) {
   }
   adopt(name);
 
-  source+='var fn='+SAI.FinalizePrototype.toString()+'(prototype);\n';
+  source+='var FinalizePrototype='+SAI.FinalizePrototype.toString()+';\n';
+  source+='FinalizePrototype(prototype);\n';
   source+='var pro=prototype.constructor;\n';
   source+='exports=pro; try { module.exports=pro; } catch(e) {}\n';
   source+='return pro;\n';

@@ -10,3 +10,6 @@ instance:
 T task
   return 'Child'
 
+Instantiate task
+  super
+  debug "Instantiate ITChild"

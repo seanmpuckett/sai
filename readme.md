@@ -23,7 +23,10 @@ While SAI appears to look a little like Coffeescript (in particular due to their
 
 SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, SAI's _affordances_ tend to emphasise clear code, while making some of the more egregiously obnoxious Javascript hacks and idioms either impossible, or just very difficult. Just because you _can_ do something a certain way in JS doesn't mean you _should_.
 
+
 ### Usage Notes
+
+Note that it is computationally unwise to compile the same SAI expression over and over. Assign things your results to a variable and re-use the compiled Javascript.
 
 #### To evaluate a SAI expression
 
@@ -75,6 +78,7 @@ Result:
     > [ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55 ]
     
 
+
 #### To create a SAI object given a .SAI source file:
 
     var SAI = require('SAI');
@@ -102,11 +106,12 @@ The 20.Keywords file is the reference documentation and is the most definitive i
 
 SAI does not yet have a beautiful and competently written introduction to the language, e.g. "Learn you a SAI for Great Justice," which sucks. Maybe someday this will happen.
 
-### Samples
+### Additional Samples
 
 The _samples_ folder has several sample bits of code, some of which are reproduced here.
 
 You may also look at my solutions to Advent of Code 2017 which were all written in SAI: https://github.com/seanmpuckett/advent-of-code-2017
+
 
 
 #### FizzBuzz
@@ -121,6 +126,27 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
         unless num % .divisor
           set out + .word
       debug out ?? out :: num
+
+#### Permutation generator
+
+    set Permutations process as cards
+      local Pick to process as hand, deck
+        unless deck count
+          yield hand
+        else
+          ply deck as card, index
+            yielding from Pick hand concat card, deck delete index
+      yielding from Pick empty, cards
+
+    iterate from Permutations list apple, banana, cherry
+      debug .
+      
+    > [ 'apple', 'banana', 'cherry' ]
+    > [ 'apple', 'cherry', 'banana' ]
+    > [ 'banana', 'apple', 'cherry' ]
+    > [ 'banana', 'cherry', 'apple' ]
+    > [ 'cherry', 'apple', 'banana' ]
+    > [ 'cherry', 'banana', 'apple' ]
 
 #### Minimal HTTP Server
 

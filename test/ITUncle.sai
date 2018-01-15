@@ -6,3 +6,6 @@ inherit:
 given:
  g 'Uncle'
 
+Instantiate task
+  super
+  debug "Instantiate ITUncle"

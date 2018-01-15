@@ -447,7 +447,7 @@ Object
     code+='var isa=prototype.isa='+isa+';\n';
     isof+='version:'+v+',';
     isof+='isa:isa,';
-    isof+='load:__loadinfo,';
+    isof+='context:__context,';
     code+='prototype.isof['+isa+']={'+isof+'};\n';
     var l;
     if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
