@@ -168,6 +168,7 @@ SAI.GetParser = function() {
         allowedStartRules: ['startFile', 'startExpression'],
         output:'source',
         optimize:'size',
+        trace:0,
         cache:true
       });
       fs.writeFileSync(parserFile,mainParser);
@@ -206,7 +207,7 @@ SAI.GetParser = function() {
     } catch (e) {
       var info='';
       if (e.location) {
-        info+='\nSAI: Syntax error <HERE> in '+fn+'\n\n';
+        info+='\nSAI: Syntax error <HERE> in '+JSON.stringify(fn)+'\n\n';
         var context=SAI.Contexualize(source,e.location.start.offset,e.location.end.offset);
         info+=context+'\n\n'+e.message+'\n\n';
         

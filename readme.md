@@ -43,11 +43,10 @@ Result:
 
     var SAI = require('SAI');
     var ReverseItems=SAI.Expression(`task as items
-      return chain items
-        thru chain .
-          split ''
-          reverse
-          join ''
+      return items thru chain .
+        split ''
+        reverse
+        join ''
     `);
 
 Result:

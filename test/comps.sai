@@ -357,17 +357,17 @@ Execute task
     
   @Test 'concat undef iterable', task
     set a undef concat ((array 1, 2) iterate)
-    set a collect
+    set a to a collect
     return a.0=1 and a.1=2 and a.length=2
 
   @Test 'concat list undef', task
     set a (array 1, 2) concat undef
-    set a collect
+    set a to a collect
     return a.0=1 and a.1=2 and a.length=2
     
   @Test 'concat iterable undef', task
     set a ((array 1, 2) iterate) concat undef
-    set a collect
+    set a to a collect
     return a.0=1 and a.1=2 and a.length=2
 
   @Test 'concat inplace self', task

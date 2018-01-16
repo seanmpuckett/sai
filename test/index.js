@@ -5,9 +5,7 @@ SAI.Configure({
 });
 
 var Test=SAI.Require('Test');
-
-/* Bunch-a test code
-
+/*
 var X=SAI.Expression;
 
 var fruit=X('list apple, banana, cherry');
@@ -15,11 +13,10 @@ var fruit=X('list apple, banana, cherry');
 console.log(fruit);
 
 var ReverseItems=X(`task as items
-  return chain items
-    thru chain .
-      split ''
-      reverse
-      join ''
+  return items thru chain .
+    split ''
+    reverse
+    join ''
 `);
 
 console.log(ReverseItems(fruit));
@@ -39,21 +36,14 @@ for (var i of FibonacciGenerator(10)) {
 console.log(results);
 
 X(`task
-  set Permutations process as cards
-    local Pick to process as hand, deck
-      unless deck count
-        yield hand
-      else
-        ply deck as card, index
-          yielding from Pick hand concat card, deck delete index
-    yielding from Pick empty, cards
-
-  iterate from Permutations list apple, banana, cherry
-    debug .
-        `)();
+  set a blank
+  set a.0 update: b 2
+  debug a
+  `)();
 */
-
-
+  var t1 = new Date();
 var results=new Test();
+var t2 = new Date();
+console.log(`Time: ${t2-t1}`);
 
 

@@ -563,6 +563,7 @@ SAILib.clone = function(a) {
 // {a:1, b:2} overlay {c:3, b:4, a:undefined} -> {a:1, b:4, c:3}
 //
 SAILib.overlay = function(l,r) {// test 'overlay'
+  if (l===undefined) l={};
   if (!isMergable(l)) throw new Error("SAI: Attempt to OVERLAY onto something that's not a collection/iterable.");
   if (!isMergable(r)) throw new Error("SAI: Attempt to OVERLAY with something that's not a collection/iterable.");
   if (!mustIterate(l)) { // left side static
@@ -711,8 +712,9 @@ SAILib.select = function(src,keys) {
 // {a:1, b:2} update {c:3, b:4, a:undefined} -> {a:1, b:4, c:3}
 // 
 SAILib.update = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
-  if (!(isArray(dest)||isObject(dest))) throw new Error("Attempt to MERGE into something that's not a list or traits.");
-  if (!isMergable(keys)) throw new Error("Attempt to MERGE from something that's not a list or traits.");
+  if (dest===undefined) dest={};
+  if (!(isArray(dest)||isObject(dest))) throw new Error("Attempt to UPDATE into something that's not a list or traits.");
+  if (!isMergable(keys)) throw new Error("Attempt to UPDATE from something that's not a list or traits.");
   if (mustIterate(keys)) {
     keys=SAILib.iterator(keys);
     var i=0;
@@ -726,6 +728,7 @@ SAILib.update = function(dest,keys) { // ITERATORS ONLY ON RIGHT SIDE
       if (v!==undefined) dest[i]=v;
     }
   }
+  return dest;
 }
 
 // delete

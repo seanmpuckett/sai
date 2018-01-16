@@ -106,10 +106,15 @@ Execute task
     set a ?> 5
     return a
     
-  @Match 'self via', 3, task
-    set a to 3.141
-    set a via ~Math.floor
-    return a
+  @Test 'self update undef', task
+    set a to undefined
+    set a update: b 2
+    return a.b = 2
+    
+  @Test 'self update undef child', task
+    set a to blank
+    set a.1 update: b 2
+    return a.1.b = 2
     
   @Test 'self update', task
     set a to: a 1, b 2, c 3
@@ -148,6 +153,10 @@ Execute task
       audit it
     return a
 
+  @Test 'set collect?', task
+    set a (: 1, 2, 3) iterate
+    set b a collect
+    return b.1 = 2 and b.length = 3
 
   @Match 'self default set', 2, task
     set a to 2

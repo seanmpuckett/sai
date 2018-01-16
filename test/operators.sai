@@ -247,6 +247,11 @@ Execute task
 
 //  @Test 'delete array iterator', task
     
+  @Test 'overlay undef', task
+    set a to undefined
+    set b to a overlay: b 3, c 4
+    return b.b=3 and b.c=4
+
   @Test 'overlay static', task
     set a to traits a 1, b 2
     set b to a overlay traits b 3, c 4
@@ -330,24 +335,11 @@ Execute task
 
 
 
-  @Match 'via', 3, task
-    return 3.141 via ~Math.floor
-
   @Test 'default unset', task
     return undefined default true
 
   @Test 'default set', task
     return not (false default true)
-
-  @Test 'initialized unset', task
-    set a to undefined
-    set b to a initialized true
-    return b=true and a=true
-    
-  @Test 'initialized set', task
-    set a to false
-    set b to a initialized true
-    return b=false and a=false
 
   @Match 'compare less', -1, task
     return 0 <=> 1

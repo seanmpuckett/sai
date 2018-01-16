@@ -193,8 +193,8 @@
     '?>': '^{1} = Math.max(^{1},^{2})', // test 'self ?>'
     '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
     
-    via: '^{1} = ^{2}(^{1})', // test 'self via'
-    update: '_$AI.update(^{1},^{2})', // test 'self update'
+//    via: '^{1} = ^{2}(^{1})', // test 'self via'
+    update: '^{1} = _$AI.update(^{1},^{2})', // test 'self update'
     delete: '_$AI.delete(^{1},^{2})', // test 'self delete*'
     default: 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
     concat: '^{1} = _$AI.concat(^{1},^{2}, true)', // test 'self concat inplace*'
@@ -577,7 +577,7 @@ Line
  
 
 
-
+ 
 
 MiscStatement
  = BREAK _ { return 'break;\n'; }
@@ -770,7 +770,7 @@ LocalAdj
 
 
 UnOp // test 'self*'
- = '-' / INC / DEC  / DELETE / NOTB / NOT / COLLECT
+ = '-' / INC / DEC  / DELETE / NOTB / NOT 
 
 Itselfop // test 'self*'
  = '+' / '-' 
@@ -779,8 +779,8 @@ Itselfop // test 'self*'
  / AND / OR / XOR / NAND / NOR
  / '?>' / '?<'
  / UPDATE / THRU / DELETE
- / VIA / DEFAULT
- / CONCAT / COLLECT 
+ / DEFAULT
+ / CONCAT 
 
 
 
@@ -1269,7 +1269,6 @@ Comprehension
  / IterateComprehension
  / CollectComprehension
  / SetComprehension
- / ViaComprehension
  / ObserveComprehension
  / OtherComprehension
  / FilterComprehension 
@@ -1400,14 +1399,14 @@ FilterComprehension2
     return ['_$AI.filter(' , ','+x+')' ];
   }
 
-
-ViaComprehension
+/*
+ViaComprehensionUNUSED
  = VIA Sep x:ViaComprehension2 { return x }
-ViaComprehension2
+ViaComprehension2UNUSED
  = x:Expression { // test 'via inline*'
     return [ '_$AI.alter(' , ','+x+')']; 
   }
-  
+*/  
 
 SetComprehension
  = SET Sep x:AlterComprehension2 { return x }
@@ -1535,7 +1534,7 @@ SortDirection
 
 Logical
  = l:Comparison _ o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
- / l:Comparison _ VIA _ f:VerbValue { return '('+f[0]+f[1]+')('+l+')' } // test 'via'
+// / l:Comparison _ VIA _ f:VerbValue { return '('+f[0]+f[1]+')('+l+')' } // test 'via'
  / c:Comparison _ XOR _ l:Logical  { return '(_$AI.xor('+c+','+l+'))' } // test 'xor' 
  / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
  / l:Comparison _ NOR _ f:Logical { return '(!('+l+' || '+f+'))' } // test 'nor'
@@ -1545,10 +1544,6 @@ Logical
  / c:Comparison _ DEFAULT _ v:Logical  {  // test 'default*'
      SafetyFetch=true; 
      return RV('((undefined!==($_b=^{c}))?$_b:^{v})',{c:c,v:v}); 
-   } 
- / c:Comparison _ INITIALIZED _ v:Logical  { // test 'initialized*'
-     SafetyFetch=true; 
-     return RV('((undefined!==($_b=^{c}))?$_b:(^{c}=^{v}))',{c:c,v:v}); 
    } 
  / v:Comparison _ { return v }
 
@@ -1897,7 +1892,6 @@ ReservedWords
  / HAS 
  / HIGHEST 
  / INC
- / INITIALIZED
  / INTO
  / ISNT
  / ISNAN
@@ -1940,7 +1934,6 @@ ReservedWords
  / UPDATE
  / USING
  / VALUES
- / VIA
  / XORB
  / XOR
  / YIELDING
@@ -1997,7 +1990,6 @@ GIVEN = 'given'/'GIVEN'
 HAS = 'has'/'HAS'
 HIGHEST = 'highest'/'HIGHEST'
 IF = 'if'/'IF'
-INITIALIZED = 'initialized'/'INITIALIZED'
 INFINITY = 'Infinity'
 INSTANCE = 'instance'/'INSTANCE'
 INTO = 'into'/'INTO'
@@ -2063,7 +2055,6 @@ UNDEFINED = 'undefined'/'UNDEFINED'
 UPDATE = 'update'/'UPDATE'
 USING = 'using'/'USING'
 VALUES = 'values'/'VALUES'
-VIA = 'via'/'VIA'
 WHILE = 'while'/'WHILE'
 WITH = 'with'/'WITH'
 XOR  = 'xor'/'XOR'

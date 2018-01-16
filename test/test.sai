@@ -1,5 +1,8 @@
-
-
+reference:
+  fs require('fs')
+  readline require('readline')
+  stream require('stream')
+  
 object Test
 
 instance:
@@ -7,11 +10,7 @@ instance:
   fail empty
   ids blank
 
-
-
 Instantiate task
-
-  debug 'Test coverage is really minimal right now. So is the documentation.'
 
   set tests to list
     Literals
@@ -43,6 +42,21 @@ Instantiate task
     ~process.exit 1
   else
     debug 'SUCCESS'
-    ~process.exit 0
 
+// ok just ignore this right now
+AnalyseParseTrace task
+  set
+    filename 'parse.trace'
+    instream ~fs.createReadStream(filename)
+    outstream new ~stream
+    rl ~readline.createInterface(instream,outstream)
+    ruletally blank
+
+  rl.on 'line', task as line
+    set line from line.split /\s+/
+    set ruletally[line.2] to (self default 0)+1
+
+  rl.on 'close', task
+    debug ruletally enlist by .1 desc
+    
 
