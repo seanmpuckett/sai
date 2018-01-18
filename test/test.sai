@@ -12,7 +12,10 @@ instance:
 
 Instantiate task
 
+  //@AnalyseParseTrace
+
   set tests to list
+    Promises
     Literals
     Syntax
     Generators
@@ -28,7 +31,6 @@ Instantiate task
     CompOrderOps
     Inheritance
     
-//  set inactive to list
 
 
   ply tests
@@ -53,10 +55,10 @@ AnalyseParseTrace task
     ruletally blank
 
   rl.on 'line', task as line
-    set line from line.split /\s+/
-    set ruletally[line.2] to (self default 0)+1
+    with line.split(/\s+/)
+      set ruletally[.2] to (self default 0)+1
 
   rl.on 'close', task
-    debug ruletally enlist by .1 desc
+    debug ruletally enlist by .1 desc limit 50 
     
 

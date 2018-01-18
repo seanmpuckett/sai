@@ -1,5 +1,16 @@
 ## Change log
 
+### 0.1.4
+
+#### Breaking changes
+
+ - removed LOCAL as a modifier for SET; instead LOCAL must now be used in place of SET, e.g. instead of `set local a to true` you now use `local a to true` 
+ - LOCAL now uses javascript's LET instead of VAR to ensure tighter, more predictable scoping.
+
+#### Enhancements
+
+ - Added sample code for PROMISE.  Also added test code for it but it's not executing right now because the test harness isn't async-ready.
+ 
 ### 0.1.3
 
 #### Breaking changes

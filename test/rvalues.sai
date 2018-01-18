@@ -72,8 +72,8 @@ Execute task
     count down 2 
       return counter = 1
 
-  @Test 'b=1', task
-    set local b to 1
+  @Test 'local b=1', task
+    local b to 1
     return b = 1
 
   @Test '@b=1', task
@@ -88,8 +88,8 @@ Execute task
     each list traits b 1 
       return .b = 1
 
-  @Test '$b=1', task
-    set local f to task expects $b
+  @Test 'local $b=1', task
+    local f to task expects $b
       return $b = 1
     return from f: b 1
   
@@ -106,17 +106,17 @@ Execute task
       return false
     return true
 
-  @Test 'b.cow = 1', task
-    set local b to traits cow 1
+  @Test 'local b.cow = 1', task
+    local b to traits cow 1
     return b.cow = 1
 
-  @Test 'b|a = 1', task
-    set local b to traits cow 1
+  @Test 'local b|a = 1', task
+    local b to traits cow 1
     set a to 'cow'
     return b|a = 1
 
-  @Test 'b[a] = 1', task
-    set local b to traits cow 1
+  @Test 'local b[a] = 1', task
+    local b to traits cow 1
     set a to 'cow'
     return b[a] = 1
 

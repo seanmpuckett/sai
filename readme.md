@@ -165,3 +165,31 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
           debug 'Example app listening at http://${.address}:${.port}'       
       
    
+#### Promises sample
+
+    set 
+      willIGetNewPhone promise as isMomHappy
+        if isMomHappy
+          resolve:
+            brand 'Wangdoodle'
+            colour 'paisley'
+        else
+          reject new ~Error 'Mom is not happy.'
+    
+      showOff promise as phone
+        with phone
+          debug 'Hey friend, I have a new ${.colour} ${.brand} phone'
+  
+      askMom task as happiness
+        chain from willIGetNewPhone happiness
+          then showOff
+          catch promise as e
+            debug '${e}\nNo phone for you.'
+      
+    askMom true
+    askMom false
+    
+    > Hey friend, I have a new paisley Wangdoodle phone
+    > Error: Mom is not happy.
+    > No phone for you.
+    

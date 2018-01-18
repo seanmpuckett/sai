@@ -233,3 +233,23 @@ Execute task
     return a.a=1 and a.b=2 and a|1='a' and a|3='b' and a|0 is undefined and a|2 is undefined
 
 
+  @Match 'local 1', 1, task
+    local a 1
+    if a is 1
+      local a 2
+      unless a is 2
+        return false
+    return a
+    
+  @Test 'multi-set', task
+    set a, b to: 1, 2
+    return a=1 and b=2
+
+  @Test 'local multi-set', task
+    local a, b to: 1, 2
+    if a is 1
+      local a, b to: 3, 4
+      unless a=3 and b=4
+        return false
+    return a=1 and b=2
+  

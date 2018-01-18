@@ -232,12 +232,12 @@
           },
           function(x, o, b) {
             return TaskClauseFormatter({
-              expects:x,
-              as:o,
-              block:b,
-              kind:'function',
-              preface:'return new Promise(function($_resolve,$_reject) {',
-              postface:'});'
+              expects:x
+              ,as:o
+              ,block:b
+              ,kind:'function'
+              ,preface:'return new Promise(function($_resolve,$_reject) {'
+              ,postface:'});'
             });
           },
           function(i, t) { return [i[1],t?t:true] },
@@ -328,50 +328,47 @@
           function(t, v) { return v },
           function(t, v) { return v.concat(t) },
           function(v) { return v.reduce(function(a,b){return a.concat(b)}) },
-          function(local, l, o, e) {
-             local=local?'var ':'';
-             var code='';
-             for (var i in l) {
-               code+=local+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
-             }
-             return code;
-           },
-          function(local, l, e) {
-             local=local?'var ':'';
-             if (l.length==1) return local+l[0]+'='+RV(e,{self:l[0]})+';\n';
-             var code='var $_='+e+';\n';
-             for (var i in l) {
-               code+=local+l[i]+'=$_['+i+'];\n';
-             }
-             return code;
-           },
-          function(local, l, o) {
-             var code='';
-             local=local?'var ':'';
-             for (var i in l) {
-               code+=local+RV(unops[o],{'1':l[i]})+';\n';
-             }
-             return code;
-           },
           function(l, o, e) {
              var code='';
              for (var i in l) {
-               code+='var '+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
+               code+=RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
              }
              return code;
            },
           function(l, e) {
-             if (l.length==1) return 'var '+l[0]+'='+RV(e,{self:l[0]})+';\n';
+             if (l.length==1) return l[0]+'='+RV(e,{self:l[0]})+';\n';
              var code='var $_='+e+';\n';
              for (var i in l) {
-               code+='var '+l[i]+'=$_['+i+'];\n';
+               code+=l[i]+'=$_['+i+'];\n';
              }
              return code;
            },
           function(l, o) {
              var code='';
              for (var i in l) {
-               code+='var '+RV(unops[o],{'1':l[i]})+';\n';
+               code+=RV(unops[o],{'1':l[i]})+';\n';
+             }
+             return code;
+           },
+          function(l, o, e) {
+             var code='';
+             for (var i in l) {
+               code+='let '+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
+             }
+             return code;
+           },
+          function(l, e) {
+             if (l.length==1) return 'let '+l[0]+'='+RV(e,{self:l[0]})+';\n';
+             var code='var $_='+e+';\n';
+             for (var i in l) {
+               code+='let '+l[i]+'=$_['+i+'];\n';
+             }
+             return code;
+           },
+          function(l, o) {
+             var code='';
+             for (var i in l) {
+               code+='let '+RV(unops[o],{'1':l[i]})+';\n';
              }
              return code;
            },
@@ -1545,7 +1542,7 @@
           peg$decode("%;\xDC/U#;\xDF/L$;\u0165/C$;\xDF/:$;2/1$;\u0166/($8&:$&!!)(&'#(%'#($'#(#'#(\"'#&'#.h &%;\xDC/^#28\"\"6879/O$;\xDC/F$;4/=$%<;\xDF=/##&'!&&#/($8%::%!!)(%'#($'#(#'#(\"'#&'#"),
           peg$decode("%$;3/&#0#*;3&&&#/' 8!:;!! )"),
           peg$decode("%;4/1#;\xDF/($8\":$\"!!)(\"'#&'#"),
-          peg$decode(";?._ &;F.Y &;S.S &;V.M &;D.G &;6.A &;;.; &;:.5 &;E./ &;C.) &;5.# &;R"),
+          peg$decode(";?.Y &;F.S &;S.M &;V.G &;D.A &;6.; &;;.5 &;:./ &;E.) &;5.# &;R"),
           peg$decode("%;\xF2/0#;\xDC/'$8\":<\" )(\"'#&'#.t &%;\xFA/0#;\xDC/'$8\":=\" )(\"'#&'#.W &%;\u0136/0#;\xDC/'$8\":>\" )(\"'#&'#.: &%;\u012E/0#;\xDC/'$8\":?\" )(\"'#&'#"),
           peg$decode("%;7/\xD0#;\x90.\" &\"/\xC2$;\xDF/\xB9$;\u0165/\xB0$$%;\xDF/3#;8/*$8\":@\"#'& )(\"'#&'#/@#0=*%;\xDF/3#;8/*$8\":@\"#'& )(\"'#&'#&&&#/f$%;\xDF/4#;9/+$8\":A\"$'&# )(\"'#&'#.\" &\"/=$;\xDF/4$;\u0166/+$8(:B($'&#\")(('#(''#(&'#(%'#($'#(#'#(\"'#&'#"),
           peg$decode("%;\u014A/:#;\xDB/1$;\x93/($8#:C#! )(#'#(\"'#&'#"),
@@ -1567,7 +1564,7 @@
           peg$decode("%;J/\xA4#;\xDC/\x9B$$%2U\"\"6U7V/D#;\xDC/;$;J/2$;\xDC/)$8$:`$\"'!)($'#(#'#(\"'#&'#0T*%2U\"\"6U7V/D#;\xDC/;$;J/2$;\xDC/)$8$:`$\"'!)($'#(#'#(\"'#&'#&/)$8#:a#\"\" )(#'#(\"'#&'#"),
           peg$decode("%;G/1#;\xDF/($8\":$\"!!)(\"'#&'#"),
           peg$decode("%$;H/&#0#*;H&&&#/' 8!:b!! )"),
-          peg$decode("%;O.\" &\"/a#;\xDC/X$;[/O$;\xDC/F$;Q/=$;\xDC/4$;\x93/+$8':c'$&$\" )(''#(&'#(%'#($'#(#'#(\"'#&'#.\xD8 &%;O.\" &\"/\x89#;\xDC/\x80$;X/w$;\xDC/n$;\u0151.\" &\".A &%<;\u0112=/##&'!&&#./ &%<;\xF6=/##&'!&&#/<$;\xDC/3$;\x93/*$8':d'#&$ )(''#(&'#(%'#($'#(#'#(\"'#&'#.] &%;O.\" &\"/N#;\xDC/E$;[/<$;\xDC/3$;P/*$8%:e%#$\" )(%'#($'#(#'#(\"'#&'#"),
+          peg$decode("%;[/N#;\xDC/E$;Q/<$;\xDC/3$;\x93/*$8%:c%#$\" )(%'#($'#(#'#(\"'#&'#.\xA8 &%;X/v#;\xDC/m$;\u0151.\" &\".A &%<;\u0112=/##&'!&&#./ &%<;\xF6=/##&'!&&#/;$;\xDC/2$;\x93/)$8%:d%\"$ )(%'#($'#(#'#(\"'#&'#.E &%;[/;#;\xDC/2$;P/)$8#:e#\"\" )(#'#(\"'#&'#"),
           peg$decode("%;N/\xA4#;\xDC/\x9B$$%2U\"\"6U7V/D#;\xDC/;$;N/2$;\xDC/)$8$:`$\"'!)($'#(#'#(\"'#&'#0T*%2U\"\"6U7V/D#;\xDC/;$;N/2$;\xDC/)$8$:`$\"'!)($'#(#'#(\"'#&'#&/)$8#:a#\"\" )(#'#(\"'#&'#"),
           peg$decode("%;K/1#;\xDF/($8\":$\"!!)(\"'#&'#"),
           peg$decode("%$;L/&#0#*;L&&&#/' 8!:b!! )"),
@@ -1692,7 +1689,7 @@
           peg$decode("%;\xF6/M#;\xDC/D$;\x93/;$;\xDC/2$;\xC5/)$8%:\u016D%\"\" )(%'#($'#(#'#(\"'#&'#"),
           peg$decode("%;\xDF/Y#;\u0165/P$;\xDF/G$$;\xC6/&#0#*;\xC6&&&#/1$;\u0166/($8%:\u016E%!!)(%'#($'#(#'#(\"'#&'#"),
           peg$decode("%;\x95/:#;\xDC/1$;\xDF/($8#:\u016F#!\")(#'#(\"'#&'#.\\ &%;\xBD/R#;\xDC/I$;x.\" &\"/;$;\xDC/2$;\xDF/)$8%:\u0170%\"$\")(%'#($'#(#'#(\"'#&'#"),
-          peg$decode("%;\xFE/R#;\xDC/I$;\xB8/@$;\xDC/7$;x.\" &\"/)$8%:\u0171%\"\" )(%'#($'#(#'#(\"'#&'#.e &%;\u012D/[#;\xDB/R$;\xDC/I$;\xB8/@$;\xDC/7$;x.\" &\"/)$8&:\u0172&\"\" )(&'#(%'#($'#(#'#(\"'#&'#"),
+          peg$decode("%;\xFE/R#;\xDC/I$;\xB8/@$;\xDC/7$;x.\" &\"/)$8%:\u0171%\"\" )(%'#($'#(#'#(\"'#&'#.\\ &%;\u012D/R#;\xDC/I$;\xB8/@$;\xDC/7$;x.\" &\"/)$8%:\u0172%\"\" )(%'#($'#(#'#(\"'#&'#"),
           peg$decode("%<;\xDF=/##&'!&&#.G &%<;\xE3=/##&'!&&#.5 &%<2\xDF\"\"6\xDF7\xE0=/##&'!&&#"),
           peg$decode("%$4\u0173\"\"5!7\u0174/,#0)*4\u0173\"\"5!7\u0174&&&#/' 8!:\u0175!! )"),
           peg$decode("%;\xCB/7#2\u0176\"\"6\u01767\u0177/($8\":\u0178\"!!)(\"'#&'#.# &;\xCB"),
@@ -2562,7 +2559,9 @@
         if (!o.preface) o.preface='';
         if (!o.postface) o.postface='';
         locals=locals.length?('var '+locals.join(',')+';'):'';
-        return o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+o.block+FunStop()+o.postface+'}';
+        var code = o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+o.block+FunStop()+o.postface+'}';
+        if (o.execute) code+='()';
+        return code;
       }
 
       

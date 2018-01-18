@@ -281,7 +281,9 @@
     if (!o.preface) o.preface='';
     if (!o.postface) o.postface='';
     locals=locals.length?('var '+locals.join(',')+';'):'';
-    return o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+o.block+FunStop()+o.postface+'}';
+    var code = o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+o.block+FunStop()+o.postface+'}';
+    if (o.execute) code+='()';
+    return code;
   }
 
   
@@ -533,12 +535,12 @@ IteratorClause
 PromiseClause
 = x:Expects? _ o:MultiOutput? _ b:Block {
   return TaskClauseFormatter({
-    expects:x,
-    as:o,
-    block:b,
-    kind:'function',
-    preface:'return new Promise(function($_resolve,$_reject) {',
-    postface:'});'
+    expects:x
+    ,as:o
+    ,block:b
+    ,kind:'function'
+    ,preface:'return new Promise(function($_resolve,$_reject) {'
+    ,postface:'});'
   });
 }
 
@@ -571,7 +573,7 @@ Line
  / TryStatement
  / ThrowStatement
  / SwapStatement
- / LocalStatement
+ // LocalStatement
  / MiscStatement
  / VerbStatement
  
@@ -703,28 +705,25 @@ SetBlock
  = v:(SetLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
 SetTerm
- = local:LocalAdj? _ l:RValues _ o:Itselfop _ e:Expression {
-   local=local?'var ':'';
+ = l:RValues _ o:Itselfop _ e:Expression {
    var code='';
    for (var i in l) {
-     code+=local+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
+     code+=RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
    }
    return code;
  }
- / local:LocalAdj? _ l:LValues _ (TO?/&FROM/&CHAIN) _ e:Expression {
-   local=local?'var ':'';
-   if (l.length==1) return local+l[0]+'='+RV(e,{self:l[0]})+';\n';
+ / l:LValues _ (TO?/&FROM/&CHAIN) _ e:Expression {
+   if (l.length==1) return l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
-     code+=local+l[i]+'=$_['+i+'];\n';
+     code+=l[i]+'=$_['+i+'];\n';
    }
    return code;
  }
- / local:LocalAdj? _ l:RValues _ o:UnOp {
+ / l:RValues _ o:UnOp {
    var code='';
-   local=local?'var ':'';
    for (var i in l) {
-     code+=local+RV(unops[o],{'1':l[i]})+';\n';
+     code+=RV(unops[o],{'1':l[i]})+';\n';
    }
    return code;
  }
@@ -743,22 +742,22 @@ LocalTerm
  = l:RValues _ o:Itselfop _ e:Expression {
    var code='';
    for (var i in l) {
-     code+='var '+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
+     code+='let '+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
    }
    return code;
  }
  / l:LValues _ (TO?/&FROM/&CHAIN) _ e:Expression {
-   if (l.length==1) return 'var '+l[0]+'='+RV(e,{self:l[0]})+';\n';
+   if (l.length==1) return 'let '+l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
-     code+='var '+l[i]+'=$_['+i+'];\n';
+     code+='let '+l[i]+'=$_['+i+'];\n';
    }
    return code;
  }
  / l:RValues _ o:UnOp {
    var code='';
    for (var i in l) {
-     code+='var '+RV(unops[o],{'1':l[i]})+';\n';
+     code+='let '+RV(unops[o],{'1':l[i]})+';\n';
    }
    return code;
  }
@@ -1731,7 +1730,7 @@ NewObject
  = CREATE _ v:Value _ o:ParameterList?  { 
    return '_$AI.new('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
- / NEW Sep _ v:Value _ o:ParameterList? {
+ / NEW _ v:Value _ o:ParameterList? {
    return 'new '+v+'('+(o?o[1]:'')+')'; 
  }
 

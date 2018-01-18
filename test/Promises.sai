@@ -1,0 +1,39 @@
+
+object Promises
+
+inherit:
+  Harness
+
+Execute task
+  nop
+  
+  // Isn't much of a test bc harness doesn't work with async stuff yet. HAH
+
+  //debug @TestPromise.toString()
+  
+  //@TestPromise
+
+
+TestPromise task
+
+  set 
+    willIGetNewPhone promise as isMomHappy
+      if isMomHappy
+        resolve:
+          brand 'Wangdoodle'
+          colour 'paisley'
+      else
+        reject new ~Error 'Mom is not happy.'
+      
+    showOff promise as phone
+      with phone
+        debug 'Hey friend, I have a new ${.colour} ${.brand} phone'
+    
+    askMom task as happiness
+      chain from willIGetNewPhone happiness
+        then showOff
+        catch promise as e
+          debug '${e}\nNo phone for you.'
+        
+  askMom true
+  askMom false

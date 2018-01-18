@@ -8,23 +8,23 @@ Execute task
 
   // returns true for odd iterations, undefined for even including 0
   set OddTrue to process
-    set local i to 0
+    local i to 0
     while true
       yield i%2 ?? true :: undefined
       inc i
 
   set Odds to process
-    set local i to 1
+    local i to 1
     while true
       yield i
       set i + 2
 
   // returns Fibbonaci sequence
   set Fibb to process
-    set
-      local a to 1
-      local b to 0
-      local c to 0
+    local
+      a to 1
+      b to 0
+      c to 0
     while true
       set 
         c to a+b
