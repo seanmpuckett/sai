@@ -487,6 +487,13 @@ Execute task
     return friends into 0 using task as acc,val
       return acc+val.age
     
+  @Test 'into empty generator', task
+    set gen process
+      nop
+    set a gen into 1 sum + .
+    set a self collect 
+    return a.0 is 1 and a.length is 1
+    
   @Match 'age total into', 185, task
     return friends into 0
       set sum + .age
@@ -578,9 +585,94 @@ Execute task
     set a to :(:1,'a'),(:3,1),(:5); iterate entrait
     return a|1='a' and a|3=1 and a|5 is undefined
   
-  
   @Test 'enlist entrait', task
     set a to: fred 1, bill 2, cal 3; enlist entrait
     return a.fred=1 and a.bill=2 and a.cal=3
+  
+  @Test 'limit undef', task
+    set a to undefined limit 1
+    return a is undefined
+    
+  @Test 'limit no rows', task
+    set a to: 1, 2, 3; limit 0
+    return a.length is 0
+  
+  @Test 'limit no gen', task
+    set a to: 1, 2, 3; iterate limit 0
+    if typeof a is 'function'
+      set a self collect
+      return a.length is 0
+    return false
+  
+  @Test 'limit entire generator', task
+    set gen to: 1, 2, 3; iterate
+    set a to gen limit 0, undefined
+    set a self collect
+    return a.length is 3 and a.1 is 2
+    
+  @Test 'limit chopped generator', task
+    set gen to: 1, 2, 3; iterate
+    set a to gen limit 0, 10
+    set a self collect
+    return a.length is 3 and a.1 is 2
+    
+  @Test 'limit on object', task
+    try
+      set a to: a 1, b 2; limit 1
+    catch
+      return true
+    return false
+    
+  @Test 'limit on value unlimited', task
+    set a to 1 limit 1
+    return a.length is 1 and a.0 is 1
+    
+  @Test 'limit on value from the end', task
+    set a to 1 limit -1
+    return a.length is 1 and a.0 is 1
+    
+  @Test 'limit on value from the end chopped', task
+    set a to 1 limit -1,0
+    return a.length is 0
+    
+  @Test 'limit on value limited', task
+    set a to 1 limit 0
+    return a.length is 0 
+    
+  @Test 'limit on value out of range', task
+    set a to 1 limit -2,1
+    return a is undefined
+    
+  @Test 'first last on undefined', task
+    set a to undefined first
+    set b to undefined last
+    return a is undefined and b is undefined
+    
+  @Test 'first last on value', task
+    set a to 1 first
+    set b to 1 last
+    return a is 1 and b is 1
+
+  @Test 'first last on object', task
+    try
+      set a to: a 1, b 2; first
+    catch
+      try
+        set b to: a 1, b 2; last
+      catch
+        return true
+    return false
+
+  @Test 'first on generator', task
+    set a to: 1, 2, 3; iterate first
+    return a is 1
+
+  @Test 'last on generator', task
+    set a to: 1, 2, 3; iterate last
+    return a is 3
+    
+  
+    
+    
     
     

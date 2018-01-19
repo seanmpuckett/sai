@@ -153,6 +153,11 @@ Execute task
     set c to copy a
     return (a is b) and (a isnt c) and (c.d=1) and (c.e=2)
     
+  @Test 'copy value', task
+    set a to copy 1 
+    return a is 1
+    
+    
   @Test 'keys comp undefined', task
     set a to undefined keys
     return ~Array.isArray(a) and (a.length = 0)
@@ -252,6 +257,16 @@ Execute task
     set b to a overlay: b 3, c 4
     return b.b=3 and b.c=4
 
+  @Test 'overlay inappropriate', task
+    try
+      set a to 1 overlay: 1, 2, 3
+    catch
+      try
+        set a to: 1, 2, 3; overlay 1
+      catch
+        return true
+    return false
+
   @Test 'overlay static', task
     set a to traits a 1, b 2
     set b to a overlay traits b 3, c 4
@@ -271,6 +286,18 @@ Execute task
     set b to (list 1,2,3,4; iterate) overlay (OddTrue() limit 4) collect
     return b[0]=1 and b[1]=true and b[2]=3 and b[3]=true
 
+  @Test 'select invalid', task
+    try
+      set a to 1 select 2
+    catch
+      return true
+    return false
+    
+  @Test 'select array value', task
+    set a to list a,b,c,d
+    set c to a select 1
+    return c.length=1 and c.0='b' 
+    
   @Test 'select array array', task
     set a to list a,b,c,d
     set b to: 1,3
@@ -333,7 +360,24 @@ Execute task
     set b to a select traits a 1, c 2
     return b.a=1 and b.c=3 and b.b is undefined
 
+  @Test 'collect undef', task
+    set a to undefined collect
+    return a is undefined
 
+  @Test 'generator collect', task
+    set gen3 to process 
+      count 3
+        yield counter
+    set a to gen3 collect
+    return a.length is 3 and a.2 is 2 
+
+  @Test 'select generator ', task
+    set gen3 to process 
+      count 3
+        yield counter
+    set a to gen3 select: 1
+    set a self collect
+    return a.length is 1 and a.0 is 1 
 
   @Test 'default unset', task
     return undefined default true

@@ -111,6 +111,18 @@ Execute task
     set a update: b 2
     return a.b = 2
     
+  @Test 'self update invalid', task
+    set a 1
+    set b: 1, 2
+    try
+      set a update b
+    catch
+      try
+        set b update a
+      catch
+        return true
+    return false
+    
   @Test 'self update undef child', task
     set a to blank
     set a.1 update: b 2
@@ -121,6 +133,25 @@ Execute task
     set a update: b 4, d 5
     return a.a=1 and a.b=4 and a.c=3 and a.d=5
     
+  @Test 'self delete invalid', task
+    set a to 1
+    set b to: 1, 2
+    try
+      set a delete b
+    catch
+      return true
+    return false
+  
+  @Test 'self delete generator', task
+    set a to: 1, 2, 3; iterate
+    set b to: 1, 2
+    try
+      set a delete b
+    catch
+      return true
+    return false
+  
+  
   @Test 'self delete traits', task
     set a to: a 1, b 2, c 3
     set a delete: b 4, d 5
@@ -135,6 +166,11 @@ Execute task
     set a to: a 1, b 2, c 3
     set a delete 'b'
     return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
+
+  @Test 'self delete number from traits', task
+    set a to: '1' 1, '2' 2, '3' 3
+    set a delete 2
+    return a.1=1 and a.2 is undefined and a.3=3 and a.4 is undefined
 
   @Test 'self delete iterable', task
     set a to: a 1, b 2, c 3

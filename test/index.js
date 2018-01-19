@@ -1,6 +1,5 @@
 var SAI = require('../SAI');
 SAI.Configure({
-  options:{speedometer:true},
   paths:[__dirname]
 });
 

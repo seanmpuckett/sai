@@ -1,5 +1,18 @@
 ## Change log
 
+### 0.1.5
+
+#### Enhancements
+
+ - The default implementation for DEBUG now goes through SAILib.debug which offers some more clarity on various object types
+ - "canIterate" internal check now returns TRUE for functions, assuming that any function used in this way is likely a generator that will want to be invoked. (Current implementation will invoke generators automatically, this just ties up a a loose end.)
+ - added issues.md -- list of current issues
+ - full coverage testing of runtime library methods in SAILib
+ 
+#### Bug fixes
+
+ - Several impossible code paths in SAILib removed
+ 
 ### 0.1.4
 
 #### Breaking changes
@@ -24,10 +37,6 @@
  - expand usage of DEFAULT to allow usage in an lvalue. This sets the variable ONLY if its current value is undefined. As in `set a default 4`
  - both OVERLAY and UPDATE will now silently initialize an undefined lvalue to BLANK before attempting to merge
  - tidy up example code
-
-#### Ponderables
-
- - considering removal of pipe accessor as it can very easily parse in a way that is unclear
 
 ### 0.1.2 
 

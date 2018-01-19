@@ -33,7 +33,7 @@ try {
 
 var SAIconfig = {
   verbs: {
-    debug: 'console.log',
+    debug: '_$AI.debug',
     require: 'require',
     assert: '_$AI.assert'
   },
@@ -488,4 +488,5 @@ SAI.Configure = function(config) {
     SAI.config.Loader=config.Loader;
   }
 }
+
 

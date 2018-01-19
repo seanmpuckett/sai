@@ -81,6 +81,11 @@ Execute task
       return it
     return false
 
+  @Test 'is null an object (narrator: it isnt)', task
+    set a null
+    set a self by asc
+    return a is null
+
 Iterator process
   yield 1
   
