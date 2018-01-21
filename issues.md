@@ -5,6 +5,7 @@
 
  - tone down rhetoric in readme
  - tutorial
+ - compiler
  
 
 ### Toolchain
@@ -21,15 +22,19 @@
 
 #### Enhancement
 
- - 100% test coverage of library
+ - 100% test coverage of parser -- is this even practical?
  - integrate support for Map and Set
  - SUPER does not properly handle multiple inheritance, instead only calling the last applied parent
-
+ - verify contents of reserved words list
+ - ''' here document operator needs to support indenting
+ - need a way to specify code to be run immediately, e.g. a "main" function to be invoked
+ - source code lookup for exceptions or debugging
+ - state machine construct
+  
 #### Bugs
 
  - parser can't handle slashes in comments 
 
 #### Breaking
 
- - considering eliminating upper-case variants of keywords as being unnecessary
  - considering removal of pipe accessor as it can very easily parse in a way that is unclear

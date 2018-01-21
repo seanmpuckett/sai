@@ -12,4 +12,4 @@ T task
 
 Instantiate task
   super
-  debug "Instantiate ITChild"
+//  debug "Instantiate ITChild"

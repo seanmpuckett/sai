@@ -50,22 +50,7 @@ var SAIconfig = {
 //
 //  runtime library functions
 
-var _$AI=require('./sailib');
-
-
-//////////////////////////////////////////////////////////////////////////////////
-//
-//  object prototype
-
-var SAIproto = function() {
-  this.Constructor=function(){};
-  this.__tobelocked=[];
-  this.__tobefrozen=[];
-  this.__contracts=[];
-  this.__unverified=true;
-  this.isof={};
-}
-
+var _$AI=require('sai-library');
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -80,6 +65,7 @@ SAI.protogens={};
 SAI.isa={};
 SAI.config=SAIconfig;
 SAI.persist={globalcount:1}; // internal
+SAI.proto=_$AI._prototype;
   
 // Dedenter
 //
@@ -319,7 +305,7 @@ SAI.GetAncestors = function(name) {
     var leaf=heritage.shift();
     if (!nodupes[leaf]) {
       nodupes[leaf]=true;
-      var obj=new SAIproto(name); 
+      var obj=new SAI.proto(name); 
       var protogen=SAI.GetProtogen(leaf);
       protogen(obj,{name:leaf},require,_$AI); 
       obj.Constructor();
@@ -341,39 +327,6 @@ SAI.GetAncestors = function(name) {
   return ancestors;
 }
 
-// FinalizePrototype
-//
-// Lock and freeze prototype attributes as needed.
-// Verify contracts are fulfilled
-// Bind and build an instantiation function.
-//
-SAI.FinalizePrototype = function(proto) {
-  for (var i in proto.__tobelocked) {
-    Object.defineProperty(proto,proto.__tobelocked[i],{configurable:false});
-  }
-  delete proto.__tobelocked;
-  for (var i in proto.__tobefrozen) {
-    _$AI.deepFreeze(proto[proto.__tobefrozen[i]]);
-  }
-  delete proto.__tobefrozen;
-  if (proto.__unverified) {
-    for (var i in proto.__contracts) {
-      var l=proto.__contracts[i];
-      if (undefined===proto[l]) {
-        throw new Error("SAI: Contractually required trait '"+l+"' does not exist in object '"+proto.isa+"'.");
-      }
-    }
-    delete proto.__unverified;
-    delete proto.__contracts;
-  }
-  proto.constructor=function() {
-    var obj=Object.create(proto);
-    if (obj.Constructor) obj.Constructor();
-    if (obj.Instantiate) obj.Instantiate.apply(obj,arguments);
-    return obj;
-  };
-}
-
 // GetPrototype
 // 
 // Given a name, locate all ancestors, create all prototypes,
@@ -384,7 +337,7 @@ SAI.GetPrototype = function(name,bindings) {
   var proto=SAI.prototypes[name];
   if (!proto) {
     var ancestors=SAI.GetAncestors(name);
-    var proto=new SAIproto(name);
+    var proto=new SAI.proto(name);
 
     var adopt=function(name) {
       var list=ancestors[name];
@@ -405,7 +358,7 @@ SAI.GetPrototype = function(name,bindings) {
     }
     SAI.isa[proto.isa]=name;
 
-    SAI.FinalizePrototype(proto);
+    _$AI.finalizePrototype(proto);
     SAI.prototypes[name]=proto;
   }
   return proto;
@@ -420,12 +373,10 @@ SAI.GetSource = function(name) {
   var source=
     '// Javascript source for '+name+' transpiled by SAI\n'+
     '//\n'+
-    '// You must provide access to a variable called _$AI with a reference to the sailib.js object\n'+
-    '// e.g. var _$AI=require("sailib.js");\n'+
-    '//\n'+
-    'var proto='+JSON.stringify(SAIproto)+';\n'+
-    'var prototype=new proto();\n';
-    'prototype.isof={};\n';
+    '"use strict";\n'+
+    'var _$AI=require("sai-library");\n'+
+    'var prototype=new _$AI._prototype();\n'+
+    '\n// Generated code follows\n\n';
     
   var adopt=function(name) {
     var list=ancestors[name];
@@ -438,10 +389,11 @@ SAI.GetSource = function(name) {
   }
   adopt(name);
 
-  source+='var FinalizePrototype='+SAI.FinalizePrototype.toString()+';\n';
-  source+='FinalizePrototype(prototype);\n';
+  source+='\n// End of generated code\n\n';
+  source+='_$AI.finalizePrototype(prototype);\n';
   source+='var pro=prototype.constructor;\n';
   source+='exports=pro; try { module.exports=pro; } catch(e) {}\n';
+  source+='if (prototype.isof[isa].main) var main=pro();\n';
   source+='return pro;\n';
   
   return source;
@@ -459,9 +411,9 @@ SAI.Require = function(name) {
 
 // Create
 //
-// Create an object by name (an alternative to using new on what Required gives you)
+// Create an object by name (an alternative to using new on what Require gives you)
 //
-SAI.Create = _$AI.new = function(name,parameters) {
+SAI.Create = _$AI.create = function(name,parameters) {
   var proto=SAI.GetPrototype(name);
   if (!proto) throw new Error('SAI.Create: Do not know how to create SAI object "'+name+'".');
   var obj=Object.create(proto); 
@@ -488,5 +440,4 @@ SAI.Configure = function(config) {
     SAI.config.Loader=config.Loader;
   }
 }
-
 

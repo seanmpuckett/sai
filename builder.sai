@@ -1,0 +1,36 @@
+reference:
+  fs require('fs')
+  path require('path')
+  
+object Builder
+
+Instantiate task as SAI
+
+  set argv ~process.argv limit 2, undefined
+    
+  debug argv
+  
+  if argv.length < 1
+    debug '''
+      sai-build -- command-line compiler for .sai scripts
+      
+      USAGE
+      sai-build [object name] - compiles file to native JS on STDOUT
+      
+    ~process.exit
+    
+  set objectName ~path.basename(argv.0)
+  set objectPath ~path.dirname(argv.0)
+  
+  SAI.Configure:
+    paths: objectPath
+    
+  try
+    set object SAI.Require(objectName)
+  catch as e
+    debug e
+    debug 'Could not create ${objectName} at ${objectPath}'
+    ~process.exit
+  
+  debug SAI.GetSource(objectName)
+  

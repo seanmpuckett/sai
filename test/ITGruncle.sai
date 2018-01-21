@@ -7,4 +7,5 @@ given:
   gruncle 'Gruncle'
   
 Instantiate task
-  debug "Instantiate ITGruncle"
+  nop
+//  debug "Instantiate ITGruncle"

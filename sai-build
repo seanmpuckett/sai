@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+
+var SAI = require('./SAI');
+SAI.Configure({ paths:[__dirname] });
+SAI.Require('builder')(SAI);
+

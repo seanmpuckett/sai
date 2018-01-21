@@ -9,7 +9,7 @@
 // 1) P says "I cannot find these numbers."
 // 2) S says "I was sure that you could not find them. I cannot find them either."
 // 3) P says "Then, I found these numbers."
-// 4) S says "If you could find them, then I also found them."
+// 4) S says "if you could find them, then I also found them."
 //
 // What are these numbers?
 //
@@ -17,7 +17,6 @@
 // This solution based in part on sample Python and Scala code in 
 // http://en.wikipedia.org/wiki/Impossible_Puzzle
 //
-
 
 // Declare a global variable
 
@@ -27,7 +26,7 @@ reference:
 
 // Object declaration
 
-object Impossible 1.0.0
+object Impossible main 1.0.0
 
 
 // Object 'method' which runs once on object instantiation.
@@ -37,20 +36,17 @@ Instantiate task
 
   // Define an iterable process yielding candidate solutions.
   //
-  // What is being YIELDed for each valid candidate is a plain
+  // What is being yielded for each valid candidate is a plain
   // object with named traits for x, y, s (sum) and p (product).
   //
   // SAI does not use = for assignment. Every line of code begins with
-  // a verb. Here it is SET, used for variable assignment.
-  //
-  // Keywords can be all caps or all lowercase, as you prefer.
-  // Starting off with all caps can help you learn the syntax.
-  
-  SET Candidates TO PROCESS
-    COUNT 2 TO ~max AS x                    // greater than 1 
-      COUNT x+1 TO ~max AS y                // greater than x
-        IF x+y<~max                         // sum less than max 
-          YIELD FIELDS
+  // a verb. Here it is set, used for variable assignment.
+
+  set Candidates to process
+    count 2 to ~max as x                    // greater than 1 
+      count x+1 to ~max as y                // greater than x
+        if x+y<~max                         // sum less than max 
+          yield fields
             x x
             y y
             sum x+y
@@ -58,27 +54,27 @@ Instantiate task
 
   // simple instrument to count the length of an array
 
-  SET Countem TO TASK AS obj, label
-    DEBUG '${label} candidate count: ${obj.length}'
+  set Countem to task as obj, label
+    debug '${label} candidate count: ${obj.length}'
 
 
   // Working storage.
-  // EMPTY means an array with no elements. (Must be lowercase.)
+  // empty means an array with no elements. (Must be lowercase.)
   //
-  // The SET verb can perform multiple assignments when they
+  // The set verb can perform multiple assignments when they
   // are indented as below. This can make for clearer code.
 
-  SET
-    pgood TO empty
-    sbad TO empty
-    pgood2 TO empty    
-    sgood TO empty
+  set
+    pgood to empty
+    sbad to empty
+    pgood2 to empty    
+    sgood to empty
 
 
   // Banner
   // Backtick specifies a string that runs to EOL.
   
-  DEBUG `Mathemetician's "Impossible" puzzle solver.
+  debug `Mathemetician's "Impossible" puzzle solver.
 
 
   // Print calculated result
@@ -90,48 +86,48 @@ Instantiate task
   // Nevertheless, it's clearer and more maintainable to abstract away the
   // candidate generator into a process and then extract candidates into a list 
   
-  DEBUG CHAIN Candidates() COLLECT
+  debug chain Candidates() collect
     
     
     // Notice the indent level has changed, we're now in the "chain"
     // 
-    // OBSERVE is a chain operator that receives the current object without
+    // observe is a chain operator that receives the current object without
     // any iteration. It allows you to inspect the object without changing it. 
     // Because this is the first link in the chain, we get the value declared at
     // the start of the chain, in this case the result of 'Candidates() collect',
     // which is an array.
 
-    OBSERVE FROM Countem it, 'Initial'
+    observe from Countem it, 'Initial'
 
 
     // Phase 1 -- establish P's knowledge
     // count how many rows have a given product as a solution (PGood)
     // 
-    // AUDIT is similar to observe, but is triggered for every item in a container
+    // audit is similar to observe, but is triggered for every item in a container
     // In this case we're counting solutions by product (.p) in the pgood array.
     //
-    // the DEFAULT operator is used to ensure that uninitialized array elements
+    // the default operator is used to ensure that uninitialized array elements
     // get a starting value of 0.
 
-    AUDIT 
-      SET pgood[.product] TO (self DEFAULT 0)+1
+    audit 
+      set pgood[.product] to (self default 0)+1
     
 
     // Phase 2 -- if P could have known, S knows it isn't the answer.
     // remove trivial solutions for .product from the solutions for .sum
     //
-    // If pgood indicates a trivial solution for P, then flag S's solution as bad  
+    // if pgood indicates a trivial solution for P, then flag S's solution as bad  
     
-    AUDIT 
-      IF pgood[.product]=1
-        SET sbad[.sum] TO true
+    audit 
+      if pgood[.product]=1
+        set sbad[.sum] to true
 
-    // HAS is a filtration operator: if the expression is true, the row is kept.
+    // Has is a filtration operator: if the expression is true, the row is kept.
     // We keep all solutions that are not marked bad.
     
-    HAS NOT sbad[.sum] 
+    has not sbad[.sum] 
 
-    OBSERVE FROM Countem it, 'Phase 2'
+    observe from Countem it, 'Phase 2'
 
 
     // phase 3 -- Since S didn't know either, P can eliminate non-trivial solutions
@@ -139,23 +135,23 @@ Instantiate task
     //
     // The remaining patterns should be familiar.
 
-    AUDIT 
-      SET pgood2[.product] TO (self DEFAULT 0)+1
+    audit 
+      set pgood2[.product] to (self default 0)+1
 
-    HAS pgood2[.product]=1
+    has pgood2[.product]=1
     
-    OBSERVE FROM Countem it, 'Phase 3'
+    observe from Countem it, 'Phase 3'
 
 
     // phase 4 -- Since P now knows, S can eliminate non-trivial solutions 
     // Filter for a new list of solutions where there is only one answer for .sum
 
-    AUDIT 
-      SET sgood[.sum] TO (self default 0)+1
+    audit 
+      set sgood[.sum] to (self default 0)+1
 
-    HAS sgood[.sum]=1
+    has sgood[.sum]=1
     
-    OBSERVE FROM Countem it, 'Results'
+    observe from Countem it, 'Results'
 
 
     // phase 5 -- Nicely format remaining solution(s)
@@ -165,7 +161,7 @@ Instantiate task
     // an expression to be evaluated; in this case a string literal 
     // that uses the ${} string composition tool.
      
-    THRU `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
+    thru `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
     
     
     // JOIN is not a keyword, it's a member method of Array. CHAIN knows how to
@@ -174,7 +170,7 @@ Instantiate task
     //
     // Here we're turning a list into a single string with elements delimited 
     // by newlines. And as this is the last indented clause in the chain,
-    // the resulting string is the final value that is given to DEBUG to display.
+    // the resulting string is the final value that is given to debug to display.
     
     join '\n'
 

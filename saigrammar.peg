@@ -440,7 +440,7 @@ Reference
 }
 
 Object
- = OBJECT _ k:Identifier _ v:SemVer? _ EOLs s:Segment+ {
+ = OBJECT _ k:Identifier _ main:MAIN? _ v:SemVer? _ EOLs s:Segment+ {
     if (!v) v=quoted('0.0.0-unspecified');
     var code='',isof='';
     var isa=quoted(k);
@@ -450,6 +450,9 @@ Object
     isof+='version:'+v+',';
     isof+='isa:isa,';
     isof+='context:__context,';
+    if (main) {
+      isof+='main:true,';
+    }
     code+='prototype.isof['+isa+']={'+isof+'};\n';
     var l;
     if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
@@ -1486,11 +1489,7 @@ OtherComprehension
      if (expr.limit.length) {
        var l=expr.limit[0];
        if (l.slice) {
-         if (l.len) {
-           code='_$AI.slice('+code+','+l.start+','+l.len+')';
-         } else {
-           code='_$AI.slice('+code+','+l.start+')';
-         }
+         code='_$AI.slice('+code+','+l.start+','+l.len+')';
        }
        if (l.extract) { 
          code='_$AI.element('+code+',0)';
@@ -1509,7 +1508,7 @@ Limit
  = FIRST _ { return ['limit',{extract:true,sort:1}]; } 
  / LAST _ { return ['limit',{extract:true,slice:true,start:-1}]; } 
  / LIMIT _ s:Logical _ COMMA _ c:Logical _ { return ['limit',{slice:true,start:s,len:c}]; } 
- / LIMIT _ s:Logical _ { return ['limit',{slice:true,start:0,len:s}]; } 
+ / LIMIT _ s:Logical _ { return ['limit',{slice:true,start:undefined,len:s}]; } 
  / COUNT _ { return ['limit',{count:true}]; }
  
 Quality
@@ -1728,7 +1727,7 @@ VerbChainLine
 
 NewObject
  = CREATE _ v:Value _ o:ParameterList?  { 
-   return '_$AI.new('+v+',['+(o?o[1]:'undefined')+'])'; 
+   return '_$AI.create('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
  / NEW _ v:Value _ o:ParameterList? {
    return 'new '+v+'('+(o?o[1]:'')+')'; 
@@ -1786,7 +1785,7 @@ StringQuoteChar
  = v:[^\"\n] { return [true,v] }
 
 MultiString
- = "'''" _ EOLs INDENT EOLs v:(v:Bareline EOLs { return v} )* DEDENT &EOLs { return v.join("+'\\n'+") } 
+ = "'''" _ EOLs INDENT EOLs v:(v:Bareline EOL { return v} )* DEDENT &EOLs { return v.join("+'\\n'+") } 
 
 
 Bareline
@@ -1943,123 +1942,124 @@ __OFFSET = '__offset'
 __COLUMN = '__column'
 __LINE = '__line'
 
-AND = 'and'/'AND'
-ANDB = 'andb'/'ANDB'
-ARRAY = 'array'/'ARRAY'
-AS = 'as'/'AS'
-ASC = 'asc'/'ASC'
-ASCENDING = 'ascending'/'ASCENDING'
-AUDIT = 'audit'/'AUDIT'
+AND = 'and'
+ANDB = 'andb'
+ARRAY = 'array'
+AS = 'as'
+ASC = 'asc'
+ASCENDING = 'ascending'
+AUDIT = 'audit'
 BLANK = 'blank'
-BREAK = 'break'/'BREAK'
-BY = 'by'/'BY'
-CASE = 'case'/'CASE'
-CATCH = 'catch'/'CATCH'
-CHAIN = 'chain'/'CHAIN'
-COLLECT = 'collect'/'COLLECT'
-COPY = 'copy'/'COPY'
-CONCAT = 'concat'/'CONCAT'
-CONTINUE = 'continue'/'CONTINUE'
-CONTRACT = 'contract'/'CONTRACT'
-COUNT = 'count'/'COUNT'
+BREAK = 'break'
+BY = 'by'
+CASE = 'case'
+CATCH = 'catch'
+CHAIN = 'chain'
+COLLECT = 'collect'
+COPY = 'copy'
+CONCAT = 'concat'
+CONTINUE = 'continue'
+CONTRACT = 'contract'
+COUNT = 'count'
 COUNTER = 'counter'
-CREATE = 'create'/'CREATE'
-DEC = 'dec'/'DEC'
-DEFAULT = 'default'/'DEFAULT'
-DELETE = 'delete'/'DELETE'
-DESC = 'desc'/'DESC'
-DESCENDING = 'descending'/'DESCENDING'
-DO = 'do'/'DO'
-DOWN = 'down'/'DOWN'
-EACH = 'each'/'EACH'
-ELSE = 'else'/'ELSE'
+CREATE = 'create'
+DEC = 'dec'
+DEFAULT = 'default'
+DELETE = 'delete'
+DESC = 'desc'
+DESCENDING = 'descending'
+DO = 'do'
+DOWN = 'down'
+EACH = 'each'
+ELSE = 'else'
 EMPTY = 'empty'
-ENUM = 'enum'/'ENUM'
-ENLIST = 'enlist'/'ENLIST'
-ENTRAIT = 'entrait'/'ENTRAIT'
+ENUM = 'enum'
+ENLIST = 'enlist'
+ENTRAIT = 'entrait'
 ERROR = 'error'
-EXISTS = 'exists'/'EXISTS'
-EXPECTS = 'expects'/'EXPECTS'
-FINALLY = 'finally'/'FINALLY'
-FIELDS = 'fields'/'FIELDS'
-FIRST = 'first'/'FIRST'
-FROM = 'from'/'FROM'
-GET = 'get'/'GET'
-GIVEN = 'given'/'GIVEN'
-HAS = 'has'/'HAS'
-HIGHEST = 'highest'/'HIGHEST'
-IF = 'if'/'IF'
+EXISTS = 'exists'
+EXPECTS = 'expects'
+FINALLY = 'finally'
+FIELDS = 'fields'
+FIRST = 'first'
+FROM = 'from'
+GET = 'get'
+GIVEN = 'given'
+HAS = 'has'
+HIGHEST = 'highest'
+IF = 'if'
 INFINITY = 'Infinity'
-INSTANCE = 'instance'/'INSTANCE'
-INTO = 'into'/'INTO'
-INC = 'inc'/'INC'
-INHERIT = 'inherit'/'INHERIT'
-ISNT = 'isnt'/'ISNT'
-ISNAN = 'isNaN'/'ISNAN'
-IS = 'is'/'IS'
-ISOF = 'isof'/'ISOF'
-ITERATE = 'iterate'/'ITERATE'
+INSTANCE = 'instance'
+INTO = 'into'
+INC = 'inc'
+INHERIT = 'inherit'
+ISNT = 'isnt'
+ISNAN = 'isNaN'
+IS = 'is'
+ISOF = 'isof'
+ITERATE = 'iterate'
 ITERATOR = 'Iterator'
 IT = 'it'
-KEYS = 'keys'/'KEYS'
+KEYS = 'keys'
 KEY = 'key'
-LAST = 'last'/'LAST'
-LIMIT = 'limit'/'LIMIT'
-LIST = 'list'/'LIST'
-LOCAL = 'local'/'LOCAL'
-LOWEST = 'lowest'/'LOWEST'
+LAST = 'last'
+LIMIT = 'limit'
+LIST = 'list'
+LOCAL = 'local'
+LOWEST = 'lowest'
+MAIN = 'main'
 NaN = 'NaN'
-NAND = 'nand'/'NAND'
-NEW = 'new'/'NEW'
-NOP = 'nop'/'NOP'
-NOR = 'nor'/'NOR'
-NOT = 'not'/'NOT'
-NOTB = 'notb'/'NOTB'
-NUMBER = 'number'/'NUMBER'
+NAND = 'nand'
+NEW = 'new'
+NOP = 'nop'
+NOR = 'nor'
+NOT = 'not'
+NOTB = 'notb'
+NUMBER = 'number'
 NULL = 'null'
-OBJECT = 'object'/'OBJECT'
-OBSERVE = 'observe'/'OBSERVE'
-ORPHAN = 'orphan'/'ORPHAN'
-OR = 'or'/'OR'
-ORB = 'orb'/'ORB'
-OVERLAY = 'overlay'/'OVERLAY'
+OBJECT = 'object'
+OBSERVE = 'observe'
+ORPHAN = 'orphan'
+OR = 'or'
+ORB = 'orb'
+OVERLAY = 'overlay'
 TRUE = 'true'
 FALSE = 'false'
-PLY = 'ply'/'PLY'
-PROMISE = 'promise'/'PROMISE'
-PROCESS = 'process'/'PROCESS'
-RESOLVE = 'resolve'/'RESOLVE'
-REJECT = 'reject'/'REJECT'
-REFERENCE = 'reference'/'REFERENCE'
-RETURN = 'return'/'RETURN'
-SELECT = 'select'/'SELECT'
+PLY = 'ply'
+PROMISE = 'promise'
+PROCESS = 'process'
+RESOLVE = 'resolve'
+REJECT = 'reject'
+REFERENCE = 'reference'
+RETURN = 'return'
+SELECT = 'select'
 SELF = 'self'
-SET = 'set'/'SET'
-STEP = 'step'/'STEP'
+SET = 'set'
+STEP = 'step'
 SUM = 'sum'
-SWAP = 'swap'/'SWAP'
-SUPER = 'super'/'SUPER'
-SWITCH = 'switch'/'SWITCH'
-TASK = 'task'/'TASK'
-THROW = 'throw'/'THROW'
-THRU = 'thru'/'THRU'
-TRAITS = 'traits'/'TRAITS'
-TRIAL = 'trial'/'TRIAL'
-TRY = 'try'/'TRY'
-TO = 'to'/'TO'
-TYPEOF = 'typeof'/'TYPEOF'
-UNLESS = 'unless'/'UNLESS'
-UNTIL = 'until'/'UNTIL'
-UNDEFINED = 'undefined'/'UNDEFINED'
-UPDATE = 'update'/'UPDATE'
-USING = 'using'/'USING'
-VALUES = 'values'/'VALUES'
-WHILE = 'while'/'WHILE'
-WITH = 'with'/'WITH'
-XOR  = 'xor'/'XOR'
-XORB  = 'xorb'/'XORB'
-YIELDING = 'yielding'/'YIELDING'
-YIELD = 'yield'/'YIELD'
+SWAP = 'swap'
+SUPER = 'super'
+SWITCH = 'switch'
+TASK = 'task'
+THROW = 'throw'
+THRU = 'thru'
+TRAITS = 'traits'
+TRIAL = 'trial'
+TRY = 'try'
+TO = 'to'
+TYPEOF = 'typeof'
+UNLESS = 'unless'
+UNTIL = 'until'
+UNDEFINED = 'undefined'
+UPDATE = 'update'
+USING = 'using'
+VALUES = 'values'
+WHILE = 'while'
+WITH = 'with'
+XOR  = 'xor'
+XORB  = 'xorb'
+YIELDING = 'yielding'
+YIELD = 'yield'
 
 BANG = '!'
 DOT = '.'

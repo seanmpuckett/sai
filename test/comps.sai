@@ -604,6 +604,141 @@ Execute task
       return a.length is 0
     return false
   
+  
+  set ListVerify task as c, m
+    if c.length isnt m.length 
+      debug "List error ${~JSON.stringify(c)} isn't ${~JSON.stringify(m)}"
+      return false
+    ply c
+      if . isnt m[key]
+        debug "List error ${~JSON.stringify(c)} isn't ${~JSON.stringify(m)}"
+        return false
+    return true
+  
+  set l to: 1,2,3,4,5
+
+  @Test 'limit -x', task
+    set a to l limit -2
+    return from ListVerify a, :4,5
+    
+  @Test 'limit 0', task
+    set a to l limit 0
+    return from ListVerify a, empty
+    
+  @Test 'limit +x', task
+    set a to l limit 2
+    return from ListVerify a, :1,2
+    
+  @Test 'limit -x, -y', task//              everything except last y rows starting x from end of list
+    set a to l limit -3,-1
+    return from ListVerify a, :3,4
+    
+  @Test 'limit -x, 0', task//              nothing
+    set a to l limit -3,0
+    return from ListVerify a, empty
+    
+  @Test 'limit -x, undef', task//           last x rows
+    set a to l limit -2, undef
+    return from ListVerify a, :4, 5
+    
+  @Test 'limit -x, +y', task//                    y rows starting x from end of list
+    set a to l limit -4,2
+    return from ListVerify a, :2,3
+    
+  @Test 'limit 0, -y', task//everything except last y rows
+    set a to l limit 0,-1
+    return from ListVerify a, :1,2,3,4
+    
+  @Test 'limit 0, 0', task //nothing
+    set a to l limit 0,0
+    return from ListVerify a, empty
+    
+  @Test 'limit 0, undef', task //everything 
+    set a to l limit 0, undef
+    return from ListVerify a, :1,2,3,4,5
+    
+  @Test 'limit 0, +y', task //first y rows
+    set a to l limit 0,2
+    return from ListVerify a, :1,2
+    
+  @Test 'limit +x, -y', task//everything except last y rows starting at x
+    set a to l limit 1,-2
+    return from ListVerify a, :2,3
+    
+  @Test 'limit +x, 0', task //nothing
+    set a to l limit 1,0
+    return from ListVerify a, empty
+    
+  @Test 'limit +x, undef', task //everything starting at x
+    set a to l limit 2, undef
+    return from ListVerify a, :3,4,5
+    
+  @Test 'limit +x, +y', task //y rows starting at x
+    set a to l limit 2,2
+    return from ListVerify a, :3,4
+      
+      
+  @Test 'limit gen -x', task
+    set a to l iterate limit -2 collect
+    return from ListVerify a, :4,5
+    
+  @Test 'limit gen 0', task
+    set a to l iterate limit 0 collect
+    return from ListVerify a, empty
+    
+  @Test 'limit gen +x', task
+    set a to l iterate limit 2 collect
+    return from ListVerify a, :1,2
+    
+  @Test 'limit gen -x, -y', task//              everything except last y rows starting x from end of list
+    set a to l iterate limit -3,-1 collect
+    return from ListVerify a, :3,4
+    
+  @Test 'limit gen -x, 0', task//              nothing
+    set a to l iterate limit -3,0 collect
+    return from ListVerify a, empty
+    
+  @Test 'limit gen -x, undef', task//           last x rows
+    set a to l iterate limit -2, undef collect
+    return from ListVerify a, :4, 5
+    
+  @Test 'limit gen -x, +y', task//                    y rows starting x from end of list
+    set a to l iterate limit -4,2 collect
+    return from ListVerify a, :2,3
+    
+  @Test 'limit gen 0, -y', task//everything except last y rows
+    set a to l iterate limit 0,-1 collect
+    return from ListVerify a, :1,2,3,4
+    
+  @Test 'limit gen 0, 0', task //nothing
+    set a to l iterate limit 0,0 collect
+    return from ListVerify a, empty
+    
+  @Test 'limit gen 0, undef', task //everything 
+    set a to l iterate limit 0, undef collect
+    return from ListVerify a, :1,2,3,4,5
+    
+  @Test 'limit gen 0, +y', task //first y rows
+    set a to l iterate limit 0,2 collect
+    return from ListVerify a, :1,2
+    
+  @Test 'limit gen +x, -y', task//everything except last y rows starting at x
+    set a to l iterate limit 1,-2 collect
+    return from ListVerify a, :2,3
+    
+  @Test 'limit gen +x, 0', task //nothing
+    set a to l iterate limit 1,0 collect
+    return from ListVerify a, empty
+    
+  @Test 'limit gen +x, undef', task //everything starting at x
+    set a to l iterate limit 2, undef collect
+    return from ListVerify a, :3,4,5
+    
+  @Test 'limit gen +x, +y', task //y rows starting at x
+    set a to l iterate limit 2,2 collect
+    return from ListVerify a, :3,4
+      
+  
   @Test 'limit entire generator', task
     set gen to: 1, 2, 3; iterate
     set a to gen limit 0, undefined
@@ -617,11 +752,8 @@ Execute task
     return a.length is 3 and a.1 is 2
     
   @Test 'limit on object', task
-    try
-      set a to: a 1, b 2; limit 1
-    catch
-      return true
-    return false
+    set a to: a 1, b 2; limit 1
+    return a.length=1 and a.0.a=1 
     
   @Test 'limit on value unlimited', task
     set a to 1 limit 1
@@ -635,13 +767,21 @@ Execute task
     set a to 1 limit -1,0
     return a.length is 0
     
+  @Test 'limit list offset unclosed', task
+    set a to: 1, 2, 3; limit 2, undefined
+    return a.length is 1 and a.0 is 3
+    
+  @Test 'limit list negative offset unclosed', task
+    set a to: 1, 2, 3; limit -2, undefined
+    return a.length is 2 and a.0 is 2 and a.1 is 3
+    
   @Test 'limit on value limited', task
     set a to 1 limit 0
     return a.length is 0 
     
   @Test 'limit on value out of range', task
     set a to 1 limit -2,1
-    return a is undefined
+    return a.length is 0
     
   @Test 'first last on undefined', task
     set a to undefined first
@@ -653,15 +793,13 @@ Execute task
     set b to 1 last
     return a is 1 and b is 1
 
-  @Test 'first last on object', task
-    try
-      set a to: a 1, b 2; first
-    catch
-      try
-        set b to: a 1, b 2; last
-      catch
-        return true
-    return false
+  @Test 'first on object', task
+    set a to: a 1, b 2; first
+    return a.a is 1
+
+  @Test 'last on object', task
+    set a to: a 1, b 2; last
+    return a.a is 1
 
   @Test 'first on generator', task
     set a to: 1, 2, 3; iterate first
