@@ -1,5 +1,15 @@
 ## Change log
 
+### 0.1.7
+
+#### Enhancements
+
+ - additional documentation / clean-ups
+ - removed several entries from reserved words list
+ - command line runner `sai-run` added, can compile and instantiate a SAI object from the command line.
+ - removed redundant code path in sailib
+
+ 
 ### 0.1.6
 
 #### Breaking changes
@@ -13,6 +23,7 @@
  - FIRST / LAST no longer throw exceptions if applied to singletons/objects; they return the object itself.
  - added MAIN clause to OBJECT declarations, flagging an object as needing to be instantiated when required from a pre-compiled .js file. See the MAIN keyword for details.
  - ''' here document now support blank lines (but not indenting, not yet)
+ 
  
 ### 0.1.5
 

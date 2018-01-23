@@ -1895,12 +1895,12 @@ ReservedWords
  / ISNAN
  / IS
  / ITERATE
- / ITERATOR
+// / ITERATOR
  / KEYS
  / LAST
  / LIMIT
  / LIST
- / LOCAL
+// / LOCAL
  / LOWEST 
  / NaN
  / NAND
@@ -1912,12 +1912,12 @@ ReservedWords
  / NULL
  / OBSERVE
  / ORB
- / ORPHAN
+// / ORPHAN
  / OR
  / OVERLAY
  / PROMISE
  / PROCESS
- / SELECT
+// / SELECT
  / SELF
  / SWAP
  / TASK
@@ -1934,8 +1934,8 @@ ReservedWords
  / VALUES
  / XORB
  / XOR
- / YIELDING
- / YIELD
+// / YIELDING
+// / YIELD
  
 __SOURCE = '__source'
 __OFFSET = '__offset'

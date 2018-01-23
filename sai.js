@@ -1,13 +1,12 @@
 "use strict";
 
 var fs = require('fs');
-var PEG = require('pegjs');
 
-var Beautify=undefined;
+var Beautify=function(a) { return a; };
 try {
   Beautify=require('js-beautify').js_beautify; // optional
 } catch(e) {
-  Beautify=function(a) { return a; }
+  // no beautification
 }
 
 
@@ -75,6 +74,7 @@ SAI.Dedenter=function(src) {
   var lines=src.split(/\r\n|[\r\n\u0085\u2028\u2029]/);
   var indent=[0];
   var out=[];
+  var heredoc=false;
   for (var i=0; i<lines.length; i++) {
     var line=lines[i];
     var depth=0;
@@ -149,6 +149,7 @@ SAI.GetParser = function() {
     var grammarFile=__dirname + "/saigrammar.peg";
     var parserFile=__dirname + "/saigrammar.js";
     if (!fs.existsSync(parserFile) || fs.statSync(grammarFile).mtime>fs.statSync(parserFile).mtime) {
+      var PEG = require('pegjs');
       var grammar=fs.readFileSync(grammarFile).toString();
       var mainParser=PEG.generate(grammar,{
         allowedStartRules: ['startFile', 'startExpression'],

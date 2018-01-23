@@ -2,7 +2,7 @@ reference:
   fs require('fs')
   path require('path')
   
-object Builder
+object Runner
 
 // Instantiate
 //
@@ -16,16 +16,16 @@ Instantiate task as SAI
   
   if argv.length < 1
     debug '''
-      sai-build -- command-line compiler for .sai scripts
+      sai-run -- run an arbitrary SAI script.
       
       USAGE
-      sai-build [path/object name] - compiles file to native JS on STDOUT
+      sai-run [path/object name] - compiles file to native JS on STDOUT
       
       EXAMPLE
-      ./sai-build ./HelloWorld >helloworld.js
+      sai-run ./HelloWorld
       
-      Note: do not include .sai extension with the name of the object, this will just confuse the loader.
-      
+      Note 1: do not include .sai extension with the name of the object, this will just confuse the loader.
+  
     ~process.exit
     
   set objectName ~path.basename(argv.0)
@@ -37,11 +37,9 @@ Instantiate task as SAI
     paths: objectPath
     
   try
-    set object SAI.Require(objectName)
+    set object create objectName
   catch as e
     debug e
     debug 'Could not create ${objectName} at ${objectPath}'
     ~process.exit
-  
-  debug SAI.GetSource(objectName)
   
