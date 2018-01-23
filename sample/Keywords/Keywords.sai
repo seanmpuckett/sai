@@ -1,7 +1,7 @@
 // sample code from Keywords documentation 
 // (maybe not all of it, and not in order)
 
-object Keywords 1.0.0
+object Keywords main 1.0.0
 
 Instantiate task
 
@@ -171,11 +171,6 @@ Instantiate task
   debug '\nIS'
   debug 0 = false
   debug 0 is false
-  
-  // INITIALIZED
-  debug '\nINITIALIZED'
-  debug friends into blank
-    (sum|.province initialized empty).push .name
 
   // INTO
   debug '\nINTO'
@@ -334,7 +329,7 @@ Instantiate task
   // collect
   debug '\nCOLLECT'
   set Odds to process
-    set local i to 1
+    local i to 1
     while i
       yield i
       set i + 2
@@ -430,7 +425,9 @@ Instantiate task
   // from
   debug '\nFROM'
   set a to task
-    return @cache|$key initialized from @ExpensiveCalculation $key
+    unless @cache[$key]
+      set @cache[$key] from @ExpensiveCalculation $key
+    return @cache[$key]
   debug a.toString()
   
   // down
@@ -610,7 +607,6 @@ Instantiate task
   debug '\nSET'
   set a to 2
   set a from ~Math.pow self, 2
-  set a via ~Math.sqrt
   set a * 4
   set a -
   debug a

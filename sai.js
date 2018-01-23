@@ -224,17 +224,21 @@ SAI.Parse = SAI.GetParser();
 // directories.
 //
 SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
-  var filename;
+  var filename='';
   var raw=undefined;
   var mtime=0;
   for (var i in SAI.config.paths) {
     var path=SAI.config.paths[i];
-    filename=path+'/'+name+'.sai';
-    try {
-      raw=fs.readFileSync(filename).toString();
-      mtime=fs.statSync(filename).mtime;
-    } catch (e) {
-      ;
+    var opts=['.sai',''];
+    for (var opt in opts) {
+      filename=path+'/'+name+opts[opt];
+      try {
+        raw=fs.readFileSync(filename).toString();
+        mtime=fs.statSync(filename).mtime;
+        break;
+      } catch (e) {
+        ;
+      }
     }
     if (raw) return {success:true,source:raw,context:{
       name:name,

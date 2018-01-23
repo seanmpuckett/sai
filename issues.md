@@ -31,7 +31,8 @@
 #### Bugs
 
  - parser can't handle slashes in comments 
-
+ - dedenter incorrectly adds comments to here documents 
+ 
 
 #### Breaking
 

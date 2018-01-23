@@ -24,8 +24,6 @@ Instantiate task as SAI
       EXAMPLE
       ./sai-build ./HelloWorld >helloworld.js
       
-      Note: do not include .sai extension with the name of the object, this will just confuse the loader.
-      
     ~process.exit
     
   set objectName ~path.basename(argv.0)

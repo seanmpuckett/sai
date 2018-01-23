@@ -1,7 +1,7 @@
 reference:
   express from require 'express'
 
-object HelloHTTP 1.0.0
+object HelloHTTP main 1.0.0
 
 Instantiate task
   set @app from ~express

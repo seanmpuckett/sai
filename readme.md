@@ -66,7 +66,7 @@ For example:
 
 #### To evaluate a SAI expression in a JS file
 
-    var SAI = require('SAI');
+    var SAI = require('sai-language');
     var fruit = SAI.Expression('list apple, banana, cherry');
 
 Result:
@@ -80,7 +80,7 @@ _Note that it is computationally unwise to compile the same SAI expression over 
 
 #### To define a function using SAI in a JS file
 
-    var SAI = require('SAI');
+    var SAI = require('sai-language');
     var ReverseItems=SAI.Expression(`task as items
       return items thru chain .
         split ''
@@ -97,7 +97,7 @@ Result:
 
 #### To define a process (generator) using SAI
 
-    var SAI = require('SAI');
+    var SAI = require('sai-language');
     var FibonacciGenerator=SAI.Expression(`process as n
       local stack array 1, 1
       count n
@@ -119,7 +119,7 @@ Result:
 
 #### To create a SAI object given a .SAI source file:
 
-    var SAI = require('SAI');
+    var SAI = require('sai-language');
     SAI.Configure({options:{},paths:[__dirname]});
 
     // build native JS prototype from ObjectName.sai in __dirname
@@ -133,7 +133,7 @@ Result:
 #### Notes
 
 Modules used: 
-- `sai-language` is the runtime library, and is necessary.
+- `sai-library` is the runtime library, and is necessary.
 
 Optional modules:
 - `pegjs` is only needed to compile the grammar which should not be necessary
@@ -157,6 +157,8 @@ SAI does not yet have a beautiful and competently written introduction to the la
 
 The `samples` folder has several sample bits of code, some of which are reproduced here.
 
+To run the samples, invoke e.g. `./sai-run sample/FizzBuzz/FizzBuzz`
+
 You may also look at my solutions to Advent of Code 2017 which were all written in SAI: `https://github.com/seanmpuckett/advent-of-code-2017`
 
 
@@ -172,6 +174,7 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
         unless num % .divisor
           set out + .word
       debug out ?? out :: num
+
 
 #### Permutation generator
 
@@ -193,6 +196,7 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
     > [ 'banana', 'cherry', 'apple' ]
     > [ 'cherry', 'apple', 'banana' ]
     > [ 'cherry', 'banana', 'apple' ]
+
 
 #### Minimal HTTP Server
 
@@ -231,12 +235,11 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
         chain from willIGetNewPhone happiness
           then showOff
           catch promise as e
-            debug '${e}\nNo phone for you.'
+            debug '${e} No phone for you.'
       
     askMom true
     askMom false
     
     > Hey friend, I have a new paisley Wangdoodle phone
-    > Error: Mom is not happy.
-    > No phone for you.
+    > Error: Mom is not happy. No phone for you.
     

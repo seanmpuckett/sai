@@ -1,10 +1,14 @@
 {
   "name": "sai-language",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "An object-oriented language designed to afford code comprehension and maintenance. Transpiles in-place to Javascript.",
   "main": "sai.js",
   "scripts": {
-    "test": "cd test && node index.js && cd .."
+    "test": "./sai-run test/Test"
+  },
+  "bin": {
+    "sai-build": "./sai-build",
+    "sai-run": "./sai-run"
   },
   "repository": {
     "type": "git",
@@ -22,7 +26,9 @@
   },
   "homepage": "https://github.com/seanmpuckett/sai",
   "dependencies": {
-    "pegjs": "^0.10.0",
     "sai-library": "^1.0.2"
+  },
+  "devDependencies": {
+    "pegjs": "^0.10.0"
   }
 }

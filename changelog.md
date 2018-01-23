@@ -1,5 +1,13 @@
 ## Change log
 
+### 0.1.8
+
+ - Object loader handles file extensions properly, but will try to load `.sai` files preferentially.
+ - documentation updates
+ - update samples to rely on `sai-run` for invokation.
+ - update package.json to put `sai-run` and `sai-build` into the bin
+
+
 ### 0.1.7
 
 #### Enhancements
