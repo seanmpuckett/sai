@@ -23,6 +23,6 @@
   "homepage": "https://github.com/seanmpuckett/sai",
   "dependencies": {
     "pegjs": "^0.10.0",
-    "sai-library": "^1.0.0"
+    "sai-library": "^1.0.2"
   }
 }
