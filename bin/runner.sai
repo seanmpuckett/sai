@@ -1,5 +1,4 @@
 reference:
-  fs require('fs')
   path require('path')
   
 object Runner
@@ -26,8 +25,8 @@ Instantiate task as SAI
       
     ~process.exit
     
-  set objectName ~path.basename(argv.0)
-  set objectPath ~path.dirname(argv.0)
+  set objectName path.basename(argv.0)
+  set objectPath path.dirname(argv.0)
   
   // set loader path to path of file to compile
 

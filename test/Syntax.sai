@@ -53,7 +53,7 @@ Execute task
     set a to: 1,2,3
     chain a
       reverse
-    return a|0=3
+    return a.0=3
     
   @Test 'swap', task
     set a to 1

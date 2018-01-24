@@ -1,6 +1,25 @@
 ## Change log
 
+### 0.1.9
+
+#### Breaking Changes
+
+ - removed `|` shorthand attribute accessor -- where `b|a` was equivalent to `b[a]` as the notion of a "simple value" is too easy to miscode. The most common use of | was to allow access to numeric indices anyway (e.g. `a|2` for `a[2]`), and the dot accessor offers these in a clearer way, e.g. `a.2`.  I doubt anyone was using this; I even stopped after too many syntax errors. It also looked ugly. So, if this was you, sorry. 
+ - when using `reference` 
+   - variables defined with reference no longer need to be scoped with `~` within code; they are automatically promoted to bareword scoping.
+   - variables defined with reference cannot be assigned to; you cannot override them with `local` and you cannot use `set` to assign them. There are probably ways around this but if I find them I'll fix them if possible.
+
+#### Enhancements
+
+ - Strip out first line of .sai file if it's a shebang `#!`
+ - Use `#!/usr/bin/env sai-run` on the first line of a file and mark it executable.
+ - moved `sai-run` and `sai-build` to `bin/` directory
+ - for some reason the `~` scoping prefix was undocumented?
+
+
 ### 0.1.8
+
+#### Enhancements
 
  - Object loader handles file extensions properly, but will try to load `.sai` files preferentially.
  - documentation updates
@@ -27,10 +46,10 @@
 #### Enhancements
 
  - command line compiler `sai-build`, can create a native JS version of a single object (see 07.Commandline document).
- - rewrote slice/LIMIT library function for more versatility.  See keywords for LIMIT for full table of possibilities.
- - FIRST / LAST no longer throw exceptions if applied to singletons/objects; they return the object itself.
- - added MAIN clause to OBJECT declarations, flagging an object as needing to be instantiated when required from a pre-compiled .js file. See the MAIN keyword for details.
- - ''' here document now support blank lines (but not indenting, not yet)
+ - rewrote `limit` library function for more versatility.  See 20.keywords for `limit` for full table of possibilities.
+ - `first` / `last` no longer throw exceptions if applied to singletons/objects; they return the object itself.
+ - added `main` clause to `object` declarations, flagging an object as needing to be instantiated when required from a pre-compiled .js file. See the `main` keyword for details.
+ - `'''` here document now support blank lines (but not indenting, not yet)
  
  
 ### 0.1.5
@@ -51,26 +70,26 @@
 
 #### Breaking changes
 
- - removed LOCAL as a modifier for SET; instead LOCAL must now be used in place of SET, e.g. instead of `set local a to true` you now use `local a to true` 
- - LOCAL now uses javascript's LET instead of VAR to ensure tighter, more predictable scoping.
+ - removed `local` as a modifier for `set`; instead `local` must now be used in place of `set`, e.g. instead of `set local a to true` you now use `local a to true` 
+ - `local` now uses javascript's `let` instead of `let` to ensure tighter, more predictable scoping.
 
 #### Enhancements
 
- - Added sample code for PROMISE.  Also added test code for it but it's not executing right now because the test harness isn't async-ready.
+ - Added sample code for `promise`.  Also added test code for it but it's not executing right now because the test harness isn't async-ready.
 
  
 ### 0.1.3
 
 #### Breaking changes
 
- - remove VIA keyword as being unnecessarily obscure in function, and hardly ever useful anyway.
- - remove INITIALIZED keyword as being too hard to use without generating JS errors about what an acceptable lvalue is. Keyword DEFAULT allows similiar levels of simplification but without the side-effects of an assignment in the middle of an expression (which I don't like at all anyway).
+ - remove `via` keyword as being unnecessarily obscure in function, and hardly ever useful anyway.
+ - remove `initialized` keyword as being too hard to use without generating JS errors about what an acceptable lvalue is. Keyword `default` allows similiar levels of simplification but without the side-effects of an assignment in the middle of an expression (which I don't like at all anyway).
 
 #### Enhancements
 
  - fix syntax error reporting to be more descriptive of the containing file
- - expand usage of DEFAULT to allow usage in an lvalue. This sets the variable ONLY if its current value is undefined. As in `set a default 4`
- - both OVERLAY and UPDATE will now silently initialize an undefined lvalue to BLANK before attempting to merge
+ - expand usage of `default` to allow usage in an lvalue. This sets the variable ONLY if its current value is undefined. As in `set a default 4`
+ - both `overlay` and `update` will now silently initialize an undefined lvalue to BLANK before attempting to merge
  - tidy up example code
 
 

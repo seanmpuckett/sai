@@ -4,7 +4,7 @@ instance:
   bag empty
 
 Count task 
-  set @bag|$ to (self default 0) + 1
+  set @bag[$] to (self default 0) + 1
 
 Iterator process
   //debug "Tally Iterator"

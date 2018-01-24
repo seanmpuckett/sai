@@ -12,15 +12,13 @@ Instantiate task expects 'Test'
     @pass to $pass
     @fail to $fail
     @ids to $ids
-
-
-
+    @SAI to $SAI
 
 
 Log task 
-  if @ids|$
+  if @ids[$]
     debug 'Duplicate test: "${$}"'
-  set @ids|$ to true
+  set @ids[$] to true
 
 
 
@@ -28,7 +26,7 @@ Test task as description, function
   set description to '${@isa}: ${self}'
   @Log description
   
-  if ~CATCH_EXCEPTIONS
+  if CATCH_EXCEPTIONS
     set success to false
     try 
       set success from function
@@ -49,7 +47,7 @@ Match task as description, expected, function
   set description to '${@isa}: ${self}'
   @Log description
   
-  if ~CATCH_EXCEPTIONS
+  if CATCH_EXCEPTIONS
     try 
       set result from function
     catch 

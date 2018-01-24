@@ -1,10 +1,12 @@
+#!/usr/bin/env sai-run
+
 reference:
   express from require 'express'
 
 object HelloHTTP main 1.0.0
 
 Instantiate task
-  set @app from ~express
+  set @app from express
   
   @app.get '/', task as req, res
     res.send 'Hello HTTP!'

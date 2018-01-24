@@ -1,3 +1,5 @@
+#!/usr/bin/env sai-run
+
 // SAI "Sums and Products" a.k.a. "Impossible Puzzle" solver
 //
 // X and Y are two different integers, greater than 1, with sum less than 100.
@@ -43,9 +45,9 @@ Instantiate task
   // a verb. Here it is set, used for variable assignment.
 
   set Candidates to process
-    count 2 to ~max as x                    // greater than 1 
-      count x+1 to ~max as y                // greater than x
-        if x+y<~max                         // sum less than max 
+    count 2 to max as x                    // greater than 1 
+      count x+1 to max as y                // greater than x
+        if x+y<max                         // sum less than max 
           yield fields
             x x
             y y

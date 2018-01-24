@@ -206,7 +206,7 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
     object HelloHTTP 1.0.0
 
     Instantiate task
-      set @app from ~express
+      set @app from express
   
       @app.get '/', task as req, res
         res.send 'Hello HTTP!'

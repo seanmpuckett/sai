@@ -1,3 +1,5 @@
+#!/usr/bin/env sai-run
+
 object FizzBuzz main 1.0.0
 
 Instantiate task
@@ -18,11 +20,11 @@ Instantiate task
   // array variation
   set out to empty
   count 3 to 101 step 3
-    set out|counter to 'Fizz'
+    set out[counter] to 'Fizz'
   count 5 to 101 step 5
-    set out|counter to (self default '') + 'Buzz'
+    set out[counter] to (self default '') + 'Buzz'
   count 1 to 101
-    debug out|counter default counter
+    debug out[counter] default counter
   return
 
   // Map
@@ -32,8 +34,8 @@ Instantiate task
   count 1 to 101 as num
     set out to ''
     iterate words
-      unless num % |1
-        set out + |0
+      unless num % .1
+        set out + .0
     debug out.length ?? out :: num
   return
 

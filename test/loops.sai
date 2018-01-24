@@ -266,9 +266,9 @@ Execute task
     a.set 'c',3
     set b to: '',''
     iterate a
-      set b|0 + |0
-      set b|1 + |1
-    return b|1='123' and b|0='abc'
+      set b.0 + .0
+      set b.1 + .1
+    return b.1='123' and b.0='abc'
       
   @Test 'until', task
     set a to 0

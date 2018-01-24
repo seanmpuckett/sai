@@ -1,3 +1,5 @@
+#!/usr/bin/env sai-run
+
 // sample code from Keywords documentation 
 // (maybe not all of it, and not in order)
 
@@ -78,7 +80,7 @@ Instantiate task
   
   set tally to blank
   set AddRow to task as item, quantity
-    set tally|item to (self default 0) + quantity
+    set tally[item] to (self default 0) + quantity
   AddRow 'socks', 3
   AddRow 'pants', 6
   debug tally 
@@ -251,19 +253,6 @@ Instantiate task
   debug 'b'<=>'b'
   debug 'b'<=>'c'
   
-  // |
-  debug '\n|'
-  set field to 'name'
-  with friends|0
-    debug it.name
-    debug .name
-    debug it['name'] 
-    debug it[field]
-    debug it|field
-    debug |field
-    debug |'name' 
-    debug it|'name' 
-  
   // isNaN
   debug '\nisNaN'
   set a to ~parseInt('This is not a number.')
@@ -349,7 +338,7 @@ Instantiate task
   debug fruit
   set fruit to a
   
-  set friend to friends|1
+  set friend to friends.1
   debug friend
   set friend update: name 'Jon', province 'QC'
   debug friend
@@ -587,11 +576,11 @@ Instantiate task
     debug it
   
   debug "ply inventory"
-  ply inventory by it|1
+  ply inventory by it.1
     debug it
   
   debug "ply inventory forcing iterator"
-  ply inventory iterate by it|1
+  ply inventory iterate by it.1
     debug it
   
   // iterate

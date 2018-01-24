@@ -1,3 +1,12 @@
+////////////////////////////////////////////////////////////////////////////////////
+//
+// SAI.JS
+//
+// Framework for SAI language.
+//
+// Designed by Sean M Puckett
+//
+
 "use strict";
 
 var fs = require('fs');
@@ -75,6 +84,11 @@ SAI.Dedenter=function(src) {
   var indent=[0];
   var out=[];
   var heredoc=false;
+  
+  if (lines[0].substr(0,2)==="#!") {
+    lines.shift(); // get rid of shebang
+  }
+  
   for (var i=0; i<lines.length; i++) {
     var line=lines[i];
     var depth=0;
@@ -163,17 +177,17 @@ SAI.GetParser = function() {
       mainParser=fs.readFileSync(parserFile).toString();
     }
   } catch (e) {
-    console.log('HEY WE GOT A PARSE ERROR IN THE MAIN GRAMMAR');
-    console.log(e);
+    var msg='SAI: Could not compile saigrammar.peg.\n  Is pegjs available?\n  Is there a syntax error in the grammar?\n\n';
+    msg+=e;
     if (grammar) {
       var beg=grammar.substring(e.offset-50,e.offset);
       var end=grammar.substring(e.offset,e.offset+50);
-      var context="\n"+beg+'(HERE)'+end;
+      var context="\n"+beg+'(HERE)'+end+"\n";
       if (e.offset<grammar.length) {
-        console.log(context);      
+        msg+=context;      
       }
     }
-    return null;
+    throw new Error(msg);
   }
   mainParser=eval(mainParser);
   //console.log (mainParser.parse.toString());
@@ -183,7 +197,6 @@ SAI.GetParser = function() {
     var source=dedent[0];
     var js='';
     try {
-      
       js=mainParser.parse(source,{
         startRule:fn?'startFile':'startExpression',
         bound:bound,
@@ -277,7 +290,7 @@ SAI.GetProtogen = function(name) {
     }
     var source=SAI.Parse(load.source,undefined,load.context);
     source='var __context='+JSON.stringify(load.context)+';\n'+source;
-    // console.log(source);
+    //console.log(source);
     protogen=SAI.Compile(source);
     if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
     var s2=new Date();

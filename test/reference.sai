@@ -1,8 +1,9 @@
 reference:
   pegjs from require 'pegjs'
+  Math ~Math
   Simple 'Simple'
-
-object HelloHTTP
+  
+object Reference
 
 inherit list
   Harness
@@ -10,9 +11,26 @@ inherit list
 Execute task
   
   @Test 'pegjs required', task
-    return ~pegjs.generate isnt undefined
+    return pegjs.generate isnt undefined
 
   @Test 'Simple reference', task
-    set a to create ~Simple
+    set a to create Simple
     return a.a isnt undefined
 
+  @Match 'math reference', 1, task
+    return Math.round(1.1)
+
+  @Test 'reference local override', task
+    try
+      set a create 'RefFail1'
+    catch
+      return true
+    return false
+    
+  @Test 'reference set override', task
+    try
+      set a create 'RefFail2'
+    catch
+      return true
+    return false
+    

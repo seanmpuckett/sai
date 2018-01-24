@@ -240,23 +240,23 @@ Execute task
   @Test 'merge list list', task
     set a to: 1,2,3
     set a update: undefined, 'a', undefined, 'b'
-    return a|0=1 and a|1='a' and a|2='3' and a|3='b'
+    return a.0=1 and a.1='a' and a.2='3' and a.3='b'
 
   @Test 'merge list traits', task
     set a to: 1,2,3
     set a update: '1' 'a','3' 'b'
-    return a|0=1 and a|1='a' and a|2='3' and a|3='b'
+    return a.0=1 and a.1='a' and a.2='3' and a.3='b'
 
   @Test 'merge list iterable', task
     set a to: 1,2,3
     set a update (: undefined, 'a', undefined, 'b'; iterate)
-    return a|0=1 and a|1='a' and a|2='3' and a|3='b'
+    return a.0=1 and a.1='a' and a.2='3' and a.3='b'
 
 
   @Test 'merge traits list', task
     set a to: a 1,b 2
     set a update: 'a', 'b'
-    return a|0='a' and a|1='b' and a.a=1 and a.b=2
+    return a.0='a' and a.1='b' and a.a=1 and a.b=2
 
   @Test 'merge traits traits', task
     set a to: a 1, b 2
@@ -266,7 +266,7 @@ Execute task
   @Test 'merge traits iterable', task
     set a to: a 1, b 2
     set a update (: undefined, 'a', undefined, 'b'; iterate)
-    return a.a=1 and a.b=2 and a|1='a' and a|3='b' and a|0 is undefined and a|2 is undefined
+    return a.a=1 and a.b=2 and a.1='a' and a.3='b' and a.0 is undefined and a.2 is undefined
 
 
   @Match 'local 1', 1, task

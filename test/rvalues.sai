@@ -9,11 +9,6 @@ inherit list
 Execute task
 
 
-  @Test '@|', task
-    set @b to true
-    set c to 'b'
-    return @|c
-
   @Test '@.', task
     set a to: "2" true
     return a.2
@@ -109,11 +104,6 @@ Execute task
   @Test 'local b.cow = 1', task
     local b to traits cow 1
     return b.cow = 1
-
-  @Test 'local b|a = 1', task
-    local b to traits cow 1
-    set a to 'cow'
-    return b|a = 1
 
   @Test 'local b[a] = 1', task
     local b to traits cow 1

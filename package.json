@@ -1,14 +1,14 @@
 {
   "name": "sai-language",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "An object-oriented language designed to afford code comprehension and maintenance. Transpiles in-place to Javascript.",
   "main": "sai.js",
   "scripts": {
-    "test": "./sai-run test/Test"
+    "test": "test/Test.sai"
   },
   "bin": {
-    "sai-build": "./sai-build",
-    "sai-run": "./sai-run"
+    "sai-build": "bin/sai-build",
+    "sai-run": "bin/sai-run"
   },
   "repository": {
     "type": "git",

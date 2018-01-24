@@ -1,3 +1,5 @@
+#!/usr/bin/env sai-run
+
 reference:
   Food 'Food'
   Fruit 'Fruit'

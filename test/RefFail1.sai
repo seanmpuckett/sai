@@ -1,0 +1,7 @@
+reference:
+  Simple 1
+  
+object RefFail1
+
+Instantiate task
+  local Simple 2

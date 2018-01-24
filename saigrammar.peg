@@ -7,8 +7,10 @@
   var FunctionChain=false;
   var SafetyFetch=false;
   var LeakedMagic=/\^\{([a-z0-9]+)\}/;
+  var References={};
   
   function addLocal(v,a) { 
+    if (References[v]) return;
     if (_bindings[v]) return;
     _locals._hasLocals=true;
     if (!_locals[v]) {
@@ -32,7 +34,15 @@
         k.unshift(_locals[i]);
       }
     } 
-    var r='var '+k.join(',')+';\n'; 
+    var finalk=[];
+    //console.log("references");
+    //console.log(References);
+    for (var i in k) {
+      //console.log(k[i]);
+      if (!References[k[i]]) finalk.push(k[i]);
+    }
+    //console.log(finalk);
+    var r='var '+finalk.join(',')+';\n'; 
     _locals={};
     return r; 
   }
@@ -280,7 +290,9 @@
     }
     if (!o.preface) o.preface='';
     if (!o.postface) o.postface='';
-    locals=locals.length?('var '+locals.join(',')+';'):'';
+    var finallocals=[];
+    for (var i in locals) if (!References[locals[i]]) finallocals.push(locals[i]);
+    locals=locals.length?('var '+finallocals.join(',')+';'):'';
     var code = o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+o.block+FunStop()+o.postface+'}';
     if (o.execute) code+='()';
     return code;
@@ -434,7 +446,8 @@ Reference
   var code='';
   for (var i in v[2]) {
     var r=v[2][i];
-    code+='var '+r[0]+'='+r[1]+';\n';
+    References['$'+r[0]]=true;
+    code+='var $'+r[0]+'='+r[1]+';\n';
   }
   return code;
 }
@@ -671,7 +684,10 @@ ElseClause
 LocalStatement
  = LOCAL _ l:(l:Local _ ',' _ { return l } )* o:Local _ {
    l=l||[]; l.push(o);
-   var j=[]; for (i in l) j.push(l[i][0][1]);
+   var j=[]; for (var i in l) j.push(l[i][0][1]);
+   console.log(j);
+   console.log(References);
+   for (var i in j) if (References[j[i]]) error("Cannot re-define reference variable "+j[i].substr(1)+" as a local."); 
    return 'var '+j.join(',')+';\n';
  } 
  
@@ -709,6 +725,7 @@ SetBlock
 
 SetTerm
  = l:RValues _ o:Itselfop _ e:Expression {
+   for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
      code+=RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
@@ -716,6 +733,7 @@ SetTerm
    return code;
  }
  / l:LValues _ (TO?/&FROM/&CHAIN) _ e:Expression {
+   for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
    if (l.length==1) return l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
@@ -724,6 +742,7 @@ SetTerm
    return code;
  }
  / l:RValues _ o:UnOp {
+   for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
      code+=RV(unops[o],{'1':l[i]})+';\n';
@@ -744,12 +763,14 @@ LocalBlock
 LocalTerm
  = l:RValues _ o:Itselfop _ e:Expression {
    var code='';
+   for (var i in l) if (References[l[i]]) error("Cannot re-define reference variable "+l[i].substr(1)+" as a local."); 
    for (var i in l) {
      code+='let '+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
    }
    return code;
  }
  / l:LValues _ (TO?/&FROM/&CHAIN) _ e:Expression {
+   for (var i in l) if (References[l[i]]) error("Cannot re-define reference variable "+l[i].substr(1)+" as a local."); 
    if (l.length==1) return 'let '+l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
@@ -758,6 +779,7 @@ LocalTerm
    return code;
  }
  / l:RValues _ o:UnOp {
+   for (var i in l) if (References[l[i]]) error("Cannot re-define reference variable "+l[i].substr(1)+" as a local."); 
    var code='';
    for (var i in l) {
      code+='let '+RV(unops[o],{'1':l[i]})+';\n';
@@ -1046,11 +1068,9 @@ Root
  = DOT !DOT v:IdentifierProto { return [[ 'it', ''],[ 'attribute', v ]] }
  / DOT v:PositiveInteger { return [[ 'it', ''],[ 'index', v ]] }
  / DOT !DOT { return [[ 'it', '']] }
- / '|' v:SimpleValue { return [['it',''],['index',v]] }
 
 Index
  = '[' _ v:Expression _ ']' { return [[ 'index', v ]] }
- / '|' v:SimpleValue { return [[ 'index', v ]] }
  / '.' v:PositiveInteger { return [[ 'index', v ]] }
 
 Parenthetic
@@ -1390,7 +1410,7 @@ FilterComprehension
 FilterComprehension2
  = x:Expression { // test 'filter inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'; }',{this:'$_v',key:'$_k'});
-     console.log("filter comp exp");
+     //console.log("filter comp exp");
      return ['_$AI.filter(' , ','+block+' )']; 
   }
  / o:IterateOutput? b:Block {
