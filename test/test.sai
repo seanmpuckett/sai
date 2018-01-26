@@ -17,10 +17,10 @@ Instantiate task
   //@AnalyseParseTrace
 
   set tests to list
+    Generators
     Promises
     Literals
     Syntax
-    Generators
     Comps
     RValues
     Operators

@@ -1,5 +1,24 @@
 ## Change log
 
+### 0.1.10
+
+#### Documentation
+
+ - `it`, `key`, `counter` and other formerly so-called "magic variables" are now collectively referred to as _pronouns_ which is a much more useful and accurate description of their function. 
+
+#### Enhancements
+
+ - Changed prefix of local variables in the generated Javascript from `$` to `_` which I think makes them a little clearer in error messages. I guess clearer still would be `local_` but we'll see how it goes. There's work to be done cleaning up the JS.  Temporary variables still start with `$` so it's clearer what's going on.
+ - other work variable name changes for less clutter etc.
+ - `audit`, `thru`, `has` and `into` comprehensions, when used with iterators, now provide a row counter as the `key`.
+ - when using `chain` as a verb, if the result is an iterator, we drain it (otherwise the chain never executes)
+ - added `key` pronoun to `iterate` verb blocks and `using` function calls.
+ 
+#### Bug Fixes
+
+ - local variables set at the same level of indent as a method start caused a JS compiler error (let collision with var). Solved by wrapping function bodies in `{}` which hopefully is clean syntax. Otherwise you know it could be `if(1){}` ifykwim.
+ 
+
 ### 0.1.9
 
 #### Breaking Changes

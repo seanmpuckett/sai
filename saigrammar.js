@@ -158,8 +158,8 @@
             var code='';
             for (var i in v[2]) {
               var r=v[2][i];
-              References['$'+r[0]]=true;
-              code+='var $'+r[0]+'='+r[1]+';\n';
+              References[lp+r[0]]=true; 
+              code+='var '+lp+r[0]+'='+r[1]+';\n'; 
             }
             return code;
           },
@@ -409,7 +409,7 @@
           "?<",
           peg$literalExpectation("?<", false),
           function(v) { return v+";\n"; },
-          function(v) { return v+';\n'; },
+          function(v) { return '$AI.drain('+v+');\n'; },
           function(k) { return k },
           function(k) { 
              return 'return '+(k?k:'')+';\n' 
@@ -428,18 +428,18 @@
           function(b) { return '{'+b+'}\n' },
           function(v, o, b, n) {return n},
           function(v, o, b, n) {
-             var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar(),this:(o?o[0]:false)};
-             var setup='var ^{t1}=_$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
+             var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
+             var setup='var ^{t1}=$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
              var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
-             var iterate='for (;!^{t2}.done; ^{t2}=^{t1}.next()) { ^{this}=^{t2}.value; ^{block}; }\n';
+             var iterate='for (var ^{key}=0; !^{t2}.done; ^{t2}=^{t1}.next(), ^{key}++) { ^{this}=^{t2}.value; ^{block}; }\n';
              return RV(setup+none+iterate,w); 
             },
           function(v, task, n) {return n},
           function(v, task, n) {
-             var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar()};
-             var setup='var ^{t1}=_$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
+             var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,key:tempvar()};
+             var setup='var ^{t1}=$AI.iterator(^{v}), ^{t2}=^{t1}.next(), ^{key}=0;\n';
              var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
-             var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value); ^{t2}=^{t1}.next(); }\n';
+             var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value,^{key}); ^{t2}=^{t1}.next(); ^{key}++; }\n';
              return RV(setup+none+iterate,w); 
             },
           function(v, o, b, n) {
@@ -528,7 +528,7 @@
           function(v) {
               var verb='',stem='';
               if (v[0][0]=='local') {
-                var test=v[0][1].substr(1,v[0][1].length-1);
+                var test=v[0][1].substr(lp.length,v[0][1].length-lp.length);
                 var binding=options.globals[test];
                 if (binding) {
                   v[0][0]='bound';
@@ -581,8 +581,8 @@
           peg$literalExpectation(".", false),
           function(v) { return [[ 'paren', v ]] },
           function(v) { 
-             if (!options.globals[v]) addLocal('$'+v); 
-             return [[ 'local','$'+v ]];
+             if (!options.globals[v]) addLocal(lp+v); 
+             return [[ 'local',lp+v ]];
           },
           "$$",
           peg$literalExpectation("$$", false),
@@ -667,111 +667,111 @@
              return v;
            },
           function() { // test 'sow *'
-               return ['_$AI.iterate(',')'];
+               return ['$AI.iterate(',')'];
              },
           function() { // test 'keys comp*'
-               return ['_$AI.keys(',')'];
+               return ['$AI.keys(',')'];
              },
           function() { // test 'values comp*'
-               return ['_$AI.values(',')'];
+               return ['$AI.values(',')'];
              },
           function(x) {
-             return ['_$AI.concat(' , ','+x+')' ];
+             return ['$AI.concat(' , ','+x+')' ];
            },
-          function() { return ['_$AI.collect(',')']; },
-          function() { return ['_$AI.enlist(',')']; },
-          function() { return ['_$AI.entrait(',')']; },
+          function() { return ['$AI.collect(',')']; },
+          function() { return ['$AI.enlist(',')']; },
+          function() { return ['$AI.entrait(',')']; },
           function(o, b) {
-              if (!o) o=['$a','$b'];
+              if (!o) o=[lp+'a',lp+'b'];
               var block=RV('function('+o[0]+','+o[1]+'){'+b+'}');
-              return ['_$AI.sort(' , ','+block+')']; 
+              return ['$AI.sort(' , ','+block+')']; 
             },
           function(x) {
-             return ['_$AI.sort(' , ','+x+')' ];
+             return ['$AI.sort(' , ','+x+')' ];
             },
           function(x) { // test 'thru inline *'
                var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
-               return ['_$AI.map(' , ','+block+' )']; 
+               return ['$AI.map(' , ','+block+' )']; 
             },
           function(o, b) { // test 'thru block'
                var block=RV('function(^{this},^{key}){'+b+'; return ^{this};}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-               return ['_$AI.map(' , ','+block+' )']; 
+               return ['$AI.map(' , ','+block+' )']; 
             },
           function(x) { // test 'thru using'
-             return ['_$AI.map(' , ','+x+')' ];
+             return ['$AI.map(' , ','+x+')' ];
             },
           function(x) { // test 'audit inline *'
                var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
-               return ['_$AI.audit(' , ','+block+' )']; 
+               return ['$AI.audit(' , ','+block+' )']; 
             },
           function(o, b) { // test 'audit block*'
                var block=RV('function(^{this},^{key}){'+b+' }',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-               return ['_$AI.audit(' , ','+block+' )']; 
+               return ['$AI.audit(' , ','+block+' )']; 
             },
           function(x) { // test 'audit using*'
-             return ['_$AI.audit(' , ','+x+')' ];
+             return ['$AI.audit(' , ','+x+')' ];
             },
           function(into, o, b) {
               if (!o) o=[];
-              if (!o[0]) o[0]='$sum';
+              if (!o[0]) o[0]=lp+'sum'; 
               if (!o[1]) o[1]='$_v';
               if (!o[2]) o[2]='$_k';
               b+='return ^{sum};\n';
               var block=RV('function(^{sum},^{this},^{key}){'+b+'}',{sum:o[0],this:o[1],key:o[2]});
               if (into=='it') {
-                return ['_$AI.reduce(' , ','+block+')' ];
+                return ['$AI.reduce(' , ','+block+')' ];
               } else {
-                return ['_$AI.reduce(' , ','+block+','+into+')' ];
+                return ['$AI.reduce(' , ','+block+','+into+')' ];
               }
             },
           function(into, b) {
-              var block=RV('function(^{sum},^{this},^{key}){ return '+b+';}',{sum:'$sum',this:'$_v',key:'$_k'});
+              var block=RV('function(^{sum},^{this},^{key}){ return '+b+';}',{sum:lp+'sum',this:'$_v',key:'$_k'});
               if (into=='it') {
-                return ['_$AI.reduce(' , ','+block+')' ];
+                return ['$AI.reduce(' , ','+block+')' ];
               } else {
-                return ['_$AI.reduce(' , ','+block+','+into+')' ];
+                return ['$AI.reduce(' , ','+block+','+into+')' ];
               }
             },
           function(into, x) {
               if (into=='it') {
-                return ['_$AI.reduce(' , ','+x+')' ];
+                return ['$AI.reduce(' , ','+x+')' ];
               } else {
-                return ['_$AI.reduce(' , ','+x+','+into+')' ];
+                return ['$AI.reduce(' , ','+x+','+into+')' ];
               }
             },
           function(x) { // test 'filter inline *'
                var block=RV('function(^{this},^{key}){ return '+x+'; }',{this:'$_v',key:'$_k'});
                //console.log("filter comp exp");
-               return ['_$AI.filter(' , ','+block+' )']; 
+               return ['$AI.filter(' , ','+block+' )']; 
             },
           function(o, b) {
                var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-               return ['_$AI.filter(' , ','+block+')']; 
+               return ['$AI.filter(' , ','+block+')']; 
             },
           function(x) {
-              return ['_$AI.filter(' , ','+x+')' ];
+              return ['$AI.filter(' , ','+x+')' ];
             },
           function(x) { // test 'alter inline*'
                var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
-               return [ '_$AI.alter(' , ','+block+')']; 
+               return [ '$AI.alter(' , ','+block+')']; 
             },
           function(o, b) { // test 'alter block*'
                var block=RV('function(^{this}){'+b+'; return ^{this}; }',{this:o?o[0]:'$_v'});
-               return [ '_$AI.alter(' , ','+block+')']; 
+               return [ '$AI.alter(' , ','+block+')']; 
             },
           function(x) { // test 'alter using'
-               return [ '_$AI.alter(' , ','+x+')']; 
+               return [ '$AI.alter(' , ','+x+')']; 
             },
           function(x) { // test 'observe inline'
                var block=RV('function(^{this}){ '+x+'; }',{this:'$_v'});
-               return [ '_$AI.observe(' , ','+block+')']; 
+               return [ '$AI.observe(' , ','+block+')']; 
             },
           function(o, b) { // test 'observe block'
                var block=RV('function(^{this}){'+b+'; }',{this:o?o[0]:'$_v'});
-               return [ '_$AI.observe(' , ','+block+')']; 
+               return [ '$AI.observe(' , ','+block+')']; 
             },
           function(x) { // test 'observe using'
-               return [ '_$AI.observe(' , ','+x+')']; 
+               return [ '$AI.observe(' , ','+x+')']; 
             },
           function(q) {
              var code='({<>})';
@@ -792,21 +792,21 @@
                var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
              }
              if (conds.length) {
-               code=RV('_$AI.filter(^{source},function($_v,$_k){ return ^{block}; })',{source:code,block:conds.join(' && '),this:'$_v',key:'$_k'});
+               code=RV('$AI.filter(^{source},function($_v,$_k){ return ^{block}; })',{source:code,block:conds.join(' && '),this:'$_v',key:'$_k'});
              }
              if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
-               code='_$AI.reduce('+code+',function(a,b) { if (undefined===a) return b; var r; ';
+               code='$AI.reduce('+code+',function(a,b) { if (undefined===a) return b; var r; ';
                expr.by[0][1]*=expr.limit[0].sort; // flip sort if looking for "last"
                var conds=expr.by.map(function(c){
                  c[0]=c[0]||'^{this}';
                  var x1=RV(c[0],{this:'a'});
                  var x2=RV(c[0],{this:'b'});
-                 return RV('r=_$AI.compare(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
+                 return RV('r=$AI.compare(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
                });
                code+=conds.join(' ')+'return a; },undefined)';     
              } else {
                if (expr.by.length) {
-                 code='_$AI.sort('+code+',function(a,b) { var aa,bb; ';
+                 code='$AI.sort('+code+',function(a,b) { var aa,bb; ';
                  var conds=expr.by.map(function(c){
                    c[0]=c[0]||'^{this}';
                    var x1=RV('aa='+c[0]+'; ',{this:'a'});
@@ -818,13 +818,13 @@
                if (expr.limit.length) {
                  var l=expr.limit[0];
                  if (l.slice) {
-                   code='_$AI.slice('+code+','+l.start+','+l.len+')';
+                   code='$AI.slice('+code+','+l.start+','+l.len+')';
                  }
                  if (l.extract) { 
-                   code='_$AI.element('+code+',0)';
+                   code='$AI.element('+code+',0)';
                  }
                  if (l.count) {
-                   code='_$AI.count('+code+')';
+                   code='$AI.count('+code+')';
                  }
                }
              } 
@@ -845,7 +845,7 @@
           function() { return 1 },
           function() { return -1 },
           function(l, o, r) { return '('+l+o+r+')' },
-          function(c, l) { return '(_$AI.xor('+c+','+l+'))' },
+          function(c, l) { return '($AI.xor('+c+','+l+'))' },
           function(l, f) { return '(!('+l+' && '+f+'))' },
           function(l, f) { return '(!('+l+' || '+f+'))' },
           "??",
@@ -882,11 +882,11 @@
           "!=",
           peg$literalExpectation("!=", false),
           function() { return '!=' },
-          function() { return '_$AI.max' },
-          function() { return '_$AI.min' },
+          function() { return '$AI.max' },
+          function() { return '$AI.min' },
           "<=>",
           peg$literalExpectation("<=>", false),
-          function() { return '_$AI.compare' },
+          function() { return '$AI.compare' },
           function() {return '|' },
           function() {return '&'},
           function() { return '^'},
@@ -894,16 +894,16 @@
              return 'Math.pow('+l+','+r+')' 
            },
           function(l, r) { // test 'overlay *'
-             return '_$AI.overlay('+l+','+r+')' 
+             return '$AI.overlay('+l+','+r+')' 
            },
           function(l, r) { // test 'select *'
-             return '_$AI.select('+l+','+r+')' 
+             return '$AI.select('+l+','+r+')' 
            },
           function(l, r) { // test 'delete *'
-             return '_$AI.delete(_$AI.clone('+l+'),'+r+')' 
+             return '$AI.delete($AI.clone('+l+'),'+r+')' 
            },
           function(l, r) { 
-             return '_$AI.expects('+l+','+r+')' 
+             return '$AI.expects('+l+','+r+')' 
            },
           function(l, r) { 
              return '('+l+').isof['+r+']'; 
@@ -913,9 +913,9 @@
           function(v) { return '(!('+v+'))' },
           function(v) { return 'typeof ('+v+')'; },
           function(v) { return 'isNaN('+v+')'; },
-          function(v) { return '(_$AI.number('+v+'))'; },
+          function(v) { return '($AI.number('+v+'))'; },
           function(v) { return '(undefined!=='+v+')' },
-          function(v) { return '_$AI.clone('+v+')'; },
+          function(v) { return '$AI.clone('+v+')'; },
           function(v) { return 'yield *'+v; },
           function(v) { return 'yield'+v; },
           "?",
@@ -981,7 +981,7 @@
                return {verb:'.'+i, param:(o?o[1]:''), test:true}; 
             },
           function(v, o) { 
-             return '_$AI.create('+v+',['+(o?o[1]:'undefined')+'])'; 
+             return '$AI.create('+v+',['+(o?o[1]:'undefined')+'])'; 
            },
           function(v, o) {
              return 'new '+v+'('+(o?o[1]:'')+')'; 
@@ -2091,6 +2091,7 @@
       var SafetyFetch=false;
       var LeakedMagic=/\^\{([a-z0-9]+)\}/;
       var References={};
+      var lp='_'; // prefix for bareword variables
       
       function addLocal(v,a) { 
         if (References[v]) return;
@@ -2235,7 +2236,7 @@
         //console.log(v);
         var code='';
         if (v[0][0]=='local') {
-          var test=v[0][1].substr(1,v[0][1].length-1);
+          var test=v[0][1].substr(lp.length,v[0][1].length-lp.length);
           var binding=options.globals[test];
           if (binding) {
             v[0][0]='bound';
@@ -2279,7 +2280,7 @@
 
         and: '^{1} = ^{1} && ^{2}', // test 'self and'
         or: '^{1} = ^{1} || ^{2}', // test 'self or'
-        xor: '^{1} = _$AI.xor(^{1},^{2})',  // test 'self xor'
+        xor: '^{1} = $AI.xor(^{1},^{2})',  // test 'self xor'
         nand: '^{1} = (!((^{1})&&(^{2})))', // test 'self nand'
         nor: '^{1} = (!((^{1})||(^{2})))', // test 'self nor'
 
@@ -2287,10 +2288,10 @@
         '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
         
     //    via: '^{1} = ^{2}(^{1})', // test 'self via'
-        update: '^{1} = _$AI.update(^{1},^{2})', // test 'self update'
-        delete: '_$AI.delete(^{1},^{2})', // test 'self delete*'
+        update: '^{1} = $AI.update(^{1},^{2})', // test 'self update'
+        delete: '$AI.delete(^{1},^{2})', // test 'self delete*'
         default: 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
-        concat: '^{1} = _$AI.concat(^{1},^{2}, true)', // test 'self concat inplace*'
+        concat: '^{1} = $AI.concat(^{1},^{2}, true)', // test 'self concat inplace*'
       };
 
       var unops={
@@ -2300,7 +2301,7 @@
         'inc': '^{1}++', // test 'self inc'
         'dec': '^{1}--', // test 'self dec'
         'delete': 'delete ^{1}', // test 'self delete'
-        'collect': '^{1} = _$AI.collect(^{1})' // test 'self collect*'
+        'collect': '^{1} = $AI.collect(^{1})' // test 'self collect*'
       };  
 
       
@@ -2346,7 +2347,7 @@
           var p='"'+x[i][0][1]+'":'+x[i][1];
           l.push(p);
         }
-        return '_$AI.expectsThrow(p,{'+l.join(',')+'},'+quoted(name)+');\n';
+        return '$AI.expectsThrow(p,{'+l.join(',')+'},'+quoted(name)+');\n';
       }
       
       
@@ -2376,7 +2377,7 @@
         var finallocals=[];
         for (var i in locals) if (!References[locals[i]]) finallocals.push(locals[i]);
         locals=locals.length?('var '+finallocals.join(',')+';'):'';
-        var code = o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+o.block+FunStop()+o.postface+'}';
+        var code = o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+'{'+o.block+'}'+FunStop()+o.postface+'}';
         if (o.execute) code+='()';
         return code;
       }
@@ -2420,7 +2421,7 @@
         if (o.expects) {
           fun+=GetExpectsTester(o.expects,fn);
         }
-        fun+=o.body+FunStop(); // function body
+        fun+='{'+o.body+'}'+FunStop(); // function body
         fun+='}';
       
         if (o.name) {

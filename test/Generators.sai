@@ -115,4 +115,23 @@ Execute task
     i.next
     return i.next().value
     
+  @Test 'chain draining iterator', task
+    set b to false
+    chain: 1; iterate
+      audit
+        set b true
+    return b
+    
+  @Match 'iterate with keys', 3, task
+    set b to 0
+    iterate: 1, 2, 3; iterate
+      set b + key
+    return b
+  
+  @Match 'iterate with keys using', 3, task
+    set b to 0
+    set countb to task as v, k
+      set b + k
+    iterate: 1, 2, 3; iterate using countb
+    return b
   

@@ -636,6 +636,12 @@ Instantiate task
   debug -32 >> 2
   debug -32 >>> 2
 
+  debug '\nVERB CHAIN'
+  set population empty
+  chain friends
+    audit 
+      set population[.province] to (self default 0) + 1
+  debug population
 
 
 Dump task 

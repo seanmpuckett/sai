@@ -808,8 +808,47 @@ Execute task
   @Test 'last on generator', task
     set a to: 1, 2, 3; iterate last
     return a is 3
-    
   
+  @Match 'row count on iterated audit', 3, task
+    set a to: 1, 2, 3; iterate
+    set b to 0
+    chain a
+      audit
+        set b + key
+    return b 
+    
+  @Match 'row count on iterated map', 3, task
+    set a to: 1, 2, 3; iterate
+    set b to 0
+    chain a
+      thru
+        set b + key
+    return b 
+    
+  @Match 'row count on iterated filter', 3, task
+    set a to: 1, 2, 3; iterate
+    set b to 0
+    chain a
+      has
+        set b + key
+    return b 
+    
+  @Match 'row count on iterated reduce', 3, task
+    set a to: 1, 2, 3; iterate
+    set b to 0
+    chain a
+      into 0
+        set b + key
+    return b
+    
+  @Match 'row count on iterated reduce it', 5, task
+    set a to: 1, 2, 3; iterate
+    set b to 0
+    chain a // when using into it, the first generated row's function call is skipped, so there is no key 0
+      into it
+        set b + key + 1
+    return b
+    
     
     
     

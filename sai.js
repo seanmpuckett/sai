@@ -41,9 +41,9 @@ try {
 
 var SAIconfig = {
   verbs: {
-    debug: '_$AI.debug',
+    debug: '$AI.debug',
     require: 'require',
-    assert: '_$AI.assert'
+    assert: '$AI.assert'
   },
   paths: [__dirname+'/'],
   options: {
@@ -58,7 +58,7 @@ var SAIconfig = {
 //
 //  runtime library functions
 
-var _$AI=require('sai-library');
+var $AI=require('sai-library');
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ SAI.protogens={};
 SAI.isa={};
 SAI.config=SAIconfig;
 SAI.persist={globalcount:1}; // internal
-SAI.proto=_$AI._prototype;
+SAI.proto=$AI._prototype;
   
 // Dedenter
 //
@@ -218,7 +218,7 @@ SAI.GetParser = function() {
       throw new Error(info);
     }
     if (SAIconfig.options.beautify) {
-      js=Beautify(js,{ indent_size: 2, preserve_newlines: false});
+      js=Beautify(js,{ indent_size: 2, preserve_newlines: false, "brace_style": "collapse",});
     }
     return js;
   }
@@ -273,7 +273,7 @@ SAI.config.Loader = SAI.GetSourceFromPaths = function(name) {
 // needed to integrate necessary scope and the SAI runtime library.
 //
 SAI.Compile = function(source) {
-  return new Function('prototype','options','require','_$AI',source);
+  return new Function('prototype','options','require','$AI',source);
 }
 
 // ProtoGen
@@ -307,7 +307,7 @@ SAI.GetProtogen = function(name) {
 //
 SAI.Expression = (source) => {
   var jssource="return "+SAI.Parse(source,undefined,undefined);
-  return SAI.Compile(jssource)(this,{},require,_$AI);
+  return SAI.Compile(jssource)(this,{},require,$AI);
 }
 
 // GetAncestors
@@ -325,7 +325,7 @@ SAI.GetAncestors = function(name) {
       nodupes[leaf]=true;
       var obj=new SAI.proto(name); 
       var protogen=SAI.GetProtogen(leaf);
-      protogen(obj,{name:leaf},require,_$AI); 
+      protogen(obj,{name:leaf},require,$AI); 
       obj.Constructor();
       if (!obj.isa) {
         throw new Error("SAI.GetPrototype: object loaded as "+leaf+" does not have an 'isa' type identifier in its manifest.")
@@ -365,7 +365,7 @@ SAI.GetPrototype = function(name,bindings) {
         }
       }
       var protogen=SAI.GetProtogen(name);
-      protogen(proto,{name:name},require,_$AI);
+      protogen(proto,{name:name},require,$AI);
     }
 
     adopt(name);
@@ -376,7 +376,7 @@ SAI.GetPrototype = function(name,bindings) {
     }
     SAI.isa[proto.isa]=name;
 
-    _$AI.finalizePrototype(proto);
+    $AI.finalizePrototype(proto);
     SAI.prototypes[name]=proto;
   }
   return proto;
@@ -392,8 +392,8 @@ SAI.GetSource = function(name) {
     '// Javascript source for '+name+' transpiled by SAI\n'+
     '//\n'+
     '"use strict";\n'+
-    'var _$AI=require("sai-library");\n'+
-    'var prototype=new _$AI._prototype();\n'+
+    'var $AI=require("sai-library");\n'+
+    'var prototype=new $AI._prototype();\n'+
     '\n// Generated code follows\n\n';
     
   var adopt=function(name) {
@@ -408,7 +408,7 @@ SAI.GetSource = function(name) {
   adopt(name);
 
   source+='\n// End of generated code\n\n';
-  source+='_$AI.finalizePrototype(prototype);\n';
+  source+='$AI.finalizePrototype(prototype);\n';
   source+='var pro=prototype.constructor;\n';
   source+='exports=pro; try { module.exports=pro; } catch(e) {}\n';
   source+='if (prototype.isof[isa].main) var main=pro();\n';
@@ -431,7 +431,7 @@ SAI.Require = function(name) {
 //
 // Create an object by name (an alternative to using new on what Require gives you)
 //
-SAI.Create = _$AI.create = function(name,parameters) {
+SAI.Create = $AI.create = function(name,parameters) {
   var proto=SAI.GetPrototype(name);
   if (!proto) throw new Error('SAI.Create: Do not know how to create SAI object "'+name+'".');
   var obj=Object.create(proto); 
@@ -449,10 +449,10 @@ SAI.Configure = function(config) {
     SAI.config.paths=config.paths;
   }
   if (config.verbs) {
-    _$AI.update(SAI.config.verbs,config.verbs);
+    $AI.update(SAI.config.verbs,config.verbs);
   }
   if (config.options) {
-    _$AI.update(SAI.config.options,config.options);
+    $AI.update(SAI.config.options,config.options);
   }
   if (config.Loader) {
     SAI.config.Loader=config.Loader;

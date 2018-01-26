@@ -8,6 +8,7 @@
   var SafetyFetch=false;
   var LeakedMagic=/\^\{([a-z0-9]+)\}/;
   var References={};
+  var lp='_'; // prefix for bareword variables
   
   function addLocal(v,a) { 
     if (References[v]) return;
@@ -152,7 +153,7 @@
     //console.log(v);
     var code='';
     if (v[0][0]=='local') {
-      var test=v[0][1].substr(1,v[0][1].length-1);
+      var test=v[0][1].substr(lp.length,v[0][1].length-lp.length);
       var binding=options.globals[test];
       if (binding) {
         v[0][0]='bound';
@@ -196,7 +197,7 @@
 
     and: '^{1} = ^{1} && ^{2}', // test 'self and'
     or: '^{1} = ^{1} || ^{2}', // test 'self or'
-    xor: '^{1} = _$AI.xor(^{1},^{2})',  // test 'self xor'
+    xor: '^{1} = $AI.xor(^{1},^{2})',  // test 'self xor'
     nand: '^{1} = (!((^{1})&&(^{2})))', // test 'self nand'
     nor: '^{1} = (!((^{1})||(^{2})))', // test 'self nor'
 
@@ -204,10 +205,10 @@
     '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
     
 //    via: '^{1} = ^{2}(^{1})', // test 'self via'
-    update: '^{1} = _$AI.update(^{1},^{2})', // test 'self update'
-    delete: '_$AI.delete(^{1},^{2})', // test 'self delete*'
+    update: '^{1} = $AI.update(^{1},^{2})', // test 'self update'
+    delete: '$AI.delete(^{1},^{2})', // test 'self delete*'
     default: 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
-    concat: '^{1} = _$AI.concat(^{1},^{2}, true)', // test 'self concat inplace*'
+    concat: '^{1} = $AI.concat(^{1},^{2}, true)', // test 'self concat inplace*'
   };
 
   var unops={
@@ -217,7 +218,7 @@
     'inc': '^{1}++', // test 'self inc'
     'dec': '^{1}--', // test 'self dec'
     'delete': 'delete ^{1}', // test 'self delete'
-    'collect': '^{1} = _$AI.collect(^{1})' // test 'self collect*'
+    'collect': '^{1} = $AI.collect(^{1})' // test 'self collect*'
   };  
 
   
@@ -263,7 +264,7 @@
       var p='"'+x[i][0][1]+'":'+x[i][1];
       l.push(p);
     }
-    return '_$AI.expectsThrow(p,{'+l.join(',')+'},'+quoted(name)+');\n';
+    return '$AI.expectsThrow(p,{'+l.join(',')+'},'+quoted(name)+');\n';
   }
   
   
@@ -293,7 +294,7 @@
     var finallocals=[];
     for (var i in locals) if (!References[locals[i]]) finallocals.push(locals[i]);
     locals=locals.length?('var '+finallocals.join(',')+';'):'';
-    var code = o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+o.block+FunStop()+o.postface+'}';
+    var code = o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+'{'+o.block+'}'+FunStop()+o.postface+'}';
     if (o.execute) code+='()';
     return code;
   }
@@ -337,7 +338,7 @@
     if (o.expects) {
       fun+=GetExpectsTester(o.expects,fn);
     }
-    fun+=o.body+FunStop(); // function body
+    fun+='{'+o.body+'}'+FunStop(); // function body
     fun+='}';
   
     if (o.name) {
@@ -446,8 +447,8 @@ Reference
   var code='';
   for (var i in v[2]) {
     var r=v[2][i];
-    References['$'+r[0]]=true;
-    code+='var $'+r[0]+'='+r[1]+';\n';
+    References[lp+r[0]]=true; 
+    code+='var '+lp+r[0]+'='+r[1]+';\n'; 
   }
   return code;
 }
@@ -810,7 +811,7 @@ Itselfop // test 'self*'
 
 VerbStatement
  = v:VerbSentence  { return v+";\n"; }
- / v:VerbChain { return v+';\n'; }
+ / v:VerbChain { return '$AI.drain('+v+');\n'; }
  
 ReturnStatement
  = RETURN k:(Sep k:Expression { return k })?  { 
@@ -836,17 +837,17 @@ NoneClause
 
 IterateStatement
  = ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-   var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar(),this:(o?o[0]:false)};
-   var setup='var ^{t1}=_$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
+   var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
+   var setup='var ^{t1}=$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
-   var iterate='for (;!^{t2}.done; ^{t2}=^{t1}.next()) { ^{this}=^{t2}.value; ^{block}; }\n';
+   var iterate='for (var ^{key}=0; !^{t2}.done; ^{t2}=^{t1}.next(), ^{key}++) { ^{this}=^{t2}.value; ^{block}; }\n';
    return RV(setup+none+iterate,w); 
   }
  / ITERATE Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
-   var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,k:tempvar()};
-   var setup='var ^{t1}=_$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
+   var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,key:tempvar()};
+   var setup='var ^{t1}=$AI.iterator(^{v}), ^{t2}=^{t1}.next(), ^{key}=0;\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
-   var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value); ^{t2}=^{t1}.next(); }\n';
+   var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value,^{key}); ^{t2}=^{t1}.next(); ^{key}++; }\n';
    return RV(setup+none+iterate,w); 
   }
  / EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
@@ -963,7 +964,7 @@ VerbValue
   {
     var verb='',stem='';
     if (v[0][0]=='local') {
-      var test=v[0][1].substr(1,v[0][1].length-1);
+      var test=v[0][1].substr(lp.length,v[0][1].length-lp.length);
       var binding=options.globals[test];
       if (binding) {
         v[0][0]='bound';
@@ -1078,8 +1079,8 @@ Parenthetic
 
 Local
  = v:Identifier { 
-   if (!options.globals[v]) addLocal('$'+v); 
-   return [[ 'local','$'+v ]];
+   if (!options.globals[v]) addLocal(lp+v); 
+   return [[ 'local',lp+v ]];
 }
 
 Parameter
@@ -1300,39 +1301,39 @@ Comprehension
 
 IterateComprehension
  = ITERATE { // test 'sow *'
-     return ['_$AI.iterate(',')'];
+     return ['$AI.iterate(',')'];
    }
 
 KeysComprehension
  = KEYS { // test 'keys comp*'
-     return ['_$AI.keys(',')'];
+     return ['$AI.keys(',')'];
    }
 
 ValuesComprehension
  = VALUES { // test 'values comp*'
-     return ['_$AI.values(',')'];
+     return ['$AI.values(',')'];
    }
 
 ConcatComprehension
  = CONCAT Sep x:Expression {
-   return ['_$AI.concat(' , ','+x+')' ];
+   return ['$AI.concat(' , ','+x+')' ];
  }
 
 CollectComprehension
- = COLLECT { return ['_$AI.collect(',')']; }
- / ENLIST { return ['_$AI.enlist(',')']; }
- / ENTRAIT { return ['_$AI.entrait(',')']; }
+ = COLLECT { return ['$AI.collect(',')']; }
+ / ENLIST { return ['$AI.enlist(',')']; }
+ / ENTRAIT { return ['$AI.entrait(',')']; }
 
 SortComprehension
  = BY Sep x:SortComprehension2 { return x }
 SortComprehension2
  = o:IterateOutput? b:Block {
-    if (!o) o=['$a','$b'];
+    if (!o) o=[lp+'a',lp+'b'];
     var block=RV('function('+o[0]+','+o[1]+'){'+b+'}');
-    return ['_$AI.sort(' , ','+block+')']; 
+    return ['$AI.sort(' , ','+block+')']; 
   }
  / USING Sep x:Value {
-   return ['_$AI.sort(' , ','+x+')' ];
+   return ['$AI.sort(' , ','+x+')' ];
   }
 
 MapComprehension
@@ -1340,18 +1341,18 @@ MapComprehension
 MapComprehension2
  = x:Expression  { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
-     return ['_$AI.map(' , ','+block+' )']; 
+     return ['$AI.map(' , ','+block+' )']; 
   }
  / LPAREN _ x:Expression _ RPAREN _ { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
-     return ['_$AI.map(' , ','+block+' )']; 
+     return ['$AI.map(' , ','+block+' )']; 
   }
  / o:IterateOutput? b:Block { // test 'thru block'
      var block=RV('function(^{this},^{key}){'+b+'; return ^{this};}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['_$AI.map(' , ','+block+' )']; 
+     return ['$AI.map(' , ','+block+' )']; 
   }
  / USING Sep x:Value { // test 'thru using'
-   return ['_$AI.map(' , ','+x+')' ];
+   return ['$AI.map(' , ','+x+')' ];
   }
 
 AuditComprehension
@@ -1359,18 +1360,18 @@ AuditComprehension
 AuditComprehension2
  = LPAREN _ x:Expression _ RPAREN _ { // test 'audit inline *'
      var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
-     return ['_$AI.audit(' , ','+block+' )']; 
+     return ['$AI.audit(' , ','+block+' )']; 
   }
  / x:Expression { // test 'audit inline *'
      var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
-     return ['_$AI.audit(' , ','+block+' )']; 
+     return ['$AI.audit(' , ','+block+' )']; 
   }
  / o:IterateOutput? b:Block { // test 'audit block*'
      var block=RV('function(^{this},^{key}){'+b+' }',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['_$AI.audit(' , ','+block+' )']; 
+     return ['$AI.audit(' , ','+block+' )']; 
   }
  / USING Sep x:Value { // test 'audit using*'
-   return ['_$AI.audit(' , ','+x+')' ];
+   return ['$AI.audit(' , ','+x+')' ];
   }
 
 ReduceComprehension
@@ -1378,30 +1379,30 @@ ReduceComprehension
 ReduceComprehension2
  = into:IntoClause o:IterateOutput? b:Block {
     if (!o) o=[];
-    if (!o[0]) o[0]='$sum';
+    if (!o[0]) o[0]=lp+'sum'; 
     if (!o[1]) o[1]='$_v';
     if (!o[2]) o[2]='$_k';
     b+='return ^{sum};\n';
     var block=RV('function(^{sum},^{this},^{key}){'+b+'}',{sum:o[0],this:o[1],key:o[2]});
     if (into=='it') {
-      return ['_$AI.reduce(' , ','+block+')' ];
+      return ['$AI.reduce(' , ','+block+')' ];
     } else {
-      return ['_$AI.reduce(' , ','+block+','+into+')' ];
+      return ['$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
  / into:IntoClause b:Expression {
-    var block=RV('function(^{sum},^{this},^{key}){ return '+b+';}',{sum:'$sum',this:'$_v',key:'$_k'});
+    var block=RV('function(^{sum},^{this},^{key}){ return '+b+';}',{sum:lp+'sum',this:'$_v',key:'$_k'});
     if (into=='it') {
-      return ['_$AI.reduce(' , ','+block+')' ];
+      return ['$AI.reduce(' , ','+block+')' ];
     } else {
-      return ['_$AI.reduce(' , ','+block+','+into+')' ];
+      return ['$AI.reduce(' , ','+block+','+into+')' ];
     }
   }
   / into:IntoClause USING Sep x:Value  {
     if (into=='it') {
-      return ['_$AI.reduce(' , ','+x+')' ];
+      return ['$AI.reduce(' , ','+x+')' ];
     } else {
-      return ['_$AI.reduce(' , ','+x+','+into+')' ];
+      return ['$AI.reduce(' , ','+x+','+into+')' ];
     }
   }
 
@@ -1411,14 +1412,14 @@ FilterComprehension2
  = x:Expression { // test 'filter inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'; }',{this:'$_v',key:'$_k'});
      //console.log("filter comp exp");
-     return ['_$AI.filter(' , ','+block+' )']; 
+     return ['$AI.filter(' , ','+block+' )']; 
   }
  / o:IterateOutput? b:Block {
      var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['_$AI.filter(' , ','+block+')']; 
+     return ['$AI.filter(' , ','+block+')']; 
   }
   / USING Sep x:Value {
-    return ['_$AI.filter(' , ','+x+')' ];
+    return ['$AI.filter(' , ','+x+')' ];
   }
 
 /*
@@ -1426,7 +1427,7 @@ ViaComprehensionUNUSED
  = VIA Sep x:ViaComprehension2 { return x }
 ViaComprehension2UNUSED
  = x:Expression { // test 'via inline*'
-    return [ '_$AI.alter(' , ','+x+')']; 
+    return [ '$AI.alter(' , ','+x+')']; 
   }
 */  
 
@@ -1435,14 +1436,14 @@ SetComprehension
 AlterComprehension2
  = x:Expression { // test 'alter inline*'
      var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
-     return [ '_$AI.alter(' , ','+block+')']; 
+     return [ '$AI.alter(' , ','+block+')']; 
   }
  / o:IterateOutput? b:Block { // test 'alter block*'
      var block=RV('function(^{this}){'+b+'; return ^{this}; }',{this:o?o[0]:'$_v'});
-     return [ '_$AI.alter(' , ','+block+')']; 
+     return [ '$AI.alter(' , ','+block+')']; 
   }
  / USING Sep x:Value { // test 'alter using'
-     return [ '_$AI.alter(' , ','+x+')']; 
+     return [ '$AI.alter(' , ','+x+')']; 
   }
   
 ObserveComprehension
@@ -1450,14 +1451,14 @@ ObserveComprehension
 ObserveComprehension2
  = x:Expression { // test 'observe inline'
      var block=RV('function(^{this}){ '+x+'; }',{this:'$_v'});
-     return [ '_$AI.observe(' , ','+block+')']; 
+     return [ '$AI.observe(' , ','+block+')']; 
   }
  / o:IterateOutput? b:Block { // test 'observe block'
      var block=RV('function(^{this}){'+b+'; }',{this:o?o[0]:'$_v'});
-     return [ '_$AI.observe(' , ','+block+')']; 
+     return [ '$AI.observe(' , ','+block+')']; 
   }
  / USING Sep x:Value { // test 'observe using'
-     return [ '_$AI.observe(' , ','+x+')']; 
+     return [ '$AI.observe(' , ','+x+')']; 
   }
 
 
@@ -1483,21 +1484,21 @@ OtherComprehension
      var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
    }
    if (conds.length) {
-     code=RV('_$AI.filter(^{source},function($_v,$_k){ return ^{block}; })',{source:code,block:conds.join(' && '),this:'$_v',key:'$_k'});
+     code=RV('$AI.filter(^{source},function($_v,$_k){ return ^{block}; })',{source:code,block:conds.join(' && '),this:'$_v',key:'$_k'});
    }
    if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
-     code='_$AI.reduce('+code+',function(a,b) { if (undefined===a) return b; var r; ';
+     code='$AI.reduce('+code+',function(a,b) { if (undefined===a) return b; var r; ';
      expr.by[0][1]*=expr.limit[0].sort; // flip sort if looking for "last"
      var conds=expr.by.map(function(c){
        c[0]=c[0]||'^{this}';
        var x1=RV(c[0],{this:'a'});
        var x2=RV(c[0],{this:'b'});
-       return RV('r=_$AI.compare(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
+       return RV('r=$AI.compare(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
      });
      code+=conds.join(' ')+'return a; },undefined)';     
    } else {
      if (expr.by.length) {
-       code='_$AI.sort('+code+',function(a,b) { var aa,bb; ';
+       code='$AI.sort('+code+',function(a,b) { var aa,bb; ';
        var conds=expr.by.map(function(c){
          c[0]=c[0]||'^{this}';
          var x1=RV('aa='+c[0]+'; ',{this:'a'});
@@ -1509,13 +1510,13 @@ OtherComprehension
      if (expr.limit.length) {
        var l=expr.limit[0];
        if (l.slice) {
-         code='_$AI.slice('+code+','+l.start+','+l.len+')';
+         code='$AI.slice('+code+','+l.start+','+l.len+')';
        }
        if (l.extract) { 
-         code='_$AI.element('+code+',0)';
+         code='$AI.element('+code+',0)';
        }
        if (l.count) {
-         code='_$AI.count('+code+')';
+         code='$AI.count('+code+')';
        }
      }
    } 
@@ -1553,7 +1554,7 @@ SortDirection
 Logical
  = l:Comparison _ o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
 // / l:Comparison _ VIA _ f:VerbValue { return '('+f[0]+f[1]+')('+l+')' } // test 'via'
- / c:Comparison _ XOR _ l:Logical  { return '(_$AI.xor('+c+','+l+'))' } // test 'xor' 
+ / c:Comparison _ XOR _ l:Logical  { return '($AI.xor('+c+','+l+'))' } // test 'xor' 
  / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
  / l:Comparison _ NOR _ f:Logical { return '(!('+l+' || '+f+'))' } // test 'nor'
  / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { 
@@ -1586,9 +1587,9 @@ ComparisonOp
 
 
 MathOp
- = '?>' { return '_$AI.max' } // test '?>'
- / '?<' { return '_$AI.min' } // test '?<'
- / '<=>' { return '_$AI.compare' } // test '<=>'
+ = '?>' { return '$AI.max' } // test '?>'
+ / '?<' { return '$AI.min' } // test '?<'
+ / '<=>' { return '$AI.compare' } // test '<=>'
 
    
    
@@ -1609,16 +1610,16 @@ Multiplication
    return 'Math.pow('+l+','+r+')' 
  } 
  / l:Value _ OVERLAY Sep r:Multiplication { // test 'overlay *'
-   return '_$AI.overlay('+l+','+r+')' 
+   return '$AI.overlay('+l+','+r+')' 
  }
  / l:Value _ SELECT Sep r:Multiplication { // test 'select *'
-   return '_$AI.select('+l+','+r+')' 
+   return '$AI.select('+l+','+r+')' 
  }
  / l:Value _ DELETE Sep r:Multiplication { // test 'delete *'
-   return '_$AI.delete(_$AI.clone('+l+'),'+r+')' 
+   return '$AI.delete($AI.clone('+l+'),'+r+')' 
  }
  / l:Value _ EXPECTS Sep r:Multiplication { 
-   return '_$AI.expects('+l+','+r+')' 
+   return '$AI.expects('+l+','+r+')' 
  }
  / l:Value _ ISOF Sep r:Multiplication { 
    return '('+l+').isof['+r+']'; 
@@ -1640,9 +1641,9 @@ Value
  / NOT Sep v:Value _ { return '(!('+v+'))' } // test 'unary not'
  / TYPEOF Sep v:Value _ { return 'typeof ('+v+')'; }
  / ISNAN Sep v:Value _ { return 'isNaN('+v+')'; }
- / NUMBER Sep v:Value { return '(_$AI.number('+v+'))'; } // test 'number *'
+ / NUMBER Sep v:Value { return '($AI.number('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
- / COPY Sep v:Value _ { return '_$AI.clone('+v+')'; } // test 'copy'
+ / COPY Sep v:Value _ { return '$AI.clone('+v+')'; } // test 'copy'
  / TASK Sep v:TaskClause _ { return v }
  / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
@@ -1747,7 +1748,7 @@ VerbChainLine
 
 NewObject
  = CREATE _ v:Value _ o:ParameterList?  { 
-   return '_$AI.create('+v+',['+(o?o[1]:'undefined')+'])'; 
+   return '$AI.create('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
  / NEW _ v:Value _ o:ParameterList? {
    return 'new '+v+'('+(o?o[1]:'')+')'; 
