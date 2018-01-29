@@ -1,12 +1,12 @@
 object Distance 1.0.0
 instance: meters 0
 
-centimeters set as val
+centimeters set givenval
   set @meters to val/100
 get
   return @meters * 100
 
-miles set as val
+miles set givenval
   set @meters to val * 1609.344
 get
   return @meters / 1609.344

@@ -56,7 +56,7 @@ Instantiate task
 
   // simple instrument to count the length of an array
 
-  set Countem to task as obj, label
+  set Countem to task given obj, label
     debug '${label} candidate count: ${obj.length}'
 
 

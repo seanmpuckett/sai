@@ -305,7 +305,7 @@ SAI.GetProtogen = function(name) {
 //
 // Compile a single SAI expression, out of context except for the runtime library.
 //
-SAI.Expression = (source) => {
+SAI.Expression = function(source){
   var jssource="return "+SAI.Parse(source,undefined,undefined);
   return SAI.Compile(jssource)(this,{},require,$AI);
 }
@@ -421,7 +421,7 @@ SAI.GetSource = function(name) {
 //
 // Return a prototype object by name
 //
-SAI.Require = function(name) {
+SAI.Require = $AI.import = function(name) {
   var proto=SAI.GetPrototype(name).constructor;
   if (!proto) throw new Error('SAI.Require: Do not know how to create SAI object "'+name+'".');
   return proto;

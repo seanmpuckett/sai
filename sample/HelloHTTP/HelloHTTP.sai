@@ -8,7 +8,7 @@ object HelloHTTP main 1.0.0
 Instantiate task
   set @app from express
   
-  @app.get '/', task as req, res
+  @app.get '/', task given req, res
     res.send 'Hello HTTP!'
 
   set @server from @app.listen 3000, 'localhost', task

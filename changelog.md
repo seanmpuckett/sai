@@ -1,5 +1,14 @@
 ## Change log
 
+### 0.1.11
+
+#### Enhancements
+
+ - new keyword `every` is a multi-purpose iterator, performing the functions of the place of `ply` `each` and `iterate`. There is a slight performance penalty with using `every` compared to the more specific iterators. I am considering deprecating them, however, in the interest of making a cleaner language
+ 
+ - now preferring the keyword `given` to describe parameters to a function, rather than `as`.  The compiler will continue to accept `as` for now, but this usage is deprecated. You can easily update source by search/replace for `task as` `process as` `promise as` `set as` and replacing with `task given` `process given` `promise given` and `set given`.
+
+
 ### 0.1.10
 
 #### Documentation

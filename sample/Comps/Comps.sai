@@ -18,15 +18,15 @@ Instantiate task
   set rentAge to: ON 25, QC 21
 
   // HAS filter function
-  set CanRent to task as row
+  set CanRent to task given row
     return row.age >= rentAge[row.province]
 
   // BY sort function
-  set ProvinceAge to task as a, b
+  set ProvinceAge to task given a, b
     return a.province <=> b.province or a.age <=> b.age
 
   // GATHER reduction function
-  set AgeTotal to task as accumulator, row
+  set AgeTotal to task given accumulator, row
     return accumulator + row.age
 
   // create an "adding machine tape" of results to display

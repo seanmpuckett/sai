@@ -81,7 +81,7 @@ _Note that it is computationally unwise to compile the same SAI expression over 
 #### To define a function using SAI in a JS file
 
     var SAI = require('sai-language');
-    var ReverseItems=SAI.Expression(`task as items
+    var ReverseItems=SAI.Expression(`task given items
       return items thru chain .
         split ''
         reverse
@@ -98,7 +98,7 @@ Result:
 #### To define a process (generator) using SAI
 
     var SAI = require('sai-language');
-    var FibonacciGenerator=SAI.Expression(`process as n
+    var FibonacciGenerator=SAI.Expression(`process given n
       local stack array 1, 1
       count n
         yield stack.0
@@ -178,8 +178,8 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
 
 #### Permutation generator
 
-    set Permutations process as cards
-      local Pick to process as hand, deck
+    set Permutations process given cards
+      local Pick to process given hand, deck
         unless deck count
           yield hand
         else
@@ -208,7 +208,7 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
     Instantiate task
       set @app from express
   
-      @app.get '/', task as req, res
+      @app.get '/', task given req, res
         res.send 'Hello HTTP!'
 
       set @server from @app.listen 3000, 'localhost', task
@@ -219,7 +219,7 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
 #### Promises sample
 
     set 
-      willIGetNewPhone promise as isMomHappy
+      willIGetNewPhone promise given isMomHappy
         if isMomHappy
           resolve:
             brand 'Wangdoodle'
@@ -227,14 +227,14 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
         else
           reject new ~Error 'Mom is not happy.'
     
-      showOff promise as phone
+      showOff promise given phone
         with phone
           debug 'Hey friend, I have a new ${.colour} ${.brand} phone'
   
-      askMom task as happiness
+      askMom task given happiness
         chain from willIGetNewPhone happiness
           then showOff
-          catch promise as e
+          catch promise given e
             debug '${e} No phone for you.'
       
     askMom true

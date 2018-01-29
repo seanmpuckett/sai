@@ -17,7 +17,7 @@ Execute task
 TestPromise task
 
   set 
-    willIGetNewPhone promise as isMomHappy
+    willIGetNewPhone promise given isMomHappy
       if isMomHappy
         resolve:
           brand 'Wangdoodle'
@@ -25,14 +25,14 @@ TestPromise task
       else
         reject new ~Error 'Mom is not happy.'
       
-    showOff promise as phone
+    showOff promise given phone
       with phone
         debug 'Hey friend, I have a new ${.colour} ${.brand} phone'
     
-    askMom task as happiness
+    askMom task given happiness
       chain from willIGetNewPhone happiness
         then showOff
-        catch promise as e
+        catch promise given e
           debug '${e}\nNo phone for you.'
         
   askMom true

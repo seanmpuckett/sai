@@ -7,7 +7,7 @@ inherit list
 
 
 
-Counter process as start, stop, delta
+Counter process given start, stop, delta
   if stop > start
     set delta default 1
     if delta <= 0
@@ -26,11 +26,11 @@ Counter process as start, stop, delta
 
 Execute task
 
-  set Twice to process as a
+  set Twice to process given a
     yield a
     yield a
 
-  set SimpleCounter to process as a
+  set SimpleCounter to process given a
     count a
       yielding from Twice counter
 
@@ -130,7 +130,7 @@ Execute task
   
   @Match 'iterate with keys using', 3, task
     set b to 0
-    set countb to task as v, k
+    set countb to task given v, k
       set b + k
     iterate: 1, 2, 3; iterate using countb
     return b

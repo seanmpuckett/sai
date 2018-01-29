@@ -1,5 +1,5 @@
 object Parent 1.0.0
 instance: name 'unknown'
-Instantiate task as name
+Instantiate task given name
   set @name to name
   

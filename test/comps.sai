@@ -190,7 +190,7 @@ Execute task
     return false
     
   @Test 'set inline 1', task
-    set Unshifter to task as l,v
+    set Unshifter to task given l,v
       l.unshift v
       return l
     set b to: 2; set from Unshifter it, 1
@@ -474,7 +474,7 @@ Execute task
     ... thru .name
 
   @Match 'by task', 'Doug', task
-    return friends by using task as a,b
+    return friends by using task given a,b
       return a.age <=> b.age
     ... limit 1 thru .name
 
@@ -484,7 +484,7 @@ Execute task
     ... first
     
   @Match 'into task', 185, task
-    return friends into 0 using task as acc,val
+    return friends into 0 using task given acc,val
       return acc+val.age
     
   @Test 'into empty generator', task
@@ -605,7 +605,7 @@ Execute task
     return false
   
   
-  set ListVerify task as c, m
+  set ListVerify task given c, m
     if c.length isnt m.length 
       debug "List error ${~JSON.stringify(c)} isn't ${~JSON.stringify(m)}"
       return false

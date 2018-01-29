@@ -22,7 +22,7 @@ Log task
 
 
 
-Test task as description, function
+Test task given description, function
   set description to '${@isa}: ${self}'
   @Log description
   
@@ -43,7 +43,7 @@ Test task as description, function
 
 
 
-Match task as description, expected, function
+Match task given description, expected, function
   set description to '${@isa}: ${self}'
   @Log description
   

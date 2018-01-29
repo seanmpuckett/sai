@@ -79,7 +79,7 @@ Instantiate task
   debug array three, six
   
   set tally to blank
-  set AddRow to task as item, quantity
+  set AddRow to task given item, quantity
     set tally[item] to (self default 0) + quantity
   AddRow 'socks', 3
   AddRow 'pants', 6
@@ -179,7 +179,7 @@ Instantiate task
   debug friends into 0 sum + .age  
   debug friends into blank
     set sum[.province] to (self default 0)+1
-  set ageTotal to task as accumulator, row
+  set ageTotal to task given accumulator, row
     return accumulator+row.age
   debug friends into 0 using ageTotal
 
@@ -387,7 +387,7 @@ Instantiate task
   // task
   debug '\nTASK'
   debug @Instrument.toString()
-  set anon to task as name, value
+  set anon to task given name, value
     orphan
     debug `${@context} ${name}: ${value}
   debug anon.toString()
@@ -403,8 +403,8 @@ Instantiate task
 
   // promise
   debug '\nPROMISE'
-  set doThing to promise as url
-    HeyServer url, task as request, result
+  set doThing to promise given url
+    HeyServer url, task given request, result
       if result.success
         resolve result
       else
@@ -467,7 +467,7 @@ Instantiate task
   
   // return
   debug '\nRETURN'
-  set multiply to task as a,b
+  set multiply to task given a,b
     return a*b
   debug from multiply 2, 4
   
@@ -488,7 +488,7 @@ Instantiate task
     
   // yielding
   debug '\nYIELDING'
-  set Mirror to process as str
+  set Mirror to process given str
     yield str
     yield str.split('').reverse().join('')
     
@@ -658,7 +658,7 @@ Dump task
 AddStudent task expects $name string, $age number
   @students.push copy $  
   
-Instrument task as name, value
+Instrument task given name, value
   debug `${@context} ${name}: ${value}
   
 SetPolar task 

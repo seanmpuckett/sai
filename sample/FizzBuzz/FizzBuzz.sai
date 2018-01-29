@@ -10,7 +10,7 @@ Instantiate task
     
   count 1 to 101 as num
     set out to ''
-    each words
+    every words
       unless num % .divisor
         set out + .word
     debug out ?? out :: num

@@ -57,29 +57,29 @@ Execute task
     return t(from t true)
     
   @Test 'as a', task
-    set t to task as a
+    set t to task given a
       return a
     return from t true
     
   @Test 'as a exp', task
-    set t to task as a a
+    set t to task given a a
     return from t true
     
   @Test 'as a; exp', task
-    set t to task as a; a
+    set t to task given a; a
     return from t true
     
   @Test '1,2,3', task
-    set t to task as a,b,c
+    set t to task given a,b,c
       return a+b+c
     return 6 = t(1,2,3)
 
   @Test '1,2,3 exp', task
-    set t to task as a,b,c a+b+c
+    set t to task given a,b,c a+b+c
     return 6 = t(1,2,3)
 
   @Test '1,2,3; exp', task
-    set t to task as a,b,c; a+b+c
+    set t to task given a,b,c; a+b+c
     return 6 = t(1,2,3)
 
   @Test 'a 1, b 2, c 3', task
@@ -165,7 +165,7 @@ Execute task
       return true
     
   @Test 'lots of parameters', task
-    set t to task as a,b ,c, d, e, f , g
+    set t to task given a,b ,c, d, e, f , g
       return g
     return from t 0,0,0,0,0,0,true
     

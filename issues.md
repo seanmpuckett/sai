@@ -41,4 +41,62 @@
 
 ## Notes
 
+### async syntax
+
+    async [coerced promise] executed
+      await [coerced promise]
+      await as a
+        code here
+      catch as b
+        error handler
+      finally
+        always runs
+            
+    chain from [promise]
+      then [coerced promise]
+      then promise
+        code here
+      catch
+        code
+    // finally
+    always runs
+
+### state machine syntax
+
+    machine 'a' 
+      every
+        readline
+      case 'a'
+        code
+        state 'b'
+      case 'b'
+        code
+        done
+      catch
+        debug error
+      finally
+        debug "task complete"
   
+    set state 'a'
+    until state is 'done'
+      try
+        readline
+        switch state
+          case 'a'
+            code
+            set state 'b'
+          case 'b'
+            code
+            set state 'done'
+      catch
+        debug error
+      finally
+        task complete
+      
+
+      
+      
+      
+      
+    
+

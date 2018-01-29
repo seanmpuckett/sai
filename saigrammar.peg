@@ -204,7 +204,6 @@
     '?>': '^{1} = Math.max(^{1},^{2})', // test 'self ?>'
     '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
     
-//    via: '^{1} = ^{2}(^{1})', // test 'self via'
     update: '^{1} = $AI.update(^{1},^{2})', // test 'self update'
     delete: '$AI.delete(^{1},^{2})', // test 'self delete*'
     default: 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
@@ -836,7 +835,21 @@ NoneClause
 
 
 IterateStatement
- = ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+ = EVERY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+   var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
+   var setup='var ^{t1}=$AI.kviterate(^{v}), ^{t2}=^{t1}.next();\n';
+   var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
+   var iterate='for (; !^{t2}.done; ^{t2}=^{t1}.next()) { ^{this}=^{t2}.value[1]; ^{key}=^{t2}.value[0]; ^{block}; }\n';
+   return RV(setup+none+iterate,w); 
+  }
+ / EVERY Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
+   var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,key:tempvar()};
+   var setup='var ^{t1}=$AI.kviterate(^{v}), ^{t2}=^{t1}.next();\n';
+   var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
+   var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value[1],^{t2}.value[0]); ^{t2}=^{t1}.next();}\n';
+   return RV(setup+none+iterate,w); 
+  }
+ / ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
    var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
    var setup='var ^{t1}=$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
@@ -1265,7 +1278,7 @@ IterateOutput
  }
  
 MultiOutput
- = AS _ k:(k:Local _ COMMA _ {return k})* _ v:Local { k.push(v); return k; }
+ = (AS/GIVEN) _ k:(k:Local _ COMMA _ {return k})* _ v:Local { k.push(v); return k; }
  
  
 
@@ -1998,6 +2011,7 @@ ENUM = 'enum'
 ENLIST = 'enlist'
 ENTRAIT = 'entrait'
 ERROR = 'error'
+EVERY = 'every'
 EXISTS = 'exists'
 EXPECTS = 'expects'
 FINALLY = 'finally'

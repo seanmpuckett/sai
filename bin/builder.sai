@@ -11,7 +11,7 @@ object Builder
 //
 // SAI - reference to sai-language object
 //
-Instantiate task as SAI
+Instantiate task given SAI
 
   set argv ~process.argv limit 2, undefined // chop off first two arguments
   

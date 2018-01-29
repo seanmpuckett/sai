@@ -54,7 +54,7 @@ AnalyseParseTrace task
     rl ~readline.createInterface(instream,outstream)
     ruletally blank
 
-  rl.on 'line', task as line
+  rl.on 'line', task given line
     with line.split(/\s+/)
       set ruletally[.2] to (self default 0)+1
 

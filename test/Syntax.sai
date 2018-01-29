@@ -10,7 +10,7 @@ Execute task
   set T to task 
     return true
 
-  set Fn to task as a
+  set Fn to task given a
     return a
 
   @Test 'from function T', task
