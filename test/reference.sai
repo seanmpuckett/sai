@@ -2,13 +2,19 @@ reference:
   pegjs from require 'pegjs'
   Math ~Math
   Simple 'Simple'
+  Onceler 'Onceler'
   
 object Reference
+
+instance:
+  onceler singleton Onceler
 
 inherit list
   Harness
 
 Execute task
+  
+  @onceler.Tally
   
   @Test 'pegjs required', task
     return pegjs.generate isnt undefined
@@ -33,4 +39,11 @@ Execute task
     catch
       return true
     return false
+    
+  @Test 'singleton create', task
+    set a singleton Onceler
+    a.Tally
+    set b singleton Onceler
+    b.Tally
+    return a.tallies is 3
     

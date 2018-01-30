@@ -1,0 +1,10 @@
+object Onceler 
+
+instance:
+  tallies 0
+
+Tally task
+  inc @tallies
+  
+  
+  

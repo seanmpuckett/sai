@@ -290,7 +290,7 @@ SAI.GetProtogen = function(name) {
     }
     var source=SAI.Parse(load.source,undefined,load.context);
     source='var __context='+JSON.stringify(load.context)+';\n'+source;
-    //console.log(source);
+    console.log(source);
     protogen=SAI.Compile(source);
     if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
     var s2=new Date();

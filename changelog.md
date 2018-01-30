@@ -1,10 +1,19 @@
 ## Change log
 
+### 0.1.12
+
+#### Enhancements
+
+ - clarification in documentation on the best iterator to use when
+ - added `singleton` operator to create and manage singleton objects. 
+ - operator `via` is back but in a slightly different incarnation that allows it to be used as a customising operator.
+ 
+
 ### 0.1.11
 
 #### Enhancements
 
- - new keyword `every` is a multi-purpose iterator, performing the functions of the place of `ply` `each` and `iterate`. There is a slight performance penalty with using `every` compared to the more specific iterators. I am considering deprecating them, however, in the interest of making a cleaner language
+ - new keyword `every` is a multi-purpose iterator, performing the functions of `ply` `each` and `iterate`. There is a slight performance penalty with using `every` compared to the more specific iterators. I
  
  - now preferring the keyword `given` to describe parameters to a function, rather than `as`.  The compiler will continue to accept `as` for now, but this usage is deprecated. You can easily update source by search/replace for `task as` `process as` `promise as` `set as` and replacing with `task given` `process given` `promise given` and `set given`.
 

@@ -104,6 +104,7 @@
   var accessors = {
     firstfetch: { // [0]+key+[1]
       this: [ '$' , '' ],
+      currentthis: [ 'this' , ''],
       local: [ '' , '' ], 
       arguments: [ 'arguments','' ],
       parameters: [ 'p','' ],
@@ -521,10 +522,10 @@ Task
   } 
 
 TaskEvent
- = v:Identifier _ TASK _ x:Expects? _ w:MultiOutput? _ { 
+ = v:Identifier _ TO? _ TASK _ x:Expects? _ w:MultiOutput? _ { 
    return  {name:"'"+v+"'",expects:x,as:w,kind:'function'};
  } 
- / v:ProcessName _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
+ / v:ProcessName _ TO? _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
    return  {name:v,expects:x,as:w,kind:'function*'};
  } 
 
@@ -1109,6 +1110,8 @@ Global
 
 Property
  = '@' v:IdentifierProto { return [['this',''],[ 'attribute',v ]] }
+ / '@@' v:IdentifierProto { return [['currentthis',''],[ 'attribute',v ]] }
+ / '@@' { return [['currentthis','']] }
  / '@' { return [['this','']] }
 
 SimpleTerm
@@ -1435,14 +1438,6 @@ FilterComprehension2
     return ['$AI.filter(' , ','+x+')' ];
   }
 
-/*
-ViaComprehensionUNUSED
- = VIA Sep x:ViaComprehension2 { return x }
-ViaComprehension2UNUSED
- = x:Expression { // test 'via inline*'
-    return [ '$AI.alter(' , ','+x+')']; 
-  }
-*/  
 
 SetComprehension
  = SET Sep x:AlterComprehension2 { return x }
@@ -1566,7 +1561,6 @@ SortDirection
 
 Logical
  = l:Comparison _ o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
-// / l:Comparison _ VIA _ f:VerbValue { return '('+f[0]+f[1]+')('+l+')' } // test 'via'
  / c:Comparison _ XOR _ l:Logical  { return '($AI.xor('+c+','+l+'))' } // test 'xor' 
  / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
  / l:Comparison _ NOR _ f:Logical { return '(!('+l+' || '+f+'))' } // test 'nor'
@@ -1622,6 +1616,13 @@ Multiplication
  / l:Value _ '**' _ r:Multiplication { // test '**'
    return 'Math.pow('+l+','+r+')' 
  } 
+ / l:Value _ VIA _ op:Value _ x:ParameterList? {
+   var p=undefined;
+   if (x) {
+     p=x[1];
+   }
+   return '('+op+').call(this,('+l+'),'+p+')';
+ }
  / l:Value _ OVERLAY Sep r:Multiplication { // test 'overlay *'
    return '$AI.overlay('+l+','+r+')' 
  }
@@ -1762,6 +1763,9 @@ VerbChainLine
 NewObject
  = CREATE _ v:Value _ o:ParameterList?  { 
    return '$AI.create('+v+',['+(o?o[1]:'undefined')+'])'; 
+ }
+ / SINGLETON _ v:Value _ o:ParameterList?  { 
+   return '$AI.singleton('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
  / NEW _ v:Value _ o:ParameterList? {
    return 'new '+v+'('+(o?o[1]:'')+')'; 
@@ -1929,12 +1933,10 @@ ReservedWords
  / ISNAN
  / IS
  / ITERATE
-// / ITERATOR
  / KEYS
  / LAST
  / LIMIT
  / LIST
-// / LOCAL
  / LOWEST 
  / NaN
  / NAND
@@ -1946,13 +1948,12 @@ ReservedWords
  / NULL
  / OBSERVE
  / ORB
-// / ORPHAN
  / OR
  / OVERLAY
  / PROMISE
  / PROCESS
-// / SELECT
  / SELF
+ / SINGLETON
  / SWAP
  / TASK
  / TRIAL
@@ -1966,10 +1967,9 @@ ReservedWords
  / UPDATE
  / USING
  / VALUES
+ / VIA
  / XORB
  / XOR
-// / YIELDING
-// / YIELD
  
 __SOURCE = '__source'
 __OFFSET = '__offset'
@@ -2070,6 +2070,7 @@ RETURN = 'return'
 SELECT = 'select'
 SELF = 'self'
 SET = 'set'
+SINGLETON = 'singleton'
 STEP = 'step'
 SUM = 'sum'
 SWAP = 'swap'
@@ -2089,6 +2090,7 @@ UNDEFINED = 'undefined'
 UPDATE = 'update'
 USING = 'using'
 VALUES = 'values'
+VIA = 'via'
 WHILE = 'while'
 WITH = 'with'
 XOR  = 'xor'
