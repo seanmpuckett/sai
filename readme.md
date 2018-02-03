@@ -184,10 +184,10 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
           yield hand
         else
           ply deck as card, index
-            yielding from Pick hand concat card, deck delete index
-      yielding from Pick empty, cards
+            yielding !Pick hand concat card, deck delete index
+      yielding !Pick empty, cards
 
-    iterate from Permutations list apple, banana, cherry
+    iterate !Permutations list apple, banana, cherry
       debug .
       
     > [ 'apple', 'banana', 'cherry' ]
@@ -201,17 +201,17 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
 #### Minimal HTTP Server
 
     reference:
-      express from require 'express'
+      express !require 'express'
 
     object HelloHTTP 1.0.0
 
     Instantiate task
-      set @app from express
+      set @app !express
   
       @app.get '/', task given req, res
         res.send 'Hello HTTP!'
 
-      set @server from @app.listen 3000, 'localhost', task
+      set @server !@app.listen 3000, 'localhost', task
         with @server.address()
           debug 'Example app listening at http://${.address}:${.port}'       
       
@@ -232,7 +232,7 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
           debug 'Hey friend, I have a new ${.colour} ${.brand} phone'
   
       askMom task given happiness
-        chain from willIGetNewPhone happiness
+        chain !willIGetNewPhone happiness
           then showOff
           catch promise given e
             debug '${e} No phone for you.'

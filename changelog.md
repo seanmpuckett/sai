@@ -1,5 +1,16 @@
 ## Change log
 
+### 0.1.13
+
+#### Enhancements
+
+ - added `!` as a synonym for `from` which may someday be deprecated.
+ - support for octal numeric literals of the form 0o01234567
+ - support for hex literals of the form 0x0123456789ABCDEFabcdef
+ - support for binary literals of the form 0b0101010101
+ - `sai-build` can now build a project, and what is more it seems to actually work sometimes.  feels fragile though. 
+
+
 ### 0.1.12
 
 #### Enhancements

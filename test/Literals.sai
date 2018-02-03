@@ -16,6 +16,42 @@ Execute task
   @Test 'compose', task
     return 'a4b' = 'a${4}b'
     
+  @Test 'octal 1 ', task
+    return 0o0 is 0
+    
+  @Test 'octal 2 ', task
+    return 0o20 is 16
+    
+  @Test 'octal 3 ', task
+    return 0o17777777777 is 2147483647
+   
+  @Test 'octal 4 ', task
+    return -0o20 is -16
+    
+  @Test 'hex 1 ', task
+    return 0x0 is 0
+    
+  @Test 'hex 2 ', task
+    return 0xF0 is 240
+    
+  @Test 'hex 3 ', task
+    return 0x7FfFffff is 2147483647
+   
+  @Test 'hex 4 ', task
+    return -0xA0 is -160
+    
+  @Test 'binary 1 ', task
+    return 0b0 is 0
+    
+  @Test 'binary 2 ', task
+    return 0b11110000 is 240
+    
+  @Test 'binary 3 ', task
+    return 0b1111111111111111111111111111111 is 2147483647
+   
+  @Test 'binary 4 ', task
+    return -0b11110000 is -240
+    
   @Test 'compose lead var', task
     return (2+'${2}')='22'
 

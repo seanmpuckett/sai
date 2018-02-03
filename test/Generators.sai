@@ -135,3 +135,10 @@ Execute task
     iterate: 1, 2, 3; iterate using countb
     return b
   
+Fudge task
+  nop
+  
+Hello task
+  count 5
+    debug what
+  

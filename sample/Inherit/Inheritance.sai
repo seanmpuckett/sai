@@ -9,7 +9,7 @@ object Inheritance main 0.0.0
 Instantiate task
 
   debug 'Inheritance'
-  set apple to create ~Fruit
+  set apple to create Fruit
   
   debug apple.isof
   

@@ -67,13 +67,20 @@ var $AI=require('sai-library');
 
 var SAI = exports = module.exports = function() {}
   
-SAI.prototypes={};
-SAI.source={};
-SAI.protogens={};
-SAI.isa={};
-SAI.config=SAIconfig;
-SAI.persist={globalcount:1}; // internal
-SAI.proto=$AI._prototype;
+// Clean
+//
+// Initialize all caches
+//
+SAI.Clean=function() {
+  SAI.prototypes={};
+  SAI.source={};
+  SAI.protogens={};
+  SAI.isa={};
+  SAI.config=SAIconfig;
+  SAI.persist={globalcount:1}; // internal
+  SAI.proto=$AI._prototype;
+}
+SAI.Clean();
   
 // Dedenter
 //
@@ -290,7 +297,7 @@ SAI.GetProtogen = function(name) {
     }
     var source=SAI.Parse(load.source,undefined,load.context);
     source='var __context='+JSON.stringify(load.context)+';\n'+source;
-    console.log(source);
+    //console.log(source);
     protogen=SAI.Compile(source);
     if (!protogen) throw new Error("SAI.GetProtogen: ERROR IN GENERATED CODE "+name);
     var s2=new Date();
@@ -393,7 +400,8 @@ SAI.GetSource = function(name) {
     '//\n'+
     '"use strict";\n'+
     'var $AI=require("sai-library");\n'+
-    'var prototype=new $AI._prototype();\n'+
+    'var prototype=function(){};\n'+
+    '$AI._prototype.apply(prototype);\n'+
     '\n// Generated code follows\n\n';
     
   var adopt=function(name) {
@@ -408,11 +416,14 @@ SAI.GetSource = function(name) {
   adopt(name);
 
   source+='\n// End of generated code\n\n';
+  //source+='console.log("made a "+prototype.isa);\n';
   source+='$AI.finalizePrototype(prototype);\n';
-  source+='var pro=prototype.constructor;\n';
-  source+='exports=pro; try { module.exports=pro; } catch(e) {}\n';
-  source+='if (prototype.isof[isa].main) var main=pro();\n';
-  source+='return pro;\n';
+  source+='exports=prototype; try { module.exports=prototype; } catch(e) {}\n';
+  source+='if (prototype.isof[prototype.isa].main) { \n';
+  //source+='  console.log("instantiating");\n';
+  source+='  var main=prototype.constructor();\n}\n';
+  //source+='console.log("done "+prototype.isa);\n';
+  source+='return prototype;\n';
   
   return source;
 }

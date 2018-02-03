@@ -17,6 +17,7 @@ Instantiate task
   //@AnalyseParseTrace
 
   set tests to list
+    Loops
     Generators
     Promises
     Literals
@@ -28,15 +29,18 @@ Instantiate task
     Constructs
     Functions
     SetStatement
-    Loops
     Reference
     CompOrderOps
     Inheritance
 
   ply tests
-    set suite to create it @
-    suite.Execute
-    
+    try
+      set suite to create it @
+      suite.Execute
+    catch
+      debug error
+      set @fail concat "Could not execute tests in ${it}"
+      
   if @fail.length
     debug 'FAILED'
     ply @fail
