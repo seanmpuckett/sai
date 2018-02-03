@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/seanmpuckett/sai",
   "dependencies": {
-    "sai-library": "^1.0.5"
+    "sai-library": "^1.0.6"
   },
   "devDependencies": {
     "pegjs": "^0.10.0"
