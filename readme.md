@@ -19,6 +19,10 @@ While SAI appears to look a little like Coffeescript (in particular due to their
 
 SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, SAI's _affordances_ tend to emphasise clear code, while making some of the more egregiously obnoxious Javascript hacks and idioms either impossible, or just very difficult. Just because you _can_ do something a certain way in JS doesn't mean you _should_.
 
+#### Self-compiled
+
+Both the SAI runtime library and the runtime manager are as of 0.1.14 / 0.1.7 written in SAI and compiled to Javascript.
+
 
 ### Usage Notes
 
