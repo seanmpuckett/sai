@@ -1,10 +1,25 @@
 ## Change log
 
+### 0.1.14
+
+#### Refactoring
+
+ - Both `sai-language` and `sai-library` are now written in self-compiled SAI.  I'm pretty proud of that.
+
+#### Enhancements
+
+ - the phrase `set val - expr` will now throw an error, warning you to use either `set val (-expr)` or `set val self - expr` as appropriate, so you know what you're going to get. 
+
+#### Bug Fixes
+
+ - sai-build won't accidentally overwrite source files now, also can handle bare object names
+ 
+
 ### 0.1.13
 
 #### Enhancements
 
- - added `!` as a synonym for `from` which may someday be deprecated.
+ - added `!` as a synonym for `from` but I kind of hate it so don't use it.
  - support for octal numeric literals of the form 0o01234567
  - support for hex literals of the form 0x0123456789ABCDEFabcdef
  - support for binary literals of the form 0b0101010101

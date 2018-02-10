@@ -210,17 +210,17 @@
 
     and: '^{1} = ^{1} && ^{2}', // test 'self and'
     or: '^{1} = ^{1} || ^{2}', // test 'self or'
-    xor: '^{1} = $AI.xor(^{1},^{2})',  // test 'self xor'
+    xor: '^{1} = $AI.xor_op(^{1},^{2})',  // test 'self xor'
     nand: '^{1} = (!((^{1})&&(^{2})))', // test 'self nand'
     nor: '^{1} = (!((^{1})||(^{2})))', // test 'self nor'
 
     '?>': '^{1} = Math.max(^{1},^{2})', // test 'self ?>'
     '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
     
-    update: '^{1} = $AI.update(^{1},^{2})', // test 'self update'
-    delete: '$AI.delete(^{1},^{2})', // test 'self delete*'
+    update: '^{1} = $AI.update_op(^{1},^{2})', // test 'self update'
+    delete: '$AI.delete_op(^{1},^{2})', // test 'self delete*'
     default: 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
-    concat: '^{1} = $AI.concat(^{1},^{2}, true)', // test 'self concat inplace*'
+    concat: '^{1} = $AI.concat_op(^{1},^{2}, true)', // test 'self concat inplace*'
   };
 
   var unops={
@@ -230,7 +230,7 @@
     'inc': '^{1}++', // test 'self inc'
     'dec': '^{1}--', // test 'self dec'
     'delete': 'delete ^{1}', // test 'self delete'
-    'collect': '^{1} = $AI.collect(^{1})' // test 'self collect*'
+    'collect': '^{1} = $AI.collect_op(^{1})' // test 'self collect*'
   };  
 
   
@@ -383,12 +383,12 @@
   }
  
   function AssembleVerb(v) {
+     FunctionChain=true;
      if (v.length==1) {
 //       console.log("AV 1");
 //       console.log(v[0]);
        return VerbCat(v[0]);
      }
-     FunctionChain=true;
      var base=v[0].base;
      for (var i in v) {
        v[i].base=base;
@@ -460,26 +460,29 @@ Reference
   for (var i in v[2]) {
     var r=v[2][i];
     References[lp+r[0]]=true; 
+    if (r[1].indexOf('function')==0) {
+      error("Cannot define functions in a reference block. Sorry, maybe someday.");
+    }
     code+='var '+lp+r[0]+'='+r[1]+';\n'; 
   }
   return code;
 }
 
 Object
- = OBJECT _ k:Identifier _ main:MAIN? _ v:SemVer? _ EOLs s:Segment+ {
+ = OBJECT _ k:Identifier _ typ:(MAIN/SINGLETON)? _ v:SemVer? _ EOLs s:Segment+ {
     if (!v) v=quoted('0.0.0-unspecified');
-    var code='',isof='';
+    var code='',isof=[];
     var isa=quoted(k);
     addToList('lock','isa')
     addToList('freeze','isof')
     code+='var isa=prototype.isa='+isa+';\n';
-    isof+='version:'+v+',';
-    isof+='isa:isa,';
-    isof+='context:__context,';
-    if (main) {
-      isof+='main:true,';
+    isof.push('version:'+v);
+    isof.push('isa:isa');
+    isof.push('context:__context');
+    if (typ) {
+      isof.push('type:"'+typ+'"');
     }
-    code+='prototype.isof['+isa+']={'+isof+'};\n';
+    code+='prototype.isof['+isa+']={'+isof.join(',')+'};\n';
     var l;
     if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
     if (l=getList('freeze')) code+='prototype.__tobefrozen=prototype.__tobefrozen.concat('+l+');\n';
@@ -737,7 +740,10 @@ SetBlock
  = v:(SetLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
 SetTerm
- = l:RValues _ o:Itselfop _ e:Expression {
+ = l:RValues _ '-' _ e:Expression {
+     error('set val - expr is unclear. Please use "set val to -expr" or "set val self - expr" as appropriate.');
+   }
+ / l:RValues _ o:Itselfop _ e:Expression {
    for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
@@ -823,7 +829,7 @@ Itselfop // test 'self*'
 
 VerbStatement
  = v:VerbSentence  { return v+";\n"; }
- / v:VerbChain { return '$AI.drain('+v+');\n'; }
+ / v:VerbChain { return '$AI.drain_op('+v+');\n'; }
  
 ReturnStatement
  = RETURN k:(Sep k:Expression { return k })?  { 
@@ -850,28 +856,28 @@ NoneClause
 IterateStatement
  = EVERY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
    var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
-   var setup='var ^{t1}=$AI.kviterate(^{v}), ^{t2}=^{t1}.next();\n';
+   var setup='var ^{t1}=$AI.kviterate_op(^{v}), ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
    var iterate='for (; !^{t2}.done; ^{t2}=^{t1}.next()) { ^{this}=^{t2}.value[1]; ^{key}=^{t2}.value[0]; ^{block}; }\n';
    return RV(setup+none+iterate,w); 
   }
  / EVERY Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
    var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,key:tempvar()};
-   var setup='var ^{t1}=$AI.kviterate(^{v}), ^{t2}=^{t1}.next();\n';
+   var setup='var ^{t1}=$AI.kviterate_op(^{v}), ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
    var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value[1],^{t2}.value[0]); ^{t2}=^{t1}.next();}\n';
    return RV(setup+none+iterate,w); 
   }
  / ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
    var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
-   var setup='var ^{t1}=$AI.iterator(^{v}), ^{t2}=^{t1}.next();\n';
+   var setup='var ^{t1}=$AI.iterator_op(^{v}), ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
    var iterate='for (var ^{key}=0; !^{t2}.done; ^{t2}=^{t1}.next(), ^{key}++) { ^{this}=^{t2}.value; ^{block}; }\n';
    return RV(setup+none+iterate,w); 
   }
  / ITERATE Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
    var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,key:tempvar()};
-   var setup='var ^{t1}=$AI.iterator(^{v}), ^{t2}=^{t1}.next(), ^{key}=0;\n';
+   var setup='var ^{t1}=$AI.iterator_op(^{v}), ^{t2}=^{t1}.next(), ^{key}=0;\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
    var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value,^{key}); ^{t2}=^{t1}.next(); ^{key}++; }\n';
    return RV(setup+none+iterate,w); 
@@ -986,7 +992,7 @@ RValueSafe
   { return ValueCompositor(v,true) }
 
 VerbValue  
- = v:RStem
+ = v:RStemVerb
   {
     var verb='',stem='';
     if (v[0][0]=='local') {
@@ -1019,6 +1025,11 @@ LStem
 RStem
  = ItStem / SuperStem / RootedStem / PropertyStem / ParameterStem / LocalStem / GlobalStem / ParenStem 
 
+RStemVerb
+ = RStem 
+ / TASK Sep v:TaskClause _ { return [['literal',v]] }
+ / PROCESS Sep v:IteratorClause _ { return [['literal',v]] }
+ / PROMISE Sep v:PromiseClause _ { return [['literal',v]] }
 
 
 SuperStem
@@ -1329,28 +1340,28 @@ Comprehension
 
 IterateComprehension
  = ITERATE { // test 'sow *'
-     return ['$AI.iterate(',')'];
+     return ['$AI.iterate_op(',')'];
    }
 
 KeysComprehension
  = KEYS { // test 'keys comp*'
-     return ['$AI.keys(',')'];
+     return ['$AI.keys_op(',')'];
    }
 
 ValuesComprehension
  = VALUES { // test 'values comp*'
-     return ['$AI.values(',')'];
+     return ['$AI.values_op(',')'];
    }
 
 ConcatComprehension
  = CONCAT Sep x:Expression {
-   return ['$AI.concat(' , ','+x+')' ];
+   return ['$AI.concat_op(' , ','+x+')' ];
  }
 
 CollectComprehension
- = COLLECT { return ['$AI.collect(',')']; }
- / ENLIST { return ['$AI.enlist(',')']; }
- / ENTRAIT { return ['$AI.entrait(',')']; }
+ = COLLECT { return ['$AI.collect_op(',')']; }
+ / ENLIST { return ['$AI.enlist_op(',')']; }
+ / ENTRAIT { return ['$AI.entrait_op(',')']; }
 
 SortComprehension
  = BY Sep x:SortComprehension2 { return x }
@@ -1358,10 +1369,10 @@ SortComprehension2
  = o:IterateOutput? b:Block {
     if (!o) o=[lp+'a',lp+'b'];
     var block=RV('function('+o[0]+','+o[1]+'){'+b+'}');
-    return ['$AI.sort(' , ','+block+')']; 
+    return ['$AI.sort_op(' , ','+block+')']; 
   }
  / USING Sep x:Value {
-   return ['$AI.sort(' , ','+x+')' ];
+   return ['$AI.sort_op(' , ','+x+')' ];
   }
 
 MapComprehension
@@ -1369,18 +1380,18 @@ MapComprehension
 MapComprehension2
  = x:Expression  { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
-     return ['$AI.map(' , ','+block+' )']; 
+     return ['$AI.map_op(' , ','+block+' )']; 
   }
  / LPAREN _ x:Expression _ RPAREN _ { // test 'thru inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
-     return ['$AI.map(' , ','+block+' )']; 
+     return ['$AI.map_op(' , ','+block+' )']; 
   }
  / o:IterateOutput? b:Block { // test 'thru block'
      var block=RV('function(^{this},^{key}){'+b+'; return ^{this};}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['$AI.map(' , ','+block+' )']; 
+     return ['$AI.map_op(' , ','+block+' )']; 
   }
  / USING Sep x:Value { // test 'thru using'
-   return ['$AI.map(' , ','+x+')' ];
+   return ['$AI.map_op(' , ','+x+')' ];
   }
 
 AuditComprehension
@@ -1388,18 +1399,18 @@ AuditComprehension
 AuditComprehension2
  = LPAREN _ x:Expression _ RPAREN _ { // test 'audit inline *'
      var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
-     return ['$AI.audit(' , ','+block+' )']; 
+     return ['$AI.audit_op(' , ','+block+' )']; 
   }
  / x:Expression { // test 'audit inline *'
      var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
-     return ['$AI.audit(' , ','+block+' )']; 
+     return ['$AI.audit_op(' , ','+block+' )']; 
   }
  / o:IterateOutput? b:Block { // test 'audit block*'
      var block=RV('function(^{this},^{key}){'+b+' }',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['$AI.audit(' , ','+block+' )']; 
+     return ['$AI.audit_op(' , ','+block+' )']; 
   }
  / USING Sep x:Value { // test 'audit using*'
-   return ['$AI.audit(' , ','+x+')' ];
+   return ['$AI.audit_op(' , ','+x+')' ];
   }
 
 ReduceComprehension
@@ -1413,24 +1424,24 @@ ReduceComprehension2
     b+='return ^{sum};\n';
     var block=RV('function(^{sum},^{this},^{key}){'+b+'}',{sum:o[0],this:o[1],key:o[2]});
     if (into=='it') {
-      return ['$AI.reduce(' , ','+block+')' ];
+      return ['$AI.reduce_op(' , ','+block+')' ];
     } else {
-      return ['$AI.reduce(' , ','+block+','+into+')' ];
+      return ['$AI.reduce_op(' , ','+block+','+into+')' ];
     }
   }
  / into:IntoClause b:Expression {
     var block=RV('function(^{sum},^{this},^{key}){ return '+b+';}',{sum:lp+'sum',this:'$_v',key:'$_k'});
     if (into=='it') {
-      return ['$AI.reduce(' , ','+block+')' ];
+      return ['$AI.reduce_op(' , ','+block+')' ];
     } else {
-      return ['$AI.reduce(' , ','+block+','+into+')' ];
+      return ['$AI.reduce_op(' , ','+block+','+into+')' ];
     }
   }
   / into:IntoClause USING Sep x:Value  {
     if (into=='it') {
-      return ['$AI.reduce(' , ','+x+')' ];
+      return ['$AI.reduce_op(' , ','+x+')' ];
     } else {
-      return ['$AI.reduce(' , ','+x+','+into+')' ];
+      return ['$AI.reduce_op(' , ','+x+','+into+')' ];
     }
   }
 
@@ -1440,14 +1451,14 @@ FilterComprehension2
  = x:Expression { // test 'filter inline *'
      var block=RV('function(^{this},^{key}){ return '+x+'; }',{this:'$_v',key:'$_k'});
      //console.log("filter comp exp");
-     return ['$AI.filter(' , ','+block+' )']; 
+     return ['$AI.filter_op(' , ','+block+' )']; 
   }
  / o:IterateOutput? b:Block {
      var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['$AI.filter(' , ','+block+')']; 
+     return ['$AI.filter_op(' , ','+block+')']; 
   }
   / USING Sep x:Value {
-    return ['$AI.filter(' , ','+x+')' ];
+    return ['$AI.filter_op(' , ','+x+')' ];
   }
 
 
@@ -1456,14 +1467,14 @@ SetComprehension
 AlterComprehension2
  = x:Expression { // test 'alter inline*'
      var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
-     return [ '$AI.alter(' , ','+block+')']; 
+     return [ '$AI.alter_op(' , ','+block+')']; 
   }
  / o:IterateOutput? b:Block { // test 'alter block*'
      var block=RV('function(^{this}){'+b+'; return ^{this}; }',{this:o?o[0]:'$_v'});
-     return [ '$AI.alter(' , ','+block+')']; 
+     return [ '$AI.alter_op(' , ','+block+')']; 
   }
  / USING Sep x:Value { // test 'alter using'
-     return [ '$AI.alter(' , ','+x+')']; 
+     return [ '$AI.alter_op(' , ','+x+')']; 
   }
   
 ObserveComprehension
@@ -1471,14 +1482,14 @@ ObserveComprehension
 ObserveComprehension2
  = x:Expression { // test 'observe inline'
      var block=RV('function(^{this}){ '+x+'; }',{this:'$_v'});
-     return [ '$AI.observe(' , ','+block+')']; 
+     return [ '$AI.observe_op(' , ','+block+')']; 
   }
  / o:IterateOutput? b:Block { // test 'observe block'
      var block=RV('function(^{this}){'+b+'; }',{this:o?o[0]:'$_v'});
-     return [ '$AI.observe(' , ','+block+')']; 
+     return [ '$AI.observe_op(' , ','+block+')']; 
   }
  / USING Sep x:Value { // test 'observe using'
-     return [ '$AI.observe(' , ','+x+')']; 
+     return [ '$AI.observe_op(' , ','+x+')']; 
   }
 
 
@@ -1504,21 +1515,21 @@ OtherComprehension
      var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
    }
    if (conds.length) {
-     code=RV('$AI.filter(^{source},function($_v,$_k){ return ^{block}; })',{source:code,block:conds.join(' && '),this:'$_v',key:'$_k'});
+     code=RV('$AI.filter_op(^{source},function($_v,$_k){ return ^{block}; })',{source:code,block:conds.join(' && '),this:'$_v',key:'$_k'});
    }
    if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
-     code='$AI.reduce('+code+',function(a,b) { if (undefined===a) return b; var r; ';
+     code='$AI.reduce_op('+code+',function(a,b) { if (undefined===a) return b; var r; ';
      expr.by[0][1]*=expr.limit[0].sort; // flip sort if looking for "last"
      var conds=expr.by.map(function(c){
        c[0]=c[0]||'^{this}';
        var x1=RV(c[0],{this:'a'});
        var x2=RV(c[0],{this:'b'});
-       return RV('r=$AI.compare(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
+       return RV('r=$AI.compare_op(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
      });
      code+=conds.join(' ')+'return a; },undefined)';     
    } else {
      if (expr.by.length) {
-       code='$AI.sort('+code+',function(a,b) { var aa,bb; ';
+       code='$AI.sort_op('+code+',function(a,b) { var aa,bb; ';
        var conds=expr.by.map(function(c){
          c[0]=c[0]||'^{this}';
          var x1=RV('aa='+c[0]+'; ',{this:'a'});
@@ -1530,13 +1541,13 @@ OtherComprehension
      if (expr.limit.length) {
        var l=expr.limit[0];
        if (l.slice) {
-         code='$AI.slice('+code+','+l.start+','+l.len+')';
+         code='$AI.slice_op('+code+','+l.start+','+l.len+')';
        }
        if (l.extract) { 
-         code='$AI.element('+code+',0)';
+         code='$AI.element_op('+code+',0)';
        }
        if (l.count) {
-         code='$AI.count('+code+')';
+         code='$AI.count_op('+code+')';
        }
      }
    } 
@@ -1573,7 +1584,7 @@ SortDirection
 
 Logical
  = l:Comparison _ o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
- / c:Comparison _ XOR _ l:Logical  { return '($AI.xor('+c+','+l+'))' } // test 'xor' 
+ / c:Comparison _ XOR _ l:Logical  { return '($AI.xor_op('+c+','+l+'))' } // test 'xor' 
  / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
  / l:Comparison _ NOR _ f:Logical { return '(!('+l+' || '+f+'))' } // test 'nor'
  / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { 
@@ -1606,9 +1617,9 @@ ComparisonOp
 
 
 MathOp
- = '?>' { return '$AI.max' } // test '?>'
- / '?<' { return '$AI.min' } // test '?<'
- / '<=>' { return '$AI.compare' } // test '<=>'
+ = '?>' { return '$AI.max_op' } // test '?>'
+ / '?<' { return '$AI.min_op' } // test '?<'
+ / '<=>' { return '$AI.compare_op' } // test '<=>'
 
    
    
@@ -1636,16 +1647,16 @@ Multiplication
    return '('+op+').call(this,('+l+'),'+p+')';
  }
  / l:Value _ OVERLAY Sep r:Multiplication { // test 'overlay *'
-   return '$AI.overlay('+l+','+r+')' 
+   return '$AI.overlay_op('+l+','+r+')' 
  }
  / l:Value _ SELECT Sep r:Multiplication { // test 'select *'
-   return '$AI.select('+l+','+r+')' 
+   return '$AI.select_op('+l+','+r+')' 
  }
  / l:Value _ DELETE Sep r:Multiplication { // test 'delete *'
-   return '$AI.delete($AI.clone('+l+'),'+r+')' 
+   return '$AI.delete_op($AI.clone_op('+l+'),'+r+')' 
  }
  / l:Value _ EXPECTS Sep r:Multiplication { 
-   return '$AI.expects('+l+','+r+')' 
+   return '$AI.expects_op('+l+','+r+')' 
  }
  / l:Value _ ISOF Sep r:Multiplication { 
    return '('+l+').isof['+r+']'; 
@@ -1667,9 +1678,9 @@ Value
  / NOT Sep v:Value _ { return '(!('+v+'))' } // test 'unary not'
  / TYPEOF Sep v:Value _ { return 'typeof ('+v+')'; }
  / ISNAN Sep v:Value _ { return 'isNaN('+v+')'; }
- / NUMBER Sep v:Value { return '($AI.number('+v+'))'; } // test 'number *'
+ / NUMBER Sep v:Value { return '($AI.number_op('+v+'))'; } // test 'number *'
  / EXISTS Sep v:Value _ { return '(undefined!=='+v+')' } // test 'exists'
- / COPY Sep v:Value _ { return '$AI.clone('+v+')'; } // test 'copy'
+ / COPY Sep v:Value _ { return '$AI.clone_op('+v+')'; } // test 'copy'
  / TASK Sep v:TaskClause _ { return v }
  / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
@@ -1716,7 +1727,8 @@ JSIdentifier
  = v1:[a-zA-Z_] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
 
 IdentifierProto
- = v1:[a-zA-Z] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
+ = JSIdentifier
+// = v1:[a-zA-Z] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
 
 Literal
  = Number 
@@ -1775,10 +1787,10 @@ VerbChainLine
 
 NewObject
  = CREATE _ v:Value _ o:ParameterList?  { 
-   return '$AI.create('+v+',['+(o?o[1]:'undefined')+'])'; 
+   return '$AI.create_op('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
  / SINGLETON _ v:Value _ o:ParameterList?  { 
-   return '$AI.singleton('+v+',['+(o?o[1]:'undefined')+'])'; 
+   return '$AI.singleton_op('+v+',['+(o?o[1]:'undefined')+'])'; 
  }
  / NEW _ v:Value _ o:ParameterList? {
    return 'new '+v+'('+(o?o[1]:'')+')'; 

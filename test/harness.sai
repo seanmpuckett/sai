@@ -16,6 +16,7 @@ Instantiate task expects 'Test'
 
 
 Log task 
+  // debug $
   if @ids[$]
     debug 'Duplicate test: "${$}"'
   set @ids[$] to true

@@ -1,8 +1,8 @@
 {
   "name": "sai-language",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "An object-oriented language designed to afford code comprehension and maintenance. Transpiles in-place to Javascript.",
-  "main": "sai.js",
+  "main": "lib/sai.js",
   "scripts": {
     "test": "test/Test.sai"
   },

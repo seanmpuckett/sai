@@ -1,0 +1,512 @@
+////////////////////////////////////////////////////////////////////////////////////
+//
+// SAI.JS
+//
+// Framework for SAI language.
+//
+// Designed by Sean M Puckett
+//
+
+reference:
+  FS from require 'fs'
+  PATH from require 'path'
+  SAILIB from require 'sai-library'
+  GLOBAL empty
+  
+  ////////////////////////////////////////////////////////////////////////////////////
+  //
+  //  default configuration
+  //
+  //  VERBS
+  //  You can add your own case-sensitive verbs by adding them to the _verbs_ array.
+  //  Verbs should be text that compiles to an executable function.
+  //
+  //  PATHS
+  //  The list of paths is searched when calling SAI.Require when using the default loader.
+  //
+  //  OPTIONS
+  //  as shown
+  //
+  //  LOADER
+  //  The Loader is a function that, when passed the name of an object, returns the SAI
+  //  source code for that object. Change the loader if you want to load code from somewhere
+  //  other than the disk.
+  //
+
+  DEFAULT_config:
+    verbs:
+      'debug' '$AI.debug_op'
+      'require' 'require'
+      'assert' '$AI.assert'
+    paths:
+      ~__dirname + '/'
+    options:
+      speedometer false
+      beautify true
+    Loader:
+      'default source loader linked later in file'
+
+
+object SAI singleton
+
+
+
+// Instantiate
+//
+// object wake-up
+//
+
+Instantiate task
+  
+  set GLOBAL.root @    // Some calls may be stripped of a proper THIS; we keep it here.
+  @Clean
+  
+  
+// Clean
+//
+// Initialize all caches
+//
+
+Clean task
+  set 
+    @prototypes blank
+    @source blank
+    @protogens blank
+    @isas blank
+    @config copy DEFAULT_config
+    @persist: globalcount 1
+    @proto task
+      set
+        @@.Constructor task
+          nop
+        @@.__tobelocked empty
+        @@.__tobefrozen empty
+        @@.__contracts empty
+        @@.__unverified true
+        @@.isof blank
+      return @@
+      
+    @Parse from @GetParser
+    @config.Loader task given name
+      return @GetSourceFromPaths(name)
+    
+    SAILIB.import @Require
+    SAILIB.create_op @Create
+
+  
+// Dedenter
+//
+// Converts semantic whitespace into braces for easier parsing.
+//
+
+Dedenter task given src
+
+  set
+    lines !src.split /\r\n|[\r\n\u0085\u2028\u2029]/
+    indent: 0
+    out empty
+    heredoc false
+
+  // get rid of shebang line
+  if lines.0.substr(0,2) is '#!'
+    lines.shift
+    
+  ply lines as line
+    set depth 0    
+    while line[depth] is ' ' .. inc depth
+    if depth is line.length 
+      set out concat ''
+    else
+      set line line.substr(depth)
+      if line.substr(0,2) is '//'
+        set out concat line
+      else if depth is indent[0]
+        set out concat line
+      else if depth > indent[0]
+        set out concat: '{', line
+        indent.unshift depth
+      else
+        while depth < indent[0]
+          set out concat: '}'
+          indent.shift
+        set out concat line
+        if depth isnt indent[0]
+          set context ''
+          count i-3 to i+4
+            if counter>0 and counter<lines.length
+              set context + '${counter}: ${i is j ?? '->' :: '  '} ${lines[j]}\n'
+          throw new ~Error 'SAI: indenting error\n${context}'
+
+  while from indent.shift > 0
+    out.push '}'
+    
+  return array out.join('\n')+'\n'
+  
+  
+  
+// Contextualize
+//
+// transforms a segment of parse-ready code back into indented for inspection
+//
+
+Contextualize task given source, offset
+  set
+    context !source.substring offset-100, offset
+    context + '<HERE>'
+    context + !source.substring offset, offset+100
+
+    ind 0
+    minind 0
+    lines !context.split'\n'
+    newcontext ''
+    
+    dup task as string, times
+      set times number times
+      unless times
+        return ''
+      return from string.repeat times
+    
+  ply lines as line
+    if line is '{' .. inc ind
+    else if line is '}' .. dec ind
+    set minind ?< ind
+  set ind to - minind
+
+  ply lines as line
+    if line is '{' .. inc ind
+    else if line is '}' .. dec ind
+    else 
+      set newcontext + dup('  ',ind) + line + '\n'
+      
+  return newcontext
+
+
+
+// GetParser
+//
+// Returns a function that will parse SAI code into Javascript
+//
+// If the grammar file (saigrammar.peg) is newer than the current parser
+// (saigrammar.js), uses PEGjs to recompile the grammar and save the parser.
+//
+
+GetParser task
+
+  try
+  
+    set grammarFile PATH.resolve(PATH.join(~__dirname, 'saigrammar.peg'))
+    set parserFile PATH.resolve(PATH.join(~__dirname, 'saigrammar.js'))
+
+    if (not FS.existsSync(parserFile))
+    ... or (FS.statSync(grammarFile).mtime > FS.statSync(parserFile).mtime) 
+
+      set 
+        PEG require('pegjs')
+        grammar FS.readFileSync(grammarFile).toString()
+        
+        mainParser from PEG.generate grammar, fields
+          allowedStartRules list startFile, startExpression
+          output 'source'
+          optimize 'size'
+          trace 0
+          cache true
+          
+      FS.writeFileSync parserFile, mainParser
+
+    else
+      set mainParser FS.readFileSync(parserFile).toString()
+
+  catch
+      
+    set msg '''
+      SAI: Could not compile saigrammar.peg.
+      Is pegjs available? Is there a syntax error in the grammar?
+
+      ${error}
+    
+    if grammar
+      set
+        beg from grammar.substring e.offset-50, e.offset
+        end from grammar.substring e.offset, e.offset+50
+        msg + '''
+          ${beg}<HERE>${end}
+        
+    throw new ~Error msg
+    
+  set mainParser from ~eval mainParser
+  
+  return task given rawsource, bound, fn
+  
+    set
+      rawsource + '\n\n'
+      dedent from @Dedenter rawsource
+      source dedent[0]
+  
+    try
+      set js from mainParser.parse source, fields
+        startrule fn ?? 'startFile' :: 'startExpression'
+        bound bound
+        globals @config.verbs
+        persist @persist
+        filename fn
+    
+    catch
+      if error.location
+        throw new ~Error '''
+          SAI: Syntax error <HERE> in ${~JSON.stringify(fn)}
+          
+          ${@Contextualize(source, error.location.start.offset, error.location.end.offset)}
+          
+          ${error.message}
+          
+      else
+        throw new ~Error '''
+          SAI: Error creating prototype:
+          
+          ${error.tostring()}
+          
+    if @config.options.beautify
+      set js from @Beautify js, fields
+        indent_size 2
+        preserve_newlines false
+        brace_style 'collapse'
+    
+    return js
+
+  
+// Parse
+//
+// Build and bind parser
+//
+// (see @Clean)
+
+
+// GetSourceFromPaths -> config.Loader
+//
+// The basic loader which fetches SAI source by name from the provided list of 
+// directories.
+//
+
+GetSourceFromPaths task given name
+
+  ply @config.paths as path
+    ply array '.sai', ''; as extension
+      set filename from PATH.join path, name+extension
+      try
+        return:
+          success true
+          source FS.readFileSync(filename).toString()
+          context:
+            name name
+            loader 'SAI.GetSourceFromPaths'
+            path filename
+            mtime FS.statSync(filename).mtime
+            fetched new ~Date
+      catch
+        nop
+          
+  return:
+    success false
+    context '''
+      SAI.GetSourceFromPaths: cannot load ${name}
+      Check paths: ${@config.paths.join(';')}
+
+      
+// Compile
+//
+// Create a function that compiles parsed SAI source, binding the variables
+// needed to integrate necessary scope and the SAI runtime library.
+//
+
+Compile task given source
+  return new ~Function 'prototype','options','require','$AI','__dirname', source
+
+
+// ProtoGen
+//
+// Create a fully scoped Javascript prototype for a single object (ignoring inheritance)
+//
+
+GetProtogen task given name
+  
+  set @protogens[name] default from task
+    set s1 new ~Date
+    set load from @config.Loader name
+    unless load.success
+      throw new ~Error `SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
+    set source from @Parse load.source, undefined, load.context
+    set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
+    set protogen from @Compile source
+    //debug source
+    unless protogen
+      throw new ~Error 'SAI.GetProtogen: Error in generated code ${name}'
+    set s2 new ~Date
+    if @config.options.speedometer
+      debug 'SAI: Compiled ${name} in ${s2-s1}ms.'
+    set @source[name] source
+    return protogen
+
+  return @protogens[name]
+  
+  
+// Expression
+//
+// Compile a single SAI expression, out of context except for the runtime library.
+//
+
+Expression task given source
+  set js 'return ${@Parse(source, undefined, undefined)}'
+  return @Compile(js)(this, blank, ~require, SAILIB, ~__dirname)
+
+
+// GetAncestors
+//
+// Build a list of objects that the given object depends on
+//
+
+GetAncestors task given name
+  set
+    heritage array name
+    ancestors blank
+    nodupes blank
+    
+  while from heritage.shift as leaf
+    unless nodupes[leaf]
+      set nodupes[leaf] true
+      set obj new @proto name
+      set protogen from @GetProtogen leaf
+      protogen obj, fields name leaf;, ~require, SAILIB, ~__dirname
+      obj.Constructor
+      unless obj.isa
+        throw new ~Error 'SAI GetPrototype: object loaded as ${leaf} does not have an isa type identifier.'
+      with obj.__inherits
+        set ancestors[leaf] it
+        ply it
+          heritage.push it
+
+  return ancestors
+  
+
+// GetPrototype
+// 
+// Given a name, locate all ancestors, create all prototypes,
+// initialize primary prototype object, describe properties,
+// save the result in a cache (SAI.prototypes) and return it.
+//
+
+GetPrototype task given name, bindings
+  set @prototypes[name] default from task
+    set ancestors from @GetAncestors name
+    set proto to new @proto name
+    set adopt to task given name
+      ply ancestors[name]
+        adopt it
+      set protogen from @GetProtogen name
+      protogen proto, :name name;, require, SAILIB, ~__dirname
+    
+    adopt name
+    
+    ~Object.defineProperty proto, 'isa', :enumerable false, value proto.isa;
+    if @isas[proto.isa]
+      throw new ~Error 'SAI: object defined by ${name} has a duplicate.isa type ${proto.isa} identical to ${@isas[proto.isa]}'
+    set @isas[proto.isa] name
+
+    SAILIB.finalizePrototype proto
+    return proto
+    
+  return @prototypes[name]
+
+
+// GetSource
+//
+// Get full native JS source code for an object, by name.
+//
+
+GetSource task as name
+  set ancestors from @GetAncestors name
+  set islib to 0 <= name.indexOf('sailib')
+
+  if islib
+    debug 'Building SAILIB specifically to refer to iteself; not requiring sai-library.'
+
+  set source '''
+    // Javascript source for ${name} transipled by SAI
+    //
+    
+    "use strict";
+    
+    var prototype=new function()${'{'}
+    this.Constructor=function()${'{}'};
+    this.__tobelocked=[];
+    this.__tobefrozen=[];
+    this.__contracts=[];
+    this.__unverified=true;
+    this.isof=${'{}'};
+    return this;
+    ${'}'}();
+    var $AI=${islib ?? 'prototype' :: 'require("sai-library")'};
+    // Generated code follows
+    
+  set adopt task given name
+    ply ancestors[name]
+      adopt it
+    set source + @source[name] + '\n'
+  
+  adopt name
+
+  set source + '''
+    // End of generated code
+    
+    $AI.finalizePrototype(prototype);
+    if (prototype.isof[prototype.isa].type === "singleton") { prototype.Constructor(); prototype.Instantiate(); ${'}'}
+    var result=prototype.isof[prototype.isa].type === "main" ? prototype.constructor() : prototype;
+    exports=result; try { module.exports=result; ${'}'} catch(e) ${'{}'};
+    return result;
+    
+  return source
+
+
+// Require
+//
+// Return a prototype object by name
+//
+
+Require task given name
+  set proto from GLOBAL.root.GetPrototype name
+  exists proto.constructor
+    return it
+  throw new ~Error 'SAI.Require: do not know how to create object ${name}'
+  
+
+
+// Create
+//
+// Create an object by name (an alternative to using new on what Require gives you)
+//
+
+Create task given name, parameters
+  exists GLOBAL.root.GetPrototype(name)
+    set obj from ~Object.create it
+    if obj.Constructor .. obj.Constructor
+    if obj.Instantiate .. obj.Instantiate.apply obj, parameters
+    return obj
+  throw new ~Error 'SAI.Create: do not know how to create object ${name}'
+
+
+// Configure
+//
+// Update configuration settings individually or as a group
+//
+
+Configure task given config
+  exists config.paths
+    set @config.paths it
+  exists config.verbs
+    set @config.verbs update it
+  exists config.options
+    set @config.options update it
+  exists config.Loader
+    set @config.Loader it
+  
+  if @config.options.beautify
+    set @Beautify require('js-beautify').js_beautify

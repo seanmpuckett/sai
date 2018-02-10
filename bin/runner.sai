@@ -1,14 +1,9 @@
 reference:
   path require('path')
-  
+
+
 object Runner
 
-// Instantiate
-//
-// Called when the object is created.
-//
-// SAI - reference to sai-language object
-//
 Instantiate task given SAI
 
   set argv ~process.argv limit 2, undefined // chop off first two arguments

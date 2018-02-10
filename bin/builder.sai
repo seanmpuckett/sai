@@ -19,7 +19,11 @@ Instantiate task given SAI
   // utilities
   //
   set
+  
+    // option flags
     flags blank
+    
+    // display banner
     Banner task
       debug '''
         sai-build -- command-line compiler for .sai scripts
@@ -36,21 +40,39 @@ Instantiate task given SAI
         sai-build HelloWorld.sai
         sai-build -o bin src/bin -o lib src/lib
         
-    IsDirectory task given path
-      return FS.lstatSync(path).isDirectory()
+    // does a file exist
+    Exists task given path
+      return FS.existsSync(path)
       
+    // is the given path a directory
+    IsDirectory task given path
+      if Exists(path)
+        return FS.lstatSync(path).isDirectory()
+      return false
+        
+    // override output folder
     dest undefined
+    
+    // return destination path, updating extension and handling overrides
     DestPath task given path, branch
       if dest .. set path PATH.join(dest, branch, PATH.basename(path))
-      set path self.replace('.sai', '.js')
-      return path
-
+      with PATH.parse(path) delete 'base'
+        if  .ext is '.sai'
+          set .ext '.js'
+        else
+          set .ext (self default '') + '.js'
+        return !PATH.format .
+    
+    // recursively create directories
     MkPath task given path
-      unless FS.existsSync(path)
+      unless Exists(path)
         MkPath PATH.dirname(path)
         FS.mkdirSync path
 
+    // process exit value
     exitflag 0
+    
+    // build a single file at src path, saving javascript output to dest path
     Build task given src, dest
       local objectName PATH.basename(src)
       SAI.Clean
@@ -63,10 +85,11 @@ Instantiate task given SAI
         if flags.verbose .. debug '${src} -> ${dest}'
       catch
         debug '${src} -> ERROR'
-        debug error.message
+        debug error
         unless error.message.indexOf('Contractually required')
           set exitflag 1
   
+    // given a file or folder, recursively build .sai files within
     ProcessArg task given path, branch
       if IsDirectory(path)
         every FS.readdirSync(path) as leaf
@@ -75,9 +98,9 @@ Instantiate task given SAI
             ProcessArg candidate, branch
           else if leaf isnt '.' and leaf isnt '..' and IsDirectory(candidate)
             ProcessArg candidate, PATH.join(branch, leaf)
-      else
+      else 
         Build path, DestPath(path, branch)
-  
+        
   // main loop
   //
   

@@ -322,17 +322,29 @@ Execute task
     set c to (a select b) collect
     return c.length=2 and c.0=8 and c.1=21
   
+  @Test 'select iterable iterable limited ', task
+    set a from Fibb limit 8
+    set b from Odds limit 2,3
+    set c to (a select b) collect
+    return c.length=3 and c.0=8 and c.1=21 and c.2 is undefined
+  
   @Test 'select iterable array', task
-    set a from Fibb
+    set a from Fibb 
     set b to list 7,5
     set c to (a select b) collect
     return c.length=2 and c.0=21 and c.1=8
+  
+  @Test 'select iterable array limited', task
+    set a from Fibb limit 6
+    set b to list 5,2,7
+    set c to (a select b) collect
+    return c.length=3 and c.0=8 and c.1=2 and c.2 is undefined
   
   @Test 'select iterable traits', task
     set a from Fibb
     set b to traits '7' a,'5' b
     set c to (a select b) collect
-    return c.length=2 and ((c.0=8 and c.1=21) or (c.0=21 and c.1=8))
+    return c.length=2 and (c.0=8 and c.1=21) 
     
   @Test 'select traits iterable', task
     set a to traits '1' a, '2' b, '3' c, '4' d, '5' e, '6' f, '7' g, '8' h, '9' i

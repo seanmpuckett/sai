@@ -33,7 +33,7 @@ Execute task
     
   @Match 'self -', 2, task
     set a to 3
-    set a - 1
+    set a self - 1
     return a
 
   @Match 'self *', 2, task

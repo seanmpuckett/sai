@@ -1,5 +1,5 @@
 reference:
-  pegjs from require 'pegjs'
+  FS from require 'fs'
   Math ~Math
   Simple 'Simple'
   Onceler 'Onceler'
@@ -16,8 +16,8 @@ Execute task
   
   @onceler.Tally
   
-  @Test 'pegjs required', task
-    return pegjs.generate isnt undefined
+  @Test 'FS required', task
+    return FS.exists isnt undefined
 
   @Test 'Simple reference', task
     set a to create Simple

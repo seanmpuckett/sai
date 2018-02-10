@@ -33,6 +33,7 @@ Instantiate task
     CompOrderOps
     Inheritance
 
+  set startTime new ~Date
   ply tests
     try
       set suite to create it @
@@ -40,7 +41,9 @@ Instantiate task
     catch
       debug error
       set @fail concat "Could not execute tests in ${it}"
-      
+  set endTime new ~Date
+  debug 'Test time ${endTime-startTime}ms.'
+  
   if @fail.length
     debug 'FAILED'
     ply @fail
