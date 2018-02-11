@@ -11,7 +11,6 @@ reference:
   FS from require 'fs'
   PATH from require 'path'
   SAILIB from require 'sai-library'
-  GLOBAL empty
   
   ////////////////////////////////////////////////////////////////////////////////////
   //
@@ -49,8 +48,6 @@ reference:
 
 object SAI singleton
 
-
-
 // Instantiate
 //
 // object wake-up
@@ -58,8 +55,7 @@ object SAI singleton
 
 Instantiate task
   
-  set GLOBAL.root @    // Some calls may be stripped of a proper THIS; we keep it here.
-  @Clean
+  my Clean
   
   
 // Clean
@@ -69,29 +65,32 @@ Instantiate task
 
 Clean task
   set 
-    @prototypes blank
-    @source blank
-    @protogens blank
-    @isas blank
-    @config copy DEFAULT_config
-    @persist: globalcount 1
-    @proto task
+    my prototypes blank
+    my source blank
+    my protogens blank
+    my isas blank
+    my config copy DEFAULT_config
+    my persist: globalcount 1
+    my proto task
+      orphan
       set
-        @@.Constructor task
+        my Constructor task
           nop
-        @@.__tobelocked empty
-        @@.__tobefrozen empty
-        @@.__contracts empty
-        @@.__unverified true
-        @@.isof blank
-      return @@
+        my __tobelocked empty
+        my __tobefrozen empty
+        my __contracts empty
+        my __unverified true
+        my isof blank
+      return me
       
-    @Parse from @GetParser
-    @config.Loader task given name
-      return @GetSourceFromPaths(name)
-    
-    SAILIB.import @Require
-    SAILIB.create_op @Create
+    my Parse from my GetParser
+
+    my config.Loader task 
+      return from my GetSourceFromPaths.apply me, arguments
+    SAILIB.import task
+      return from my Require.apply me, arguments
+    SAILIB.create_op task 
+      return from my Create.apply me, arguments
 
   
 // Dedenter
@@ -101,47 +100,77 @@ Clean task
 
 Dedenter task given src
 
-  set
-    lines !src.split /\r\n|[\r\n\u0085\u2028\u2029]/
+  set 
+    rawlines from src.split /\r\n|[\r\n\u0085\u2028\u2029]/
+    heredocstate 0
+    heredepth 0
     indent: 0
-    out empty
-    heredoc false
+    lines empty
 
-  // get rid of shebang line
-  if lines.0.substr(0,2) is '#!'
-    lines.shift
+    Context task given lineno
+      set result 'near line ${lineno}:\n'
+      count lineno-3 to lineno+4
+        exists rawlines[counter]
+          set result + '${counter}:${counter is lineno ?? '->' :: '  '} ${it}\n'
+      return result
     
-  ply lines as line
-    set depth 0    
-    while line[depth] is ' ' .. inc depth
-    if depth is line.length 
-      set out concat ''
-    else
-      set line line.substr(depth)
-      if line.substr(0,2) is '//'
-        set out concat line
-      else if depth is indent[0]
-        set out concat line
-      else if depth > indent[0]
-        set out concat: '{', line
-        indent.unshift depth
-      else
-        while depth < indent[0]
-          set out concat: '}'
-          indent.shift
-        set out concat line
-        if depth isnt indent[0]
-          set context ''
-          count i-3 to i+4
-            if counter>0 and counter<lines.length
-              set context + '${counter}: ${i is j ?? '->' :: '  '} ${lines[j]}\n'
-          throw new ~Error 'SAI: indenting error\n${context}'
+  if '#!' is (rawlines.0 limit 0, 2)
+    rawlines.shift
+    
+  ply rawlines as line, lineno
+    set trail line.length
+    while ' ' is line[trail-1] .. dec trail
+    set line (self limit 0, trail)
+    set depth 0
+    while ' ' is line[depth] .. inc depth
+    set trimmed (line limit depth, undefined)
+    set isComment '//' is (trimmed limit 0, 2)
+    set isBlank 0 is trimmed.length
+    unless isComment or isBlank
+      set heredoc "'''" is (line limit -3)
+      switch heredocstate
+        case 0
+          if heredoc
+            set heredocstate 1
+            set heredepth depth
+          if depth > indent.0
+            indent.unshift depth
+            lines.push '{'
+        case 1
+            if depth <= heredepth
+              throw new ~Error "SAI: multi-line quotes must be indented ${from Context lineno}"
+            lines.push '{'
+            indent.unshift depth
+            set heredepth depth
+            set heredocstate 2
+        case 2
+            if depth < heredepth
+              set heredocstate 0
+            else if depth > heredepth
+              set trimmed (line limit heredepth)
+      if depth < indent.0
+        while depth < indent.0
+          lines.push '}'
+          indent.shift 
+        if depth isnt indent.0
+          throw new ~Error "SAI: incorrect indentation ${from Context lineno}"
+    lines.push trimmed
+    
+  while from indent.shift
+    lines.push '}'
 
-  while from indent.shift > 0
-    out.push '}'
-    
-  return array out.join('\n')+'\n'
+  lines.push ''
+
+  return from lines.join '\n'
   
+  
+// WrapExtract
+//
+// Extracts context from a string
+//
+
+WrapExtract task given source, location
+  return source.substring(location-100,location)+"<HERE>"+source.substring(location,location+100)
   
   
 // Contextualize
@@ -151,20 +180,12 @@ Dedenter task given src
 
 Contextualize task given source, offset
   set
-    context !source.substring offset-100, offset
-    context + '<HERE>'
-    context + !source.substring offset, offset+100
+    context from my WrapExtract source, offset
+    lines from context.split '\n'
 
     ind 0
     minind 0
-    lines !context.split'\n'
     newcontext ''
-    
-    dup task as string, times
-      set times number times
-      unless times
-        return ''
-      return from string.repeat times
     
   ply lines as line
     if line is '{' .. inc ind
@@ -176,7 +197,7 @@ Contextualize task given source, offset
     if line is '{' .. inc ind
     else if line is '}' .. dec ind
     else 
-      set newcontext + dup('  ',ind) + line + '\n'
+      set newcontext + '  '.repeat(ind) + line + '\n'
       
   return newcontext
 
@@ -194,8 +215,8 @@ GetParser task
 
   try
   
-    set grammarFile PATH.resolve(PATH.join(~__dirname, 'saigrammar.peg'))
-    set parserFile PATH.resolve(PATH.join(~__dirname, 'saigrammar.js'))
+    set grammarFile from PATH.resolve from PATH.join ~__dirname, 'saigrammar.peg'
+    set parserFile from PATH.resolve from PATH.join ~__dirname, 'saigrammar.js'
 
     if (not FS.existsSync(parserFile))
     ... or (FS.statSync(grammarFile).mtime > FS.statSync(parserFile).mtime) 
@@ -225,11 +246,7 @@ GetParser task
       ${error}
     
     if grammar
-      set
-        beg from grammar.substring e.offset-50, e.offset
-        end from grammar.substring e.offset, e.offset+50
-        msg + '''
-          ${beg}<HERE>${end}
+      set msg from my WrapExtract grammar, e.offset
         
     throw new ~Error msg
     
@@ -239,15 +256,14 @@ GetParser task
   
     set
       rawsource + '\n\n'
-      dedent from @Dedenter rawsource
-      source dedent[0]
+      source from my Dedenter rawsource
   
     try
       set js from mainParser.parse source, fields
         startrule fn ?? 'startFile' :: 'startExpression'
         bound bound
-        globals @config.verbs
-        persist @persist
+        globals my config.verbs
+        persist my persist
         filename fn
     
     catch
@@ -255,7 +271,7 @@ GetParser task
         throw new ~Error '''
           SAI: Syntax error <HERE> in ${~JSON.stringify(fn)}
           
-          ${@Contextualize(source, error.location.start.offset, error.location.end.offset)}
+          ${my Contextualize(source, error.location.start.offset, error.location.end.offset)}
           
           ${error.message}
           
@@ -263,10 +279,10 @@ GetParser task
         throw new ~Error '''
           SAI: Error creating prototype:
           
-          ${error.tostring()}
+          ${error.toString()}
           
-    if @config.options.beautify
-      set js from @Beautify js, fields
+    if my config.options.beautify
+      set js from my Beautify js, fields
         indent_size 2
         preserve_newlines false
         brace_style 'collapse'
@@ -278,7 +294,7 @@ GetParser task
 //
 // Build and bind parser
 //
-// (see @Clean)
+// (see my Clean)
 
 
 // GetSourceFromPaths -> config.Loader
@@ -289,7 +305,7 @@ GetParser task
 
 GetSourceFromPaths task given name
 
-  ply @config.paths as path
+  ply my config.paths as path
     ply array '.sai', ''; as extension
       set filename from PATH.join path, name+extension
       try
@@ -309,7 +325,7 @@ GetSourceFromPaths task given name
     success false
     context '''
       SAI.GetSourceFromPaths: cannot load ${name}
-      Check paths: ${@config.paths.join(';')}
+      Check paths: ${my config.paths.join(';')}
 
       
 // Compile
@@ -329,24 +345,24 @@ Compile task given source
 
 GetProtogen task given name
   
-  set @protogens[name] default from task
+  set my protogens[name] default from task
     set s1 new ~Date
-    set load from @config.Loader name
+    set load from my config.Loader name
     unless load.success
       throw new ~Error `SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
-    set source from @Parse load.source, undefined, load.context
+    set source from my Parse load.source, undefined, load.context
     set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
-    set protogen from @Compile source
+    set protogen from my Compile source
     //debug source
     unless protogen
       throw new ~Error 'SAI.GetProtogen: Error in generated code ${name}'
     set s2 new ~Date
-    if @config.options.speedometer
+    if my config.options.speedometer
       debug 'SAI: Compiled ${name} in ${s2-s1}ms.'
-    set @source[name] source
+    set my source[name] source
     return protogen
 
-  return @protogens[name]
+  return my protogens[name]
   
   
 // Expression
@@ -355,8 +371,8 @@ GetProtogen task given name
 //
 
 Expression task given source
-  set js 'return ${@Parse(source, undefined, undefined)}'
-  return @Compile(js)(this, blank, ~require, SAILIB, ~__dirname)
+  set js 'return ${my Parse(source, undefined, undefined)}'
+  return my Compile(js)(this, blank, ~require, SAILIB, ~__dirname)
 
 
 // GetAncestors
@@ -373,8 +389,8 @@ GetAncestors task given name
   while from heritage.shift as leaf
     unless nodupes[leaf]
       set nodupes[leaf] true
-      set obj new @proto name
-      set protogen from @GetProtogen leaf
+      set obj new my proto name
+      set protogen from my GetProtogen leaf
       protogen obj, fields name leaf;, ~require, SAILIB, ~__dirname
       obj.Constructor
       unless obj.isa
@@ -395,26 +411,26 @@ GetAncestors task given name
 //
 
 GetPrototype task given name, bindings
-  set @prototypes[name] default from task
-    set ancestors from @GetAncestors name
-    set proto to new @proto name
+  set my prototypes[name] default from task
+    set ancestors from my GetAncestors name
+    set proto to new my proto name
     set adopt to task given name
       ply ancestors[name]
         adopt it
-      set protogen from @GetProtogen name
+      set protogen from my GetProtogen name
       protogen proto, :name name;, require, SAILIB, ~__dirname
     
     adopt name
     
     ~Object.defineProperty proto, 'isa', :enumerable false, value proto.isa;
-    if @isas[proto.isa]
-      throw new ~Error 'SAI: object defined by ${name} has a duplicate.isa type ${proto.isa} identical to ${@isas[proto.isa]}'
-    set @isas[proto.isa] name
+    if my isas[proto.isa]
+      throw new ~Error 'SAI: object defined by ${name} has a duplicate.isa type ${proto.isa} identical to ${my isas[proto.isa]}'
+    set my isas[proto.isa] name
 
     SAILIB.finalizePrototype proto
     return proto
     
-  return @prototypes[name]
+  return my prototypes[name]
 
 
 // GetSource
@@ -423,7 +439,7 @@ GetPrototype task given name, bindings
 //
 
 GetSource task as name
-  set ancestors from @GetAncestors name
+  set ancestors from my GetAncestors name
   set islib to 0 <= name.indexOf('sailib')
 
   if islib
@@ -450,7 +466,7 @@ GetSource task as name
   set adopt task given name
     ply ancestors[name]
       adopt it
-    set source + @source[name] + '\n'
+    set source + my source[name] + '\n'
   
   adopt name
 
@@ -472,9 +488,9 @@ GetSource task as name
 //
 
 Require task given name
-  set proto from GLOBAL.root.GetPrototype name
-  exists proto.constructor
-    return it
+  exists from my GetPrototype name
+    exists .constructor
+      return it
   throw new ~Error 'SAI.Require: do not know how to create object ${name}'
   
 
@@ -485,7 +501,7 @@ Require task given name
 //
 
 Create task given name, parameters
-  exists GLOBAL.root.GetPrototype(name)
+  exists from my GetPrototype name
     set obj from ~Object.create it
     if obj.Constructor .. obj.Constructor
     if obj.Instantiate .. obj.Instantiate.apply obj, parameters
@@ -500,13 +516,13 @@ Create task given name, parameters
 
 Configure task given config
   exists config.paths
-    set @config.paths it
+    set my config.paths it
   exists config.verbs
-    set @config.verbs update it
+    set my config.verbs update it
   exists config.options
-    set @config.options update it
+    set my config.options update it
   exists config.Loader
-    set @config.Loader it
+    set my config.Loader it
   
-  if @config.options.beautify
-    set @Beautify require('js-beautify').js_beautify
+  if my config.options.beautify
+    set my Beautify require('js-beautify').js_beautify

@@ -58,9 +58,9 @@ Match task given description, expected, function
   else
     set result from function
     
-  if result = expected
+  if result is expected
     @pass.push description
   else
-    @fail.push 'test "${description}" expected ${expected}, got ${result} in:\n${function.toString()}'
+    @fail.push 'test "${description}" expected ${expected} (${typeof expected}), got ${result} (${typeof result}) in:\n${function.toString()}'
 
 

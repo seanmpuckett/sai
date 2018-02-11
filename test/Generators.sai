@@ -49,7 +49,7 @@ Execute task
         
   @Match 'sorted process', 2, task
     set c10 from @Counter 10,1,-2
-    return c10 by . limit 1
+    return number (c10 by . limit 1)
     
   @Match 'collect value', 1, task
     return 1 collect

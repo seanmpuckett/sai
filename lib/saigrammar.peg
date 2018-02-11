@@ -1122,6 +1122,7 @@ Local
 
 Parameter
  = '$$' { return [['arguments','']]}
+ / ARGUMENTS _ { return [['arguments','']]}
  / '$' v:IdentifierProto { return [[ 'parameters','' ],['attribute',v]] }
  / '$' { return [[ 'parameters','' ]]}
 
@@ -1133,9 +1134,11 @@ Global
 
 Property
  = '@' v:IdentifierProto { return [['this',''],[ 'attribute',v ]] }
+ / MY Sep v:IdentifierProto { return [['this',''],[ 'attribute',v ]] }
  / '@@' v:IdentifierProto { return [['currentthis',''],[ 'attribute',v ]] }
  / '@@' { return [['currentthis','']] }
  / '@' { return [['this','']] }
+ / ME _ { return [['this','']] }
 
 SimpleTerm
  = It/Local/Parameter/Property/Root
@@ -2008,6 +2011,8 @@ ReservedWords
  / LIMIT
  / LIST
  / LOWEST 
+ / ME
+ / MY
  / NaN
  / NAND
  / NEW
@@ -2048,6 +2053,7 @@ __LINE = '__line'
 
 AND = 'and'
 ANDB = 'andb'
+ARGUMENTS = 'arguments'
 ARRAY = 'array'
 AS = 'as'
 ASC = 'asc'
@@ -2112,6 +2118,8 @@ LIMIT = 'limit'
 LIST = 'list'
 LOCAL = 'local'
 LOWEST = 'lowest'
+ME = 'me'
+MY = 'my'
 MAIN = 'main'
 NaN = 'NaN'
 NAND = 'nand'

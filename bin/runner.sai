@@ -13,10 +13,10 @@ Instantiate task given SAI
       sai-run -- run an arbitrary SAI script.
       
       USAGE
-      sai-run [path/object name] - compiles file to native JS on STDOUT
+        sai-run [path/object name] - compiles file to native JS on STDOUT
       
       EXAMPLE
-      sai-run ./HelloWorld
+        sai-run ./HelloWorld
       
     ~process.exit
     

@@ -23,7 +23,6 @@
  - 100% test coverage of parser -- is this even practical?
  - integrate support for Map and Set
  - SUPER does not properly handle multiple inheritance, instead only calling the last applied parent
- - ''' here document operator needs to support indenting
  - source code lookup for exceptions or debugging
  - state machine construct
  - need a 'strict' behaviour that yells about variables being used before being assigned
@@ -32,7 +31,6 @@
 #### Bugs
 
  - parser can't handle slashes in comments 
- - dedenter incorrectly adds comments to here documents 
  - blank character after `return ` is a parse error
  - can't use `{` or `}` in a here document
  

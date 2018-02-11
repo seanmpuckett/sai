@@ -29,16 +29,16 @@ Instantiate task given SAI
         sai-build -- command-line compiler for .sai scripts
       
         USAGE
-        sai-build [path/object name] - compiles file to native JS 
+          sai-build [path/object name] - compiles file to native JS 
       
         OPTIONS
-        -o [path]  --output       Set output folder
-        -v         --verbose      Print input and output filenames
-        -t         --test         Don't save output, just compile
+          -o [path]  --output       Set output folder
+          -v         --verbose      Print input and output filenames
+          -t         --test         Don't save output, just compile
       
         EXAMPLES
-        sai-build HelloWorld.sai
-        sai-build -o bin src/bin -o lib src/lib
+          sai-build HelloWorld.sai
+          sai-build -o bin src/bin -o lib src/lib
         
     // does a file exist
     Exists task given path

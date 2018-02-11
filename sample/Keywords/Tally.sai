@@ -4,9 +4,8 @@ instance:
   bag empty
 
 Count task 
-  set @bag[$] to (self default 0) + 1
+  set my bag[$] to (self default 0) + 1
 
 Iterator process
-  //debug "Tally Iterator"
-  each @bag
+  each my bag
     yield: key, it

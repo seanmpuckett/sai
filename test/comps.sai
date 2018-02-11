@@ -135,7 +135,7 @@ Execute task
      b.next
      return b.next().value
      
-  @Match 'observe list', '2', task
+  @Match 'observe list', 2, task
     set a to false
     set Setter to task
       set a to $
@@ -175,11 +175,11 @@ Execute task
   //  return false
     
     
-  @Match 'set value block', '1', task
+  @Match 'set value block', 1, task
     return 2 set
       return 1
   
-  @Match 'set value inline', '1', task
+  @Match 'set value inline', 1, task
     return 2 set 1
   
   @Test 'set block', task
@@ -258,7 +258,7 @@ Execute task
     return b
 
   // GIGO result expected because into can't intuit key+it value
-  @Match 'into 1 traits it', '1', task
+  @Match 'into 1 traits it', 1, task
     set b to: a 1; into it 
        return sum+key+it
     return b
@@ -468,15 +468,17 @@ Execute task
     :name 'Jenna', age 28, #dog, province 'ON'  
 
   
-  @Match 'has task', 'Sara', task
-    return friends has using task
-      return $name='Sara'
+  @Test 'has task', task
+    set a friends has using task
+      return $name is 'Sara'
     ... thru .name
+    return a.length is 1 and a.0 is 'Sara'
 
-  @Match 'by task', 'Doug', task
-    return friends by using task given a,b
+  @Test 'by task', task
+    set a friends by using task given a,b
       return a.age <=> b.age
     ... limit 1 thru .name
+    return a.length is 1 and a.0 is 'Doug'
 
   @Match 'thru task', 'SARA', task
     return friends thru using task
@@ -614,6 +616,54 @@ Execute task
         debug "List error ${~JSON.stringify(c)} isn't ${~JSON.stringify(m)}"
         return false
     return true
+  
+  @Match 'limitstring u, -y', 'defg', task
+    return 'abcdefg' limit -4
+  
+  @Match 'limitstring u, 0', '', task
+    return 'abcdefg' limit 0
+  
+  @Match 'limitstring u, u', 'abcdefg', task
+    return 'abcdefg' limit undefined
+  
+  @Match 'limitstring u, y', 'abcdef', task
+    return 'abcdefg' limit 6
+  
+  @Match 'limitstring -, -y', 'ef', task
+    return 'abcdefg' limit -3, -1
+  
+  @Match 'limitstring -, 0', '', task
+    return 'abcdefg' limit -4, 0
+  
+  @Match 'limitstring -, u', 'bcdefg', task
+    return 'abcdefg' limit -6, undefined
+  
+  @Match 'limitstring -, y', 'cd', task
+    return 'abcdefg' limit -5, 2
+  
+  @Match 'limitstring 0, -y', 'abc', task
+    return 'abcdefg' limit 0, -4
+  
+  @Match 'limitstring 0, 0', '', task
+    return 'abcdefg' limit 0, 0
+  
+  @Match 'limitstring 0, u', 'abcdefg', task
+    return 'abcdefg' limit 0, undefined
+  
+  @Match 'limitstring 0, y', 'de', task
+    return 'abcdefg' limit 3, 2
+  
+  @Match 'limitstring +, -y', 'cdef', task
+    return 'abcdefg' limit 2, -1
+  
+  @Match 'limitstring +, 0', '', task
+    return 'abcdefg' limit 5, 0
+  
+  @Match 'limitstring +, u', 'fg', task
+    return 'abcdefg' limit 5, undefined
+  
+  @Match 'limitstring +, y', 'bcdef', task
+    return 'abcdefg' limit 1, 5
   
   set l to: 1,2,3,4,5
 

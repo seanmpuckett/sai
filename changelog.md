@@ -1,5 +1,13 @@
 ## Change log
 
+### 0.1.15
+
+#### Bugs
+
+ - Problem printing indenting errors
+ - triple-quote "here documents" now support indenting
+ 
+
 ### 0.1.14
 
 #### Refactoring

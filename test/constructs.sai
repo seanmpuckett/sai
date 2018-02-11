@@ -206,7 +206,7 @@ Execute task
       return (e isnt undefined)
     return false
     
-  @Match 'throw', 1, task
+  @Match 'throw', '1', task
     try
       throw new ~Error '1'
     catch 
