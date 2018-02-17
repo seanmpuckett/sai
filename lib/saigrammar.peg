@@ -776,13 +776,13 @@ SwapStatement
  
 
 SetStatement
- = SET Sep t:SetTerms { return t }
+ = SET _ t:SetTerms { return t }
  / SET Sep EOLs INDENT EOLs t:SetBlock DEDENT { return t.join(''); } 
- / LOCAL Sep t:LocalTerms { return t }
+ / LOCAL _ t:LocalTerms { return t }
  / LOCAL Sep EOLs INDENT EOLs t:LocalBlock DEDENT { return t.join(''); } 
- / INC Sep v:RValue _ { return v+'=('+v+' || 0)+1;\n'; } // test 'inc a'
- / DEC Sep v:RValue _ { return v+'--;\n'; } // test 'dec a'
- / DELETE Sep v:RValue _ { return 'delete '+v+';\n'; }
+ / INC _ v:RValue _ { return v+'=('+v+' || 0)+1;\n'; } // test 'inc a'
+ / DEC _ v:RValue _ { return v+'--;\n'; } // test 'dec a'
+ / DELETE _ v:RValue _ { return 'delete '+v+';\n'; }
 
 SetTerms
  = t:SetTerm _ v:(',' _ v:SetTerm _ { return v })*  { return v.concat(t) }
@@ -1240,7 +1240,7 @@ Define
     addInstanceVars(v);
     var proof='var '+ivar+'=function(){ var $=this; return '+v[1]+'; }\nfor (var i in '+ivar+'()) { prototype[i]="uninitialized instance attribute"; };\n'; 
     var sup=GlobVar();
-    var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  var t='+ivar+'();\n  for (var i in t) this[i]=t[i];\n};\n'; 
+    var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  var t='+ivar+'();\n  for (var i in t) if (t[i] !== undefined) this[i]=t[i];\n};\n'; 
     return proof+setup;
   }
 
@@ -2022,7 +2022,7 @@ EscapedChar
  / '\\' 'u' '{' a:[0-9a-fA-F]+ '}' { return [true,'\\'+'u{'+a.join('')+'}' ] }
 
 StringTemplate
- = '${' v:Expression '}' { return [false,v] }
+ = '${' _ v:Expression  '}' { return [false,v] }
 
 
 __

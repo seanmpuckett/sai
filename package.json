@@ -1,6 +1,6 @@
 {
   "name": "sai-language",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "An object-oriented language designed to afford code comprehension and maintenance. Transpiles in-place to Javascript.",
   "main": "lib/sai.js",
   "scripts": {
@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/seanmpuckett/sai",
   "dependencies": {
-    "sai-library": "^1.0.9"
+    "sai-library": "^1.0.10"
   },
   "devDependencies": {
     "pegjs": "^0.10.0"

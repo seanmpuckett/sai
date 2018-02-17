@@ -1,5 +1,10 @@
 ## Change log
 
+### 0.1.17
+
+ - better whitespace parsing
+ 
+
 ### 0.1.16
 
 #### Breaking Changes
