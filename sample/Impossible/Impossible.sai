@@ -88,7 +88,7 @@ Instantiate task
   // Nevertheless, it's clearer and more maintainable to abstract away the
   // candidate generator into a process and then extract candidates into a list 
   
-  debug chain Candidates() collect
+  debug chain from Candidates; collect
     
     
     // Notice the indent level has changed, we're now in the "chain"
@@ -112,7 +112,7 @@ Instantiate task
     // get a starting value of 0.
 
     audit 
-      set pgood[.product] to (self default 0)+1
+      set pgood\.product to self?0 + 1
     
 
     // Phase 2 -- if P could have known, S knows it isn't the answer.
@@ -121,13 +121,13 @@ Instantiate task
     // if pgood indicates a trivial solution for P, then flag S's solution as bad  
     
     audit 
-      if pgood[.product]=1
-        set sbad[.sum] to true
+      if pgood\.product = 1
+        set sbad\.sum to true
 
     // Has is a filtration operator: if the expression is true, the row is kept.
     // We keep all solutions that are not marked bad.
     
-    has not sbad[.sum] 
+    has not sbad\.sum 
 
     observe from Countem it, 'Phase 2'
 
@@ -138,9 +138,9 @@ Instantiate task
     // The remaining patterns should be familiar.
 
     audit 
-      set pgood2[.product] to (self default 0)+1
+      set pgood2\.product to self?0 + 1
 
-    has pgood2[.product]=1
+    has pgood2\.product=1
     
     observe from Countem it, 'Phase 3'
 
@@ -149,9 +149,9 @@ Instantiate task
     // Filter for a new list of solutions where there is only one answer for .sum
 
     audit 
-      set sgood[.sum] to (self default 0)+1
+      set sgood\.sum to self?0 + 1
 
-    has sgood[.sum]=1
+    has sgood\.sum = 1
     
     observe from Countem it, 'Results'
 

@@ -33,7 +33,7 @@ Test task given description, function
       set success from function
     catch 
       debug error
-      @fail.push err
+      @fail.push error
   else
     set success from function
 

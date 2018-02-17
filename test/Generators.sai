@@ -138,7 +138,3 @@ Execute task
 Fudge task
   nop
   
-Hello task
-  count 5
-    debug what
-  

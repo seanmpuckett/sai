@@ -15,6 +15,12 @@ Execute task
     inc a
     return a
     
+  @Match  'inc undef', 1, task
+    set a to undefined
+    inc a
+    return a
+    
+    
   @Match  'dec a', 1, task
     set a to 2
     dec a
@@ -217,16 +223,6 @@ Execute task
   @Match 'self notb', -8, task
     set a to 7
     set a notb
-    return a
-    
-  @Match 'self inc', 2, task
-    set a to 1
-    set a inc
-    return a
-    
-  @Match 'self dec', 2, task
-    set a to 3
-    set a dec
     return a
     
   @Test 'self indents', task

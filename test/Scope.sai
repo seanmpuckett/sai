@@ -1,0 +1,55 @@
+reference:
+   x true
+
+object Scope
+
+inherit list
+  Harness
+
+instance: 
+  a true
+  cprime false
+  
+b get 
+  return true
+  
+c set given value
+  set cprime value
+  
+given:
+  d true
+  
+
+Execute task
+
+  @Test 'Scope variable a', task
+    return @a and a
+    
+  @Test 'Scope variable b', task
+    return b and @b
+    
+  @Test 'Scope variable c', task
+    set c true
+    return cprime and @cprime
+    
+  @Test 'Scope variable d', task
+    return d and @d
+    
+  @Test 'Scope variable x', task
+    return x
+    
+  @Test 'uninitialized var', task
+    try
+      set a create 'ScopeFail1'
+    catch
+      return error.toString().indexOf('without initialization') >= 0
+    return false
+    
+  @Test 'double local', task
+    try
+      set a create 'ScopeFail2'
+    catch
+      return error.toString().indexOf('when declaring') >= 0
+    return false
+    
+        

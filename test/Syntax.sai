@@ -61,3 +61,21 @@ Execute task
     swap a b
     return a=2 and b=1
 
+  @Test 'apost 1', task
+    set a: a 1
+    return a's a is 1
+    
+  @Test 'apost 2', task
+    set a: b: c 1
+    return a's b's c is 1
+    
+  @Test 'apost 3', task
+    set a: fn Fn
+    return from a's fn true
+    
+    
+
+
+
+    
+    

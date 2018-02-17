@@ -2,7 +2,6 @@ object ITParent
 
 given:
  g 'Parent'
- gruncle 'Parent'
 
 instance:
  s 'Parent'

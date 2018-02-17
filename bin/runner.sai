@@ -6,7 +6,7 @@ object Runner
 
 Instantiate task given SAI
 
-  set argv ~process.argv limit 2, undefined // chop off first two arguments
+  set argv to ~process.argv limit 2, undefined // chop off first two arguments
   
   if argv.length < 1
     debug '''

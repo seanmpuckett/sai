@@ -7,10 +7,15 @@ reference:
 object Reference
 
 instance:
-  onceler singleton Onceler
+  onceler undefined 
 
 inherit list
   Harness
+
+Instantiate task
+  super $
+  
+  set onceler to singleton Onceler
 
 Execute task
   

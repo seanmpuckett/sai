@@ -1,4 +1,5 @@
-object ITChild
+
+object ITChild main
 
 inherit:
   ITParent

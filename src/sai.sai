@@ -11,6 +11,7 @@ reference:
   FS from require 'fs'
   PATH from require 'path'
   SAILIB from require 'sai-library'
+  DIRNAME ~__dirname
   
   ////////////////////////////////////////////////////////////////////////////////////
   //
@@ -38,7 +39,7 @@ reference:
       'require' 'require'
       'assert' '$AI.assert'
     paths:
-      ~__dirname + '/'
+      DIRNAME + '/'
     options:
       speedometer false
       beautify true
@@ -115,53 +116,59 @@ Dedenter task given src
       return result
     
   if '#!' is (rawlines.0 limit 0, 2)
-    rawlines.shift
+    shift'd rawlines
     
   ply rawlines as line, lineno
+  
     set trail line.length
     while ' ' is line[trail-1] .. dec trail
     set line (self limit 0, trail)
+    
     set depth 0
-    while ' ' is line[depth] .. inc depth
+    while ' ' is line\depth .. inc depth
     set trimmed (line limit depth, undefined)
+    
     set isComment '//' is (trimmed limit 0, 2)
-    set isBlank 0 is trimmed.length
+    set isBlank 0 is trimmed's length
+    
     unless isComment or isBlank
       set heredoc "'''" is (line limit -3)
+
       switch heredocstate
         case 0
           if heredoc
             set heredocstate 1
             set heredepth depth
           if depth > indent.0
-            indent.unshift depth
-            lines.push '{'
+            unshift'd indent depth
+            push'd lines '{'
         case 1
-            if depth <= heredepth
-              throw new ~Error "SAI: multi-line quotes must be indented ${from Context lineno}"
-            lines.push '{'
-            indent.unshift depth
-            set heredepth depth
-            set heredocstate 2
+          if depth <= heredepth
+            throw new ~Error "SAI: multi-line quotes must be indented ${from Context lineno}"
+          push'd lines '{'
+          unshift'd indent depth
+          set heredepth depth
+          set heredocstate 2
         case 2
-            if depth < heredepth
-              set heredocstate 0
-            else if depth > heredepth
-              set trimmed (line limit heredepth)
+          if depth < heredepth
+            set heredocstate 0
+          else if depth > heredepth
+            set trimmed (line limit heredepth, undefined)
       if depth < indent.0
         while depth < indent.0
-          lines.push '}'
-          indent.shift 
+          push'd lines '}'
+          shift'd indent 
         if depth isnt indent.0
           throw new ~Error "SAI: incorrect indentation ${from Context lineno}"
-    lines.push trimmed
+
+    push'd lines trimmed
     
-  while from indent.shift
-    lines.push '}'
+  while shift'd indent
+    push'd lines '}'
 
-  lines.push ''
+  push'd lines ''
 
-  return from lines.join '\n'
+  return join'd lines '\n'
   
   
 // WrapExtract
@@ -197,7 +204,7 @@ Contextualize task given source, offset
     if line is '{' .. inc ind
     else if line is '}' .. dec ind
     else 
-      set newcontext + '  '.repeat(ind) + line + '\n'
+      set newcontext + (repeat'd '  ' ind) + line + '\n'
       
   return newcontext
 
@@ -215,8 +222,8 @@ GetParser task
 
   try
   
-    set grammarFile from PATH.resolve from PATH.join ~__dirname, 'saigrammar.peg'
-    set parserFile from PATH.resolve from PATH.join ~__dirname, 'saigrammar.js'
+    set grammarFile from PATH.resolve from PATH.join DIRNAME, 'saigrammar.peg'
+    set parserFile from PATH.resolve from PATH.join DIRNAME, 'saigrammar.js'
 
     if (not FS.existsSync(parserFile))
     ... or (FS.statSync(grammarFile).mtime > FS.statSync(parserFile).mtime) 
@@ -246,7 +253,7 @@ GetParser task
       ${error}
     
     if grammar
-      set msg from my WrapExtract grammar, e.offset
+      set msg from my WrapExtract grammar, error.location.start.offset
         
     throw new ~Error msg
     
@@ -305,13 +312,13 @@ GetParser task
 
 GetSourceFromPaths task given name
 
-  ply my config.paths as path
+  ply my config's paths as path
     ply array '.sai', ''; as extension
       set filename from PATH.join path, name+extension
       try
         return:
           success true
-          source FS.readFileSync(filename).toString()
+          source toString'd FS.readFileSync(filename)
           context:
             name name
             loader 'SAI.GetSourceFromPaths'
@@ -347,17 +354,17 @@ GetProtogen task given name
   
   set my protogens[name] default from task
     set s1 new ~Date
-    set load from my config.Loader name
+    set load from my config's Loader name
     unless load.success
       throw new ~Error `SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
-    set source from my Parse load.source, undefined, load.context
+    set source from my Parse load's source, undefined, load's context
     set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
     set protogen from my Compile source
     //debug source
     unless protogen
       throw new ~Error 'SAI.GetProtogen: Error in generated code ${name}'
     set s2 new ~Date
-    if my config.options.speedometer
+    if my config's options's speedometer
       debug 'SAI: Compiled ${name} in ${s2-s1}ms.'
     set my source[name] source
     return protogen
@@ -372,7 +379,7 @@ GetProtogen task given name
 
 Expression task given source
   set js 'return ${my Parse(source, undefined, undefined)}'
-  return my Compile(js)(this, blank, ~require, SAILIB, ~__dirname)
+  return my Compile(js)(@@, blank, ~require, SAILIB, DIRNAME)
 
 
 // GetAncestors
@@ -386,17 +393,18 @@ GetAncestors task given name
     ancestors blank
     nodupes blank
     
-  while from heritage.shift as leaf
-    unless nodupes[leaf]
-      set nodupes[leaf] true
-      set obj new my proto name
+  while shift'd heritage as leaf
+    unless nodupes\leaf
+      set nodupes\leaf to true
+      set obj to new my proto name
       set protogen from my GetProtogen leaf
-      protogen obj, fields name leaf;, ~require, SAILIB, ~__dirname
+      set opts: name leaf
+      protogen obj, opts, ~require, SAILIB, DIRNAME
       obj.Constructor
       unless obj.isa
         throw new ~Error 'SAI GetPrototype: object loaded as ${leaf} does not have an isa type identifier.'
       with obj.__inherits
-        set ancestors[leaf] it
+        set ancestors\leaf it
         ply it
           heritage.push it
 
@@ -418,7 +426,7 @@ GetPrototype task given name, bindings
       ply ancestors[name]
         adopt it
       set protogen from my GetProtogen name
-      protogen proto, :name name;, require, SAILIB, ~__dirname
+      protogen proto, fields name name;, require, SAILIB, DIRNAME
     
     adopt name
     
@@ -446,8 +454,10 @@ GetSource task as name
     debug 'Building SAILIB specifically to refer to iteself; not requiring sai-library.'
 
   set source '''
-    // Javascript source for ${name} transipled by SAI
-    //
+    #!/usr/bin/env node
+    
+    \/\/ Javascript source for ${name} transipled by SAI
+    \/\/
     
     "use strict";
     

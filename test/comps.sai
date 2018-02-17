@@ -352,21 +352,21 @@ Execute task
     return a[0]=1 and a.length=1
 
   @Test 'concat undef list', task
-    set a undef concat: 1, 2
+    set a undefined concat: 1, 2
     return a.0=1 and a.1=2 and a.length=2
     
   @Test 'concat undef iterable', task
-    set a undef concat ((array 1, 2) iterate)
+    set a undefined concat ((array 1, 2) iterate)
     set a to a collect
     return a.0=1 and a.1=2 and a.length=2
 
   @Test 'concat list undef', task
-    set a (array 1, 2) concat undef
+    set a (array 1, 2) concat undefined
     set a to a collect
     return a.0=1 and a.1=2 and a.length=2
     
   @Test 'concat iterable undef', task
-    set a ((array 1, 2) iterate) concat undef
+    set a ((array 1, 2) iterate) concat undefined
     set a to a collect
     return a.0=1 and a.1=2 and a.length=2
 
@@ -688,7 +688,7 @@ Execute task
     return from ListVerify a, empty
     
   @Test 'limit -x, undef', task//           last x rows
-    set a to l limit -2, undef
+    set a to l limit -2, undefined
     return from ListVerify a, :4, 5
     
   @Test 'limit -x, +y', task//                    y rows starting x from end of list
@@ -704,7 +704,7 @@ Execute task
     return from ListVerify a, empty
     
   @Test 'limit 0, undef', task //everything 
-    set a to l limit 0, undef
+    set a to l limit 0, undefined
     return from ListVerify a, :1,2,3,4,5
     
   @Test 'limit 0, +y', task //first y rows
@@ -720,7 +720,7 @@ Execute task
     return from ListVerify a, empty
     
   @Test 'limit +x, undef', task //everything starting at x
-    set a to l limit 2, undef
+    set a to l limit 2, undefined
     return from ListVerify a, :3,4,5
     
   @Test 'limit +x, +y', task //y rows starting at x
@@ -749,7 +749,7 @@ Execute task
     return from ListVerify a, empty
     
   @Test 'limit gen -x, undef', task//           last x rows
-    set a to l iterate limit -2, undef collect
+    set a to l iterate limit -2, undefined collect
     return from ListVerify a, :4, 5
     
   @Test 'limit gen -x, +y', task//                    y rows starting x from end of list
@@ -765,7 +765,7 @@ Execute task
     return from ListVerify a, empty
     
   @Test 'limit gen 0, undef', task //everything 
-    set a to l iterate limit 0, undef collect
+    set a to l iterate limit 0, undefined collect
     return from ListVerify a, :1,2,3,4,5
     
   @Test 'limit gen 0, +y', task //first y rows
@@ -781,7 +781,7 @@ Execute task
     return from ListVerify a, empty
     
   @Test 'limit gen +x, undef', task //everything starting at x
-    set a to l iterate limit 2, undef collect
+    set a to l iterate limit 2, undefined collect
     return from ListVerify a, :3,4,5
     
   @Test 'limit gen +x, +y', task //y rows starting at x

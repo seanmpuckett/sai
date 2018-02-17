@@ -1,5 +1,28 @@
 ## Change log
 
+### 0.1.16
+
+#### Breaking Changes
+
+ - removed unary set operators `inc` and `dec`. Instead use those terms as verbs
+ - removed `ascending` and `descending` synonyms for `asc` and `desc` because there's too many reserverd words.
+ - compile order now requires that object tasks must be declared _after_ all other object attributes. A lot of these annoying limitations are due to the strictly lexical one-pass transformation. Maybe someday that will change.
+ 
+#### Enhancements
+
+ - the `inc` verb is now written to set _falsy_ values to 1, as if they were originally 0.
+ - it is _always_ now safe to call `super` in any object method, as even if there is no explicit function, there is an implicit nil function. This also overcomes a shortcoming with the order of multiply inherited objects sometimes hiding super functions. 
+ - added `'s` as a synonym for `.` accessors. Super dorky but I like how it reads.
+ - added `'d` as a synonym for accessing object verbs in a more readable way.  Like how this reads too.
+ - added `\` back in (though it used to be `|`). This is actually a useful construct and makes sense as backslash because it is kind of like a subdirectory symbol. Also anything that gets rid of unnecessary braces, brackets and parens is going to help.
+ - added `?` synonym for the `default` operator and increased its precedence to just above multiplication
+ - Object attributes declared in `instance`, `given`,  `get`, and `set` can be used as barewords. When you do so, they refer to attributes of the current (this) object.
+ - You must declare attributes before you can use them in this way, and the compiler will not let you re-use these names as function parameters or local variables. 
+ - Caveat: this takes effect only for the current file, objects inheriting from other objects will need to redeclare instance variables they want to access as barewords from their parents.  
+ - The compiler will nag you about obvious usage of variables before they're given a value.  It won't catch every bug but it should help.
+ - More tests
+ 
+
 ### 0.1.15
 
 #### Bugs

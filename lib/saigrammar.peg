@@ -7,10 +7,42 @@
   var FunctionChain=false;
   var SafetyFetch=false;
   var References={};
+  var InstanceVars={};
+  var UnresolvedLocals={};
+  var readOnlyReference=true;
   
   var _db=false;
   var lp='_'; // prefix for bareword variables
   var LeakedMagic=/\^\{([a-z0-9]+)\}/;
+  
+  function addInstanceVars(v) {
+    var vt='return '+v[1]+';';
+    try {
+      var inst=new Function(vt)();
+      for (var i in inst) {
+        if (!InstanceVars[i]) {
+          CheckScope(i,"instance");
+          InstanceVars[i]=true;
+        }
+      }
+    } catch (e) {
+      error(e.message+"\n\nSAI: Instance/Given variables can only be initialized with simple literal values. For more complex initialization, use Instantiate (but still declare them with instance).\n\nYour vars: "+v[1]);
+    }
+  }
+  
+  function CheckScope(v,context) {
+    //console.log("check scope "+context+": "+v);
+    if (References[v]) {
+      var message="SAI: variable "+v+" is a Reference variable and cannot be used as a "+context+".";
+      //console.log(message);
+      error(message);
+    }
+    if (InstanceVars[v]) {
+      var message="SAI: variable "+v+" is an Instance variable and cannot be used as a "+context+".";
+      //console.log(message);
+      error(message);
+    }
+  }
   
   function addLocal(v,a) { 
     if (_db) console.log("request local "+v+" - "+a);
@@ -23,6 +55,14 @@
       _locals[v]=v+a;
     }
     if (_db) console.log("  added local "+v+" - "+_locals[v]);
+  }
+  
+  function checkLocal(v,name) {
+    if (References[v]) return;
+    if (_bindings[v]) return;
+    if (!_locals[v]) {
+      UnresolvedLocals[v]=name;
+    }
   }
   
   function removeLocal(v) {
@@ -41,6 +81,7 @@
       }
     } 
     var finalk=[];
+    var klookup={};
     if (_db) {
       console.log("references");
       console.log(References);
@@ -50,10 +91,17 @@
     for (var i in k) {
       //console.log(k[i]);
       if (!References[k[i]]) finalk.push(k[i]);
+      klookup[k[i]]=k;
+    }
+    for (var i in UnresolvedLocals) {
+      if (!klookup[i] && !References[i]) {
+        error("local variable used without initialization: "+UnresolvedLocals[i]);
+      }
     }
     //console.log(finalk);
     var r='var '+finalk.join(',')+';\n'; 
     _locals={};
+    UnresolvedLocals={};
     return r; 
   }
 
@@ -66,6 +114,7 @@
  
   function RV(code,varnames) {
     if (!varnames) varnames={};
+    if (!code) error("SAI parser: RV has undefined code; likely a syntax error; perhaps you need to use 'self'");
     if (!code.replace) {
       code=code.toString();
     }
@@ -220,6 +269,7 @@
     update: '^{1} = $AI.update_op(^{1},^{2})', // test 'self update'
     delete: '$AI.delete_op(^{1},^{2})', // test 'self delete*'
     default: 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
+    '?': 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
     concat: '^{1} = $AI.concat_op(^{1},^{2}, true)', // test 'self concat inplace*'
   };
 
@@ -227,7 +277,7 @@
     '-': '^{1}=-(^{1})' , // test 'self negate'
     'not': '^{1}=!(^{1})', // test 'self not'
     'notb': '^{1}=~(^{1})', // test 'self notb'
-    'inc': '^{1}++', // test 'self inc'
+    'inc': '^{1}=(^{1} || 0)+1;', // test 'self inc'
     'dec': '^{1}--', // test 'self dec'
     'delete': 'delete ^{1}', // test 'self delete'
     'collect': '^{1} = $AI.collect_op(^{1})' // test 'self collect*'
@@ -341,7 +391,7 @@
     var sup=GlobVar();
     if (o.prefix!='get' && o.prefix!='set') {
       addToList('lock',fn);
-      head='var '+sup+'=prototype['+fn+'];\n';
+      head='var '+sup+'=prototype['+fn+'] || function(){};\n';
       head+='prototype['+fn+']=';
       tail=';\n';
     }
@@ -469,7 +519,7 @@ Reference
 }
 
 Object
- = OBJECT _ k:Identifier _ typ:(MAIN/SINGLETON)? _ v:SemVer? _ EOLs s:Segment+ {
+ = OBJECT _ k:Identifier _ typ:(MAIN/SINGLETON)? _ v:SemVer? _ EOLs d:Declarations* s:Processes* {
     if (!v) v=quoted('0.0.0-unspecified');
     var code='',isof=[];
     var isa=quoted(k);
@@ -486,13 +536,18 @@ Object
     var l;
     if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
     if (l=getList('freeze')) code+='prototype.__tobefrozen=prototype.__tobefrozen.concat('+l+');\n';
+    code+=d.join('\n');
     code+=s.join('\n');
     clearLists();
     return code;
   }
 
-Segment
- = v:(Inherit / Contract / PropertyDef / Task / Define) { return v }
+Declarations
+ = v:(Inherit / Contract / PropertyDef / Define) { return v }
+ / EOLs
+
+Processes
+ = v:(Task) { return v }
  / EOLs
 
 
@@ -510,6 +565,7 @@ Contract
 
 PropertyDef
  = v:Identifier p1:PropertyClause p2:PropertyClause?  {
+   addInstanceVars([undefined,'{"'+v+'":true}']);
    var prop={get: undefined, set: undefined};
    prop[p1[0]]=p1[1];
    if (p2) {
@@ -698,12 +754,10 @@ ElseClause
  = ELSE _ b:Block   { return 'else {'+b+'}\n' }
  
 LocalStatement
- = LOCAL _ l:(l:Local _ ',' _ { return l } )* o:Local _ {
+ = LOCAL _ l:(l:LLocal _ ',' _ { return l } )* o:LLocal _ {
    l=l||[]; l.push(o);
    var j=[]; for (var i in l) j.push(l[i][0][1]);
-   console.log(j);
-   console.log(References);
-   for (var i in j) if (References[j[i]]) error("Cannot re-define reference variable "+j[i].substr(1)+" as a local."); 
+   for (var i in j) CheckScope(j[i].substring(1),"local");
    return 'var '+j.join(',')+';\n';
  } 
  
@@ -726,8 +780,8 @@ SetStatement
  / SET Sep EOLs INDENT EOLs t:SetBlock DEDENT { return t.join(''); } 
  / LOCAL Sep t:LocalTerms { return t }
  / LOCAL Sep EOLs INDENT EOLs t:LocalBlock DEDENT { return t.join(''); } 
- / INC Sep v:LValue _ { return v+'++;\n'; } // test 'inc a'
- / DEC Sep v:LValue _ { return v+'--;\n'; } // test 'dec a'
+ / INC Sep v:RValue _ { return v+'=('+v+' || 0)+1;\n'; } // test 'inc a'
+ / DEC Sep v:RValue _ { return v+'--;\n'; } // test 'dec a'
  / DELETE Sep v:RValue _ { return 'delete '+v+';\n'; }
 
 SetTerms
@@ -744,7 +798,7 @@ SetTerm
      error('set val - expr is unclear. Please use "set val to -expr" or "set val self - expr" as appropriate.');
    }
  / l:RValues _ o:Itselfop _ e:Expression {
-   for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
      code+=RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
@@ -752,7 +806,7 @@ SetTerm
    return code;
  }
  / l:LValues _ (TO?/&FROM/&BANG/&CHAIN) _ e:Expression {
-   for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
    if (l.length==1) return l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
@@ -761,7 +815,7 @@ SetTerm
    return code;
  }
  / l:RValues _ o:UnOp {
-   for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
      code+=RV(unops[o],{'1':l[i]})+';\n';
@@ -781,15 +835,14 @@ LocalBlock
 
 LocalTerm
  = l:RValues _ o:Itselfop _ e:Expression {
-   var code='';
-   for (var i in l) if (References[l[i]]) error("Cannot re-define reference variable "+l[i].substr(1)+" as a local."); 
-   for (var i in l) {
-     code+='let '+RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
-   }
-   return code;
+   error("SAI: 'local' should only be used when declaring variables, not when modifying them.");
  }
  / l:LValues _ (TO?/&FROM/&BANG/&CHAIN) _ e:Expression {
-   for (var i in l) if (References[l[i]]) error("Cannot re-define reference variable "+l[i].substr(1)+" as a local."); 
+   for (var i in l) {
+     //console.log("local scope check "+l[i]);
+     if ('$.'==l[i].substring(0,2)) CheckScope(l[i].substring(2),"local-1");
+     if (lp==l[i].substring(0,lp.length)) CheckScope(l[i],"local-2");
+   }
    if (l.length==1) return 'let '+l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
@@ -798,12 +851,7 @@ LocalTerm
    return code;
  }
  / l:RValues _ o:UnOp {
-   for (var i in l) if (References[l[i]]) error("Cannot re-define reference variable "+l[i].substr(1)+" as a local."); 
-   var code='';
-   for (var i in l) {
-     code+='let '+RV(unops[o],{'1':l[i]})+';\n';
-   }
-   return code;
+   error("SAI: 'local' should only be used when declaring variables, not when modifying them.");
  }
 
 
@@ -813,7 +861,7 @@ LocalAdj
 
 
 UnOp // test 'self*'
- = '-' / INC / DEC  / DELETE / NOTB / NOT 
+ = '-' / DELETE / NOTB / NOT 
 
 Itselfop // test 'self*'
  = '+' / '-' 
@@ -821,14 +869,15 @@ Itselfop // test 'self*'
  / ANDB / ORB / XORB
  / AND / OR / XOR / NAND / NOR
  / '?>' / '?<'
- / UPDATE / THRU / DELETE
- / DEFAULT
+ / UPDATE / DELETE
+ / DEFAULT / '?' 
  / CONCAT 
 
 
 
 VerbStatement
- = v:VerbSentence  { return v+";\n"; }
+ = v:Verbd { return v+';\n'; }
+ / v:VerbSentence  { return v+";\n"; }
  / v:VerbChain { return '$AI.drain_op('+v+');\n'; }
  
 ReturnStatement
@@ -1019,11 +1068,10 @@ VerbValue
 
 
 LStem
- = RStem
- ///ItStem / RootedStem / PropertyStem / ParameterStem / LocalStem 
+ = ItStem / SuperStem / RootedStem / PropertyStem / ParameterStem / LLocalStem / GlobalStem / ParenStem 
 
 RStem
- = ItStem / SuperStem / RootedStem / PropertyStem / ParameterStem / LocalStem / GlobalStem / ParenStem 
+ = ItStem / SuperStem / RootedStem / PropertyStem / ParameterStem / RLocalStem / GlobalStem / ParenStem 
 
 RStemVerb
  = RStem 
@@ -1056,8 +1104,15 @@ GlobalStem
     return stem 
   }
 
-LocalStem
- = x:Local y:(Attribute/Index/Call)* { 
+LLocalStem
+ = x:LLocal y:(Attribute/Index/Call)* { 
+    var stem=x;
+    for (var i in y) stem=stem.concat(y[i]);
+    return stem 
+  }
+
+RLocalStem
+ = x:RLocal y:(Attribute/Index/Call)* { 
     var stem=x;
     for (var i in y) stem=stem.concat(y[i]);
     return stem 
@@ -1096,6 +1151,7 @@ It
 
 Attribute
  = DOT v:IdentifierProto { return [[ 'attribute', v ]] }
+ / '\'s' Sep v:IdentifierProto { return [[ 'attribute', v ]] }
  
 Call
  = LPAREN _ p:ParameterList? _ RPAREN _ { 
@@ -1109,14 +1165,29 @@ Root
 
 Index
  = '[' _ v:Expression _ ']' { return [[ 'index', v ]] }
+ / '\\' v:SimpleValue { return [['index',v]] }
  / '.' v:PositiveInteger { return [[ 'index', v ]] }
 
 Parenthetic
  = LPAREN _ v:Expression _ RPAREN { return [[ 'paren', v ]] }
 
-Local
+LLocal
  = v:Identifier { 
+   //console.log("LLocal "+v);
+   if (InstanceVars[v]) {
+     return [['this',''],[ 'attribute',v ]]; 
+   }
    if (!options.globals[v]) addLocal(lp+v); 
+   return [[ 'local',lp+v ]];
+}
+
+RLocal
+ = v:Identifier { 
+   //console.log("RLocal "+v);
+   if (InstanceVars[v]) {
+     return [['this',''],[ 'attribute',v ]]; 
+   }
+   if (!options.globals[v]) checkLocal(lp+v,v);
    return [[ 'local',lp+v ]];
 }
 
@@ -1141,7 +1212,7 @@ Property
  / ME _ { return [['this','']] }
 
 SimpleTerm
- = It/Local/Parameter/Property/Root
+ = It/RLocal/Parameter/Property/Root
  / v:Number { return [['literal',v]] }
  / v:StringLiteral { return [['literal',v]] }
 
@@ -1154,18 +1225,20 @@ SimpleTerm
 Define
   = GIVEN _ k:Identifier _ v:Definition EOLs { 
      addToList('freeze',k);
+      addInstanceVars([undefined,'{"'+k+'":true}']);
      return 'prototype["'+k+'"]='+v[1]+';\n';
    } 
-  / GIVEN _ v:Definition EOLs { 
+  / GIVEN _ v:FieldDefinition EOLs { 
 //    addToList('lock',i);
+    addInstanceVars(v);
     var code='';
     code+='var t='+v[1]+';\nfor (var i in t) { prototype.__tobelocked.push(i); prototype[i]=t[i]; };\n'; 
     return code;
   }
-  / INSTANCE _ v:Definition EOLs {
-    var ivar=GlobVar(); 
-    var proof='var '+ivar+'=function(){ return '+v[1]+'; }\nfor (var i in '+ivar+'()) { prototype[i]="uninitialized instance attribute"; };\n'; 
-    //prototype.__ivars=function(){ return '+v[1]+';}\n;\nfor (var i in prototype.__ivars()) { prototype[i]="uninitialized instance attribute"; };\n'; 
+  / INSTANCE _ v:FieldDefinition EOLs {
+    var ivar=GlobVar();
+    addInstanceVars(v);
+    var proof='var '+ivar+'=function(){ var $=this; return '+v[1]+'; }\nfor (var i in '+ivar+'()) { prototype[i]="uninitialized instance attribute"; };\n'; 
     var sup=GlobVar();
     var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  var t='+ivar+'();\n  for (var i in t) this[i]=t[i];\n};\n'; 
     return proof+setup;
@@ -1201,6 +1274,12 @@ NestedDefinition
  / _ (COLON/FIELDS) _ EOLs INDENT EOLs v:FieldBlock DEDENT { v=EnumCheck(v); var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal', '{'+w.join(',')+'}'] }
  / _ (COLON/ARRAY) _ v:Items _ SEMI? _ { return ['literal','['+v.join(',')+']'] }
  / _ (COLON/ARRAY) _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['literal','['+v.join(',')+']'] }
+
+
+
+FieldDefinition
+ = _ (COLON/FIELDS) _ v:Fields _ SEMI? _ { v=EnumCheck(v); var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal','{'+w.join(',')+'}'] }
+ / _ (COLON/FIELDS) _ EOLs INDENT EOLs v:FieldBlock DEDENT { v=EnumCheck(v); var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['literal', '{'+w.join(',')+'}'] }
 
 
 SimpleList
@@ -1297,7 +1376,7 @@ FieldBlock
  
  
 Output
- = AS _ v:Local _ { return v[0][1] }
+ = AS _ v:ParameterCandidate _ { return v[0][1] }
 
 IterateOutput
  = o:MultiOutput {
@@ -1307,8 +1386,15 @@ IterateOutput
  }
  
 MultiOutput
- = (AS/GIVEN) _ k:(k:Local _ COMMA _ {return k})* _ v:Local { k.push(v); return k; }
+ = (AS/GIVEN) _ k:(k:ParameterCandidate _ COMMA _ {return k})* _ v:RLocal { k.push(v); return k; }
  
+ParameterCandidate
+= v:Identifier {
+   CheckScope(v,"parameter/as/given");
+   if (!options.globals[v]) addLocal(lp+v); 
+   return [[ 'local',lp+v ]];
+}
+
  
 
 
@@ -1580,8 +1666,8 @@ Sequence
  / LOWEST _ v:Logical _ { return ['by',[v,1],'limit',{extract:true,sort:1}]}
 
 SortDirection
- = (ASCENDING/ASC) _ { return 1 }
- / (DESCENDING/DESC) _ { return -1 }
+ = (ASC) _ { return 1 }
+ / (DESC) _ { return -1 }
 
 
 
@@ -1592,10 +1678,6 @@ Logical
  / l:Comparison _ NOR _ f:Logical { return '(!('+l+' || '+f+'))' } // test 'nor'
  / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { 
      return RV('((^{c})?(^{l}):(^{r}))',{c:c,l:l,r:r}); 
-   } 
- / c:Comparison _ DEFAULT _ v:Logical  {  // test 'default*'
-     SafetyFetch=true; 
-     return RV('((undefined!==($_b=^{c}))?$_b:^{v})',{c:c,v:v}); 
    } 
  / v:Comparison _ { return v }
 
@@ -1638,7 +1720,8 @@ AdditionOp
  / XORB Sep { return '^'}  // test 'binary xor'
 
 Multiplication 
- = l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
+ = DefaultOp
+ / l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
  / l:Value _ '**' _ r:Multiplication { // test '**'
    return 'Math.pow('+l+','+r+')' 
  } 
@@ -1666,6 +1749,17 @@ Multiplication
  }
  / v:Value _ { return v }
 
+DefaultOp
+ = l:Value _ DEFAULT _ v:Multiplication  {  // test 'default*'
+     SafetyFetch=true; 
+     return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
+   } 
+ / l:Value _ '?' !'?' _ v:Multiplication  {  // test 'default*'
+     SafetyFetch=true; 
+     return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
+   } 
+
+
 MultiplicationOp
  = '*' // test '*'
  / '/' // test '/'
@@ -1689,6 +1783,7 @@ Value
  / PROMISE Sep v:PromiseClause _ { return v }
  / BANG Sep? v:VerbSentence _ { return v }
  / FROM Sep v:VerbSentence _ { return v }
+ / Verbd
  / YIELDING Sep v:Value _ { return 'yield *'+v; }
  / YIELD Sep v:Value _ { return 'yield'+v; }
  / '?' v:RValueSafe _ { return v }
@@ -1756,12 +1851,18 @@ VerbSentence
    return AssembleVerb(v);
  }
 
+Verbd
+= v:Identifier '\'d' _ b:Expression _ o:ParameterList? {
+  return AssembleVerb([{ base:b, verb:'.'+v, param:(o?o[1]:'')}]);
+}
+
 VerbClause
 = v:(VerbValue) _ o:ParameterList?  { 
      var composite=v[0]+v[1];
      if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'$'+(o?(','+o[1]):'') }]; 
      return [{ base:v[0], verb:v[1], param:(o?o[1]:'') }]
   }
+  
  / v:(VerbValue) _ { 
      var composite=v[0]+v[1];
      if (composite=='^{super}') return [{ base:'^{super}', verb:'.call', param:'$' }]; 
@@ -1966,11 +2067,20 @@ ReservedWord
 
 ReservedWords
  = SET
+ / FROM
+ / IS
+ / TASK
+ / TO
+ / MY
+ / UNDEFINED
+ / ARRAY
+ / NEW
+ / ITERATE
+
  / ANDB 
  / AND
- / ARRAY
  / AS 
- / ASCENDING / ASC
+ / ASC
  / AUDIT
  / BLANK
  / BREAK
@@ -1981,41 +2091,33 @@ ReservedWords
  / COLLECT
  / CONCAT
  / COPY
- / DEC
  / DEFAULT
  / DELETE
- / DESCENDING / DESC
+ / DESC
  / DOWN
  / EMPTY
  / ENLIST
  / ENTRAIT
  / ENUM
- / ERROR
  / EXISTS
  / EXPECTS
  / FALSE
  / FIELDS
  / FIRST 
- / FROM
  / GET
  / HAS 
  / HIGHEST 
- / INC
  / INTO
  / ISNT
  / ISNAN
- / IS
- / ITERATE
  / KEYS
  / LAST
  / LIMIT
  / LIST
  / LOWEST 
  / ME
- / MY
  / NaN
  / NAND
- / NEW
  / NOR
  / NOTB
  / NOT
@@ -2030,15 +2132,12 @@ ReservedWords
  / SELF
  / SINGLETON
  / SWAP
- / TASK
  / TRIAL
  / THROW
  / THRU
- / TO
  / TRAITS
  / TRUE
  / TYPEOF
- / UNDEFINED
  / UPDATE
  / USING
  / VALUES
@@ -2057,7 +2156,6 @@ ARGUMENTS = 'arguments'
 ARRAY = 'array'
 AS = 'as'
 ASC = 'asc'
-ASCENDING = 'ascending'
 AUDIT = 'audit'
 BLANK = 'blank'
 BREAK = 'break'
@@ -2077,7 +2175,6 @@ DEC = 'dec'
 DEFAULT = 'default'
 DELETE = 'delete'
 DESC = 'desc'
-DESCENDING = 'descending'
 DO = 'do'
 DOWN = 'down'
 EACH = 'each'

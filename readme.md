@@ -53,11 +53,11 @@ Then compiling and executing:
 
     $ ./sai-build [path/objectname]
 
-A full prototype for that object (only) will be written to STDOUT.  
+A full prototype for that object will be saved as objectname.js.  
 
 For example:
 
-    $ ./sai-build sample/Impossible/Impossible >impossible.js
+    $ ./sai-build sample/Impossible/Impossible 
     $ node impossible.js
     
     Mathemetician's "Impossible" puzzle solver.
@@ -188,10 +188,10 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
           yield hand
         else
           ply deck as card, index
-            yielding !Pick hand concat card, deck delete index
-      yielding !Pick empty, cards
+            yielding from Pick hand concat card, deck delete index
+      yielding from Pick empty, cards
 
-    iterate !Permutations list apple, banana, cherry
+    iterate from Permutations list apple, banana, cherry
       debug .
       
     > [ 'apple', 'banana', 'cherry' ]
@@ -205,18 +205,18 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
 #### Minimal HTTP Server
 
     reference:
-      express !require 'express'
+      express from require 'express'
 
     object HelloHTTP 1.0.0
 
     Instantiate task
-      set @app !express
+      set app from express
   
-      @app.get '/', task given req, res
+      app.get '/', task given req, res
         res.send 'Hello HTTP!'
 
-      set @server !@app.listen 3000, 'localhost', task
-        with @server.address()
+      set server from app.listen 3000, 'localhost', task
+        with server.address()
           debug 'Example app listening at http://${.address}:${.port}'       
       
    
@@ -236,7 +236,7 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
           debug 'Hey friend, I have a new ${.colour} ${.brand} phone'
   
       askMom task given happiness
-        chain !willIGetNewPhone happiness
+        chain from willIGetNewPhone happiness
           then showOff
           catch promise given e
             debug '${e} No phone for you.'

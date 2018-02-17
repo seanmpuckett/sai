@@ -1,0 +1,11 @@
+
+object ScopeFail1
+
+inherit list
+  Harness
+
+Execute task
+
+  @Test 'Unused Var', task
+    debug a
+    

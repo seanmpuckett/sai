@@ -17,6 +17,7 @@ Instantiate task
   //@AnalyseParseTrace
 
   set tests to list
+    Scope
     Loops
     Generators
     Promises

@@ -6,18 +6,13 @@ reference:
 object HelloHTTP main 1.0.0
 
 Instantiate task
-  set my app from express
+  set app from express
   
-  set mycroft 1
-  
-  debug mycroft
-  debug @croft
-  
-  my app.get '/', task given req, res
+  app.get '/', task given req, res
     res.send 'Hello HTTP!'
 
-  set my server from @app.listen 3000, 'localhost', task
-    with my server.address()
+  set server from app.listen 3000, 'localhost', task
+    with from server.address
       debug 'Example app listening at http://${.address}:${.port}'       
       
    

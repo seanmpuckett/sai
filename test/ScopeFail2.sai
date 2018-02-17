@@ -1,0 +1,13 @@
+
+object ScopeFail2
+
+inherit list
+  Harness
+
+Execute task
+
+  @Test 'Double Local', task
+    local a 1
+    local a + 1
+    
+    
