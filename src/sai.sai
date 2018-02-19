@@ -274,11 +274,17 @@ GetParser task
         filename fn
     
     catch
+      set location to undefined
       if error.location
+        set location to trial.start.offset
+      if  match'd error.message /at:([0-9]+)/ 
+        set location to number trial.1 
+
+      if location
         throw new ~Error '''
           SAI: Syntax error <HERE> in ${~JSON.stringify(fn)}
           
-          ${my Contextualize(source, error.location.start.offset, error.location.end.offset)}
+          ${my Contextualize(source, location)}
           
           ${error.message}
           

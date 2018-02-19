@@ -15,30 +15,35 @@
   var lp='_'; // prefix for bareword variables
   var LeakedMagic=/\^\{([a-z0-9]+)\}/;
   
+  function addInstanceVar(v) {
+    if (!InstanceVars[v]) {
+      //console.log("Added instance var "+v)
+      CheckScope(v,"instance");
+      InstanceVars[v]=true;
+    }
+  }
+
   function addInstanceVars(v) {
     var vt='return '+v[1]+';';
     try {
       var inst=new Function(vt)();
       for (var i in inst) {
-        if (!InstanceVars[i]) {
-          CheckScope(i,"instance");
-          InstanceVars[i]=true;
-        }
+        addInstanceVar(i);
       }
     } catch (e) {
-      error(e.message+"\n\nSAI: Instance/Given variables can only be initialized with simple literal values. For more complex initialization, use Instantiate (but still declare them with instance).\n\nYour vars: "+v[1]);
+      error(e.message+"\n\nSAI compiler: Instance/Given variables can only be initialized with simple literal values. For more complex initialization, use Instantiate (but still declare them with instance).\n\nYour vars: "+v[1]);
     }
   }
   
   function CheckScope(v,context) {
     //console.log("check scope "+context+": "+v);
     if (References[v]) {
-      var message="SAI: variable "+v+" is a Reference variable and cannot be used as a "+context+".";
+      var message="SAI compiler: variable "+v+" is a Reference variable and cannot be used as a "+context+".";
       //console.log(message);
       error(message);
     }
     if (InstanceVars[v]) {
-      var message="SAI: variable "+v+" is an Instance variable and cannot be used as a "+context+".";
+      var message="SAI compiler: variable "+v+" is an Instance variable and cannot be used as a "+context+".";
       //console.log(message);
       error(message);
     }
@@ -58,11 +63,30 @@
   }
   
   function checkLocal(v,name) {
-    if (References[v]) return;
-    if (_bindings[v]) return;
+    if (References[v]) return v;
+    if (_bindings[v]) return v;
     if (!_locals[v]) {
       UnresolvedLocals[v]=name;
+      return '^U['+v+','+name+','+location().start.offset+']';
     }
+    return v;
+  }
+  
+  function Linker(code,final) {
+    var p=/\^U\[([^,]+),([^,]+),([^\]]+)\]/g;
+    return code.replace(p,function(x,v,name,loc) {
+      if (References[v]) return v;
+      if (_bindings[v]) return v;
+      if (_locals[v]) return v;
+      if (InstanceVars[name]) {
+        //console.log("Resolved instance var "+name);
+        return '$.'+name;
+      }
+      if (final) {
+        error('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
+      } 
+      return x; // unchanged
+    });
   }
   
   function removeLocal(v) {
@@ -93,11 +117,11 @@
       if (!References[k[i]]) finalk.push(k[i]);
       klookup[k[i]]=k;
     }
-    for (var i in UnresolvedLocals) {
-      if (!klookup[i] && !References[i]) {
-        error("local variable used without initialization: "+UnresolvedLocals[i]);
-      }
-    }
+//    for (var i in UnresolvedLocals) {
+//      if (!klookup[i] && !References[i]) {
+//        error("SAI compiler: local variable used before initialization (beware forward declarations): "+UnresolvedLocals[i]);
+//      }
+//    }
     //console.log(finalk);
     var r='var '+finalk.join(',')+';\n'; 
     _locals={};
@@ -114,7 +138,7 @@
  
   function RV(code,varnames) {
     if (!varnames) varnames={};
-    if (!code) error("SAI parser: RV has undefined code; likely a syntax error; perhaps you need to use 'self'");
+    if (!code) error("SAI compiler: RV has undefined code; likely a syntax error; perhaps you need to use 'self'");
     if (!code.replace) {
       code=code.toString();
     }
@@ -229,7 +253,7 @@
     var i=0; while (i<v.length) {
       var pattern=patternbase[v[i][0]]; 
       patternbase=accessors.nextfetch;
-      if (!pattern) error("RV Couldn't construct dereference from "+v[i]+' because '+pattern+' is false');
+      if (!pattern) error("SAI Compiler: RV Couldn't construct dereference from "+v[i]+' because '+pattern+' is false');
       var leaf=pattern[0] + v[i][1] + pattern[1];
       if (i>0 && safe) {
         code=safetyFetch(code,leaf);
@@ -396,6 +420,7 @@
       tail=';\n';
     }
   
+    o.body=Linker(o.body,false);
     var fun=o.kind+'('+params+') {\n'+FunStart()+getLocals();
     if (o.expects) {
       fun+=GetExpectsTester(o.expects,fn);
@@ -404,10 +429,10 @@
     fun+='}';
   
     if (o.name) {
-      if (fun.indexOf('^{this}')>-1) error("Cannot use unrooted . accessor without a context\n\n"+fun);
+      if (fun.indexOf('^{this}')>-1) error("SAI Compiler: Cannot use unrooted . accessor without a context\n\n"+fun);
     }
     var r=RV(head+fun+tail,{this:false,super:sup});
-  
+
     return r;
 
   }
@@ -483,7 +508,7 @@
 
   function MagicCheck(code) {
     var lm=LeakedMagic.exec(code);
-    if (lm) error("Magic variable '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)");
+    if (lm) error("SAI Compiler: Pronoun '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)");
   }
 }
 
@@ -494,24 +519,26 @@ startFile
     if (r) code+=r;
     code+=o.join('\n')
     MagicCheck(code);
+    code=Linker(code,true);
     return code;
   }
   
 startExpression
  = code:Expression EOLs {
    MagicCheck(code); 
+   code=Linker(code);
    return code;
  }
   
 Reference 
 = REFERENCE _ v:ParameterList EOLs {
-  if (v[0]!='fields') error("REFERENCE requires a trait list.");
+  if (v[0]!='fields') error("SAI Compiler: REFERENCE requires a trait list.");
   var code='';
   for (var i in v[2]) {
     var r=v[2][i];
     References[lp+r[0]]=true; 
     if (r[1].indexOf('function')==0) {
-      error("Cannot define functions in a reference block. Sorry, maybe someday.");
+      error("SAI Compiler: Cannot define functions in a reference block. Sorry, maybe someday.");
     }
     code+='var '+lp+r[0]+'='+r[1]+';\n'; 
   }
@@ -565,7 +592,7 @@ Contract
 
 PropertyDef
  = v:Identifier p1:PropertyClause p2:PropertyClause?  {
-   addInstanceVars([undefined,'{"'+v+'":true}']);
+   addInstanceVar(v);
    var prop={get: undefined, set: undefined};
    prop[p1[0]]=p1[1];
    if (p2) {
@@ -594,9 +621,11 @@ Task
 
 TaskEvent
  = v:Identifier _ TO? _ TASK _ x:Expects? _ w:MultiOutput? _ { 
+   addInstanceVar(v);
    return  {name:"'"+v+"'",expects:x,as:w,kind:'function'};
  } 
  / v:ProcessName _ TO? _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
+   addInstanceVar(v);
    return  {name:v,expects:x,as:w,kind:'function*'};
  } 
 
@@ -710,7 +739,7 @@ ThrowStatement // maybe get an accurate line number in here someday?!
 
 TryStatement // test 'try*'
  = t:TryClause c:(EOLs c:CatchClause {return c})? f:(EOLs f:FinallyClause {return f})? {
-   if (!(c||f)) error("TRY needs a CATCH and/or FINALLY");
+   if (!(c||f)) error("SAI Compiler: TRY needs a CATCH and/or FINALLY");
    return t+(c?c:'')+(f?f:'');
  }
 
@@ -795,10 +824,10 @@ SetBlock
 
 SetTerm
  = l:RValues _ '-' _ e:Expression {
-     error('set val - expr is unclear. Please use "set val to -expr" or "set val self - expr" as appropriate.');
+     error('SAI Compiler: the "set val - expr" construct is unclear. Please use "set val to -expr" or "set val self - expr" as appropriate.');
    }
  / l:RValues _ o:Itselfop _ e:Expression {
-   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
      code+=RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
@@ -806,7 +835,7 @@ SetTerm
    return code;
  }
  / l:LValues _ (TO?/&FROM/&BANG/&CHAIN) _ e:Expression {
-   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    if (l.length==1) return l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
@@ -815,7 +844,7 @@ SetTerm
    return code;
  }
  / l:RValues _ o:UnOp {
-   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
      code+=RV(unops[o],{'1':l[i]})+';\n';
@@ -835,7 +864,7 @@ LocalBlock
 
 LocalTerm
  = l:RValues _ o:Itselfop _ e:Expression {
-   error("SAI: 'local' should only be used when declaring variables, not when modifying them.");
+   error("SAI compiler: 'local' should only be used when declaring variables, not when modifying them.");
  }
  / l:LValues _ (TO?/&FROM/&BANG/&CHAIN) _ e:Expression {
    for (var i in l) {
@@ -851,7 +880,7 @@ LocalTerm
    return code;
  }
  / l:RValues _ o:UnOp {
-   error("SAI: 'local' should only be used when declaring variables, not when modifying them.");
+   error("SAI compiler: 'local' should only be used when declaring variables, not when modifying them.");
  }
 
 
@@ -1000,10 +1029,10 @@ LValue
  = v:LStem
   {
     var j=v.length;
-    if (!j) error("Expected something to assign into");
+    if (!j) error("SAI Compiler: Expected something to assign into");
     if (j==1) {
       var pattern=accessors.firststore[v[0][0]];
-      if (!pattern) error("Couldn't construct recipient from "+v);
+      if (!pattern) error("SAI Compiler: Couldn't construct recipient from "+v);
       return pattern[0] + v[0][1] + pattern[1];
     }
     j--;
@@ -1011,12 +1040,12 @@ LValue
     var patternbase=accessors.firstfetch;
     var i=0; while (i<j) {
       var pattern=patternbase[v[i][0]]; patternbase=accessors.nextfetch;
-      if (!pattern) error("Couldn't construct recipient from "+v);
+      if (!pattern) error("SAI Compiler: Couldn't construct recipient from "+v);
       code+=pattern[0] + v[i][1] + pattern[1];
       i++;
     }
     var pattern=accessors.laststore[v[j][0]];
-    if (!pattern) error("Couldn't construct recipient from "+v);
+    if (!pattern) error("SAI Compiler: Couldn't construct recipient from "+v);
     code= code+pattern[0]+v[j][1]+pattern[1];
     return code;
   }
@@ -1056,7 +1085,7 @@ VerbValue
     var i=0; while (i<v.length) {
       var pattern=patternbase[v[i][0]]; 
       patternbase=accessors.nextfetch;
-      if (!pattern) error("VV Couldn't construct dereference from "+v[i]+' because '+pattern+' is false');
+      if (!pattern) error("SAI Compiler: VV Couldn't construct dereference from "+v[i]+' because '+pattern+' is false');
       stem+=verb;
       verb=pattern[0] + v[i][1] + pattern[1];
 //      console.log("VV"+i+": stem:"+stem+" verb:"+verb);
@@ -1187,8 +1216,12 @@ RLocal
    if (InstanceVars[v]) {
      return [['this',''],[ 'attribute',v ]]; 
    }
-   if (!options.globals[v]) checkLocal(lp+v,v);
-   return [[ 'local',lp+v ]];
+   if (!options.globals[v]) {
+     v=checkLocal(lp+v,v);
+   } else {
+     v=lp+v;
+   }
+   return [[ 'local',v ]];
 }
 
 Parameter
@@ -1225,7 +1258,7 @@ SimpleTerm
 Define
   = GIVEN _ k:Identifier _ v:Definition EOLs { 
      addToList('freeze',k);
-      addInstanceVars([undefined,'{"'+k+'":true}']);
+     addInstanceVar(k);
      return 'prototype["'+k+'"]='+v[1]+';\n';
    } 
   / GIVEN _ v:FieldDefinition EOLs { 
@@ -1238,7 +1271,7 @@ Define
   / INSTANCE _ v:FieldDefinition EOLs {
     var ivar=GlobVar();
     addInstanceVars(v);
-    var proof='var '+ivar+'=function(){ var $=this; return '+v[1]+'; }\nfor (var i in '+ivar+'()) { prototype[i]="uninitialized instance attribute"; };\n'; 
+    var proof='var '+ivar+'=function(){ var $=this; return '+v[1]+'; }\nfor (var i in '+ivar+'()) { prototype[i]=undefined; };\n'; 
     var sup=GlobVar();
     var setup= 'var '+sup+'=prototype.Constructor || function(){};\nprototype.Constructor=function() {\n'+sup+'.call(this);\n  var t='+ivar+'();\n  for (var i in t) if (t[i] !== undefined) this[i]=t[i];\n};\n'; 
     return proof+setup;
@@ -1852,7 +1885,7 @@ VerbSentence
  }
 
 Verbd
-= v:Identifier '\'d' _ b:Expression _ o:ParameterList? {
+= v:Identifier '\'d' _ b:Value _ o:ParameterList? {
   return AssembleVerb([{ base:b, verb:'.'+v, param:(o?o[1]:'')}]);
 }
 

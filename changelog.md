@@ -1,5 +1,13 @@
 ## Change log
 
+### 0.1.18
+
+ - instance variables intended to be 'undefined' were not.
+ - fixed problem with forward bareword referencing of instance variables, you can now use them before an object declares them and a linker will clean it up!  Yay.
+ - fixed another problem with instance variables
+ - errors thrown by parser and runtime now identify themselves a bit better
+
+
 ### 0.1.17
 
  - better whitespace parsing
