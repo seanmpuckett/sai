@@ -252,38 +252,38 @@ Execute task
 
 //  @Test 'delete array iterator', task
     
-  @Test 'overlay undef', task
+  @Test 'update undef', task
     set a to undefined
-    set b to a overlay: b 3, c 4
+    set b to a update: b 3, c 4
     return b.b=3 and b.c=4
 
-  @Test 'overlay inappropriate', task
+  @Test 'update inappropriate', task
     try
-      set a to 1 overlay: 1, 2, 3
+      set a to 1 update: 1, 2, 3
     catch
       try
-        set a to: 1, 2, 3; overlay 1
+        set a to: 1, 2, 3; update 1
       catch
         return true
     return false
 
-  @Test 'overlay static', task
+  @Test 'update static', task
     set a to traits a 1, b 2
-    set b to a overlay traits b 3, c 4
+    set b to a update traits b 3, c 4
     return b.a=1 and b.b=3 and b.c=4
     
-  @Test 'overlay dynamic left', task
+  @Test 'update dynamic left', task
     set a to list 1,2,3,4; iterate
-    set b to a overlay traits '1' 'a', '3' 'b'; collect
+    set b to a update traits '1' 'a', '3' 'b'; collect
     return b[0]=1 and b[1]='a' and b[2]=3 and b[3]='b'
     
-  @Test 'overlay dynamic right', task
+  @Test 'update dynamic right', task
     set a to list 1,2,3,4
-    set b to a overlay OddTrue() collect
+    set b to a update OddTrue() collect
     return b[0]=1 and b[1]=true and b[2]=3 and b[3]=true
     
-  @Test 'overlay dynamic both', task
-    set b to (list 1,2,3,4; iterate) overlay (OddTrue() limit 4) collect
+  @Test 'update dynamic both', task
+    set b to (list 1,2,3,4; iterate) update (OddTrue() limit 4) collect
     return b[0]=1 and b[1]=true and b[2]=3 and b[3]=true
 
   @Test 'select invalid', task

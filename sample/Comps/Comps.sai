@@ -102,7 +102,7 @@ Instantiate task
 
     `All-caps names
     friends thru
-      return it overlay: name from .name.toUpperCase
+      return it update: name from .name.toUpperCase
 
     `INTO\nTotal ages (inline)
     friends into 0 sum + .age

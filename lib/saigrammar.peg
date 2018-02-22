@@ -410,7 +410,13 @@
 
     if (SafetyFetch) { addLocal('$_b'); SafetyFetch=false; }
     if (FunctionChain) { addLocal('$_c'); addLocal('$_d'); FunctionChain=false; }
-    addLocal('$','=this');
+    if (!o.nothis) {
+      if (o.unbound) {
+        addLocal('$','=this');
+      } else {
+        addLocal('$','=this['+fn+']?this:$bindfail('+fn+')');
+      }
+    }
     var head='', tail='';
     var sup=GlobVar();
     if (o.prefix!='get' && o.prefix!='set') {
@@ -421,11 +427,13 @@
     }
   
     o.body=Linker(o.body,false);
-    var fun=o.kind+'('+params+') {\n'+FunStart()+getLocals();
+    if (!o.preface) o.preface='';
+    if (!o.postface) o.postface='';
+    var fun=o.kind+'('+params+') {\n'+o.preface+FunStart()+getLocals();
     if (o.expects) {
       fun+=GetExpectsTester(o.expects,fn);
     }
-    fun+='{'+o.body+'}'+FunStop(); // function body
+    fun+='{'+o.body+'}'+FunStop()+o.postface; // function body
     fun+='}';
   
     if (o.name) {
@@ -559,6 +567,7 @@ Object
     if (typ) {
       isof.push('type:"'+typ+'"');
     }
+    code+='var $bindfail=function(m){ throw new Error("SAI: A call to "+m+" on object "+isa+" has come unbound from any instance of that object. (If this is not in error, mark the declaration of "+m+" as unbound.)"); }\n';
     code+='prototype.isof['+isa+']={'+isof.join(',')+'};\n';
     var l;
     if (l=getList('lock')) code+='prototype.__tobelocked=prototype.__tobelocked.concat('+l+');\n';
@@ -610,7 +619,7 @@ PropertyClause
  = _ g:(GET/SET) _ w:MultiOutput? _ b:Block EOLs { 
    if (!g) g='get'; 
    if (g=='get') w=null; 
-   return [g,TaskFormatter({prefix:g,as:w,body:b,kind:'function'})]; 
+   return [g,TaskFormatter({prefix:g,as:w,unbound:true,body:b,kind:'function'})]; 
   }
 
 Task
@@ -620,14 +629,31 @@ Task
   } 
 
 TaskEvent
- = v:Identifier _ TO? _ TASK _ x:Expects? _ w:MultiOutput? _ { 
+ = v:Identifier _ TO? _ unbound:UNBOUND? _ TASK _ x:Expects? _ w:MultiOutput? _ { 
    addInstanceVar(v);
-   return  {name:"'"+v+"'",expects:x,as:w,kind:'function'};
+   return  {name:"'"+v+"'",unbound:unbound,expects:x,as:w,kind:'function'};
  } 
- / v:ProcessName _ TO? _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
+ / v:ProcessName _ TO? _ unbound:UNBOUND? _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
    addInstanceVar(v);
-   return  {name:v,expects:x,as:w,kind:'function*'};
+   return  {name:v,expects:x,unbound:unbound,as:w,kind:'function*'};
  } 
+ / v:Identifier _ TO? _ unbound:UNBOUND? _ PROMISE _ x:Expects? _ o:MultiOutput? _ { 
+   addInstanceVar(v);
+   var vn="'"+v+"'";
+   var isthis='this['+vn+']?this:$bindfail('+vn+')';
+   if (unbound) {
+     isthis='this';
+   }
+   return {
+    name:vn
+    ,expects:x
+    ,as:o
+    ,nothis:true
+    ,kind:'function'
+    ,preface:'var $='+isthis+'; return new Promise(function($_resolve,$_reject) {'
+    ,postface:'});'
+    };
+  } 
 
 ProcessName
  = v:ITERATOR { return "Symbol.iterator" }
@@ -671,7 +697,7 @@ Expects
  / EXPECTS _ t:Term _ { return [[['','_root'],t]] }
  
 Block
- = _ EOLs INDENT EOLs v:Lines DEDENT { return v }
+ = _ EOLs INDENT EOLs v:Lines DEDENT &EOLs { return v }
  / _ '..' _ v:Line &EOLs { return v+';' }
 
 Lines
@@ -898,7 +924,7 @@ Itselfop // test 'self*'
  / ANDB / ORB / XORB
  / AND / OR / XOR / NAND / NOR
  / '?>' / '?<'
- / UPDATE / DELETE
+ / UPDATE / DELETE 
  / DEFAULT / '?' 
  / CONCAT 
 
@@ -1763,9 +1789,9 @@ Multiplication
    if (x) {
      p=x[1];
    }
-   return '('+op+').call(this,('+l+'),'+p+')';
+   return '('+op+').call($,('+l+'),'+p+')';
  }
- / l:Value _ OVERLAY Sep r:Multiplication { // test 'overlay *'
+ / l:Value _ UPDATE Sep r:Multiplication { // test 'overlay *'
    return '$AI.overlay_op('+l+','+r+')' 
  }
  / l:Value _ SELECT Sep r:Multiplication { // test 'select *'
@@ -1816,6 +1842,7 @@ Value
  / PROMISE Sep v:PromiseClause _ { return v }
  / BANG Sep? v:VerbSentence _ { return v }
  / FROM Sep v:VerbSentence _ { return v }
+ / BIND Sep v:Value _ { return  'function(){return ('+v+').apply($,arguments);}'; }
  / Verbd
  / YIELDING Sep v:Value _ { return 'yield *'+v; }
  / YIELD Sep v:Value _ { return 'yield'+v; }
@@ -1877,6 +1904,8 @@ IntoClause
 
 
 ////////////////////////////////////////////////////////// VERBS
+
+
 
 
 VerbSentence
@@ -2043,8 +2072,8 @@ EscapedChar
  = '\\' "'" { return [true,'\\'+"'"] }
  / '\\' '"' { return [true,'\\'+'"'] }
  / '\\' '$' { return [true,'\\'+'$'] }
- / '\\&#123;' { return [true,'\\'+'&#123;'] }
- / '\\&#125;' { return [true,'\\'+'&#125;'] }
+ / '\\' '&#123;' { return [true,'\\'+'&#123;'] }
+ / '\\' '&#125;' { return [true,'\\'+'&#125;'] }
  / '\\' 'n' { return [true,'\\'+'n'] }
  / '\\' 'r' { return [true,'\\'+'r'] }
  / '\\' 't' { return [true,'\\'+'t'] }
@@ -2115,6 +2144,7 @@ ReservedWords
  / AS 
  / ASC
  / AUDIT
+ / BIND
  / BLANK
  / BREAK
  / BY
@@ -2159,7 +2189,6 @@ ReservedWords
  / OBSERVE
  / ORB
  / OR
- / OVERLAY
  / PROMISE
  / PROCESS
  / SELF
@@ -2190,6 +2219,7 @@ ARRAY = 'array'
 AS = 'as'
 ASC = 'asc'
 AUDIT = 'audit'
+BIND = 'bind'
 BLANK = 'blank'
 BREAK = 'break'
 BY = 'by'
@@ -2265,7 +2295,6 @@ OBSERVE = 'observe'
 ORPHAN = 'orphan'
 OR = 'or'
 ORB = 'orb'
-OVERLAY = 'overlay'
 TRUE = 'true'
 FALSE = 'false'
 PLY = 'ply'
@@ -2294,6 +2323,7 @@ TO = 'to'
 TYPEOF = 'typeof'
 UNLESS = 'unless'
 UNTIL = 'until'
+UNBOUND = 'unbound'
 UNDEFINED = 'undefined'
 UPDATE = 'update'
 USING = 'using'

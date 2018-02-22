@@ -8,7 +8,7 @@
 
 ### Toolchain
 
- - need a way to pre-compile a project so that files don't have to be compiled on every run
+ - 
 
 
 ### Test suite
@@ -22,10 +22,8 @@
 
  - 100% test coverage of parser -- is this even practical?
  - integrate support for Map and Set
- - SUPER does not properly handle multiple inheritance, instead only calling the last applied parent
  - source code lookup for exceptions or debugging
  - state machine construct
- - need a 'strict' behaviour that yells about variables being used before being assigned
 
   
 #### Bugs
@@ -41,6 +39,51 @@
 
 
 ## Notes
+
+
+  
+you want a thing to happen. 
+
+it has actions to undertake VERB
+it has parameters that control those actions  INPUT
+it has the results of those actions  OUTPUT
+it has the context within which those actions happen  CONTEXT
+
+it has metadata describing a specific time/place where thing will/is/did(or did not) happen  STATUS
+
+
+(context) 
+do 
+  (verb)(input) 
+
+
+    async
+      database.open options, #
+    then given h
+      set database.handle h
+      database.query queryString, #
+    then given stream
+
+    catch 
+      log.error
+    finally
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### async syntax
 

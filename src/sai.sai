@@ -49,6 +49,21 @@ reference:
 
 object SAI singleton
 
+
+instance:
+  prototypes blank
+  sources blank
+  protogens blank
+  isas blank
+  config undefined
+  persist: globalcount 1
+
+  protoConstructor undefined
+  
+  Parse undefined
+  Beautify undefined
+  
+
 // Instantiate
 //
 // object wake-up
@@ -56,7 +71,7 @@ object SAI singleton
 
 Instantiate task
   
-  my Clean
+  Clean
   
   
 // Clean
@@ -66,32 +81,29 @@ Instantiate task
 
 Clean task
   set 
-    my prototypes blank
-    my source blank
-    my protogens blank
-    my isas blank
-    my config copy DEFAULT_config
-    my persist: globalcount 1
-    my proto task
-      orphan
-      set
-        my Constructor task
-          nop
-        my __tobelocked empty
-        my __tobefrozen empty
-        my __contracts empty
-        my __unverified true
-        my isof blank
-      return me
-      
-    my Parse from my GetParser
+    prototypes blank
+    sources blank
+    protogens blank
+    isas blank
+    config copy DEFAULT_config
+    persist: globalcount 1
 
-    my config.Loader task 
-      return from my GetSourceFromPaths.apply me, arguments
-    SAILIB.import task
-      return from my Require.apply me, arguments
-    SAILIB.create_op task 
-      return from my Create.apply me, arguments
+    protoConstructor task
+      set
+        @@Constructor task
+          nop
+        @@__tobelocked empty
+        @@__tobefrozen empty
+        @@__contracts empty
+        @@__unverified true
+        @@isof blank
+      return @@
+      
+    Parse from GetParser
+
+    config.Loader from GetSourceFromPaths.bind me
+    SAILIB.import from Require.bind me
+    SAILIB.create_op from Create.bind me
 
   
 // Dedenter
@@ -111,7 +123,7 @@ Dedenter task given src
     Context task given lineno
       set result 'near line ${lineno}:\n'
       count lineno-3 to lineno+4
-        exists rawlines[counter]
+        exists rawlines\counter
           set result + '${counter}:${counter is lineno ?? '->' :: '  '} ${it}\n'
       return result
     
@@ -187,7 +199,7 @@ WrapExtract task given source, location
 
 Contextualize task given source, offset
   set
-    context from my WrapExtract source, offset
+    context from WrapExtract source, offset
     lines from context.split '\n'
 
     ind 0
@@ -253,7 +265,7 @@ GetParser task
       ${error}
     
     if grammar
-      set msg from my WrapExtract grammar, error.location.start.offset
+      set msg from WrapExtract grammar, error.location.start.offset
         
     throw new ~Error msg
     
@@ -263,14 +275,14 @@ GetParser task
   
     set
       rawsource + '\n\n'
-      source from my Dedenter rawsource
+      source from Dedenter rawsource
   
     try
       set js from mainParser.parse source, fields
         startrule fn ?? 'startFile' :: 'startExpression'
         bound bound
-        globals my config.verbs
-        persist my persist
+        globals config.verbs
+        persist persist
         filename fn
     
     catch
@@ -284,7 +296,7 @@ GetParser task
         throw new ~Error '''
           SAI: Syntax error <HERE> in ${~JSON.stringify(fn)}
           
-          ${my Contextualize(source, location)}
+          ${Contextualize(source, location)}
           
           ${error.message}
           
@@ -294,8 +306,8 @@ GetParser task
           
           ${error.toString()}
           
-    if my config.options.beautify
-      set js from my Beautify js, fields
+    if config.options.beautify
+      set js from Beautify js, fields
         indent_size 2
         preserve_newlines false
         brace_style 'collapse'
@@ -307,7 +319,7 @@ GetParser task
 //
 // Build and bind parser
 //
-// (see my Clean)
+// (see Clean)
 
 
 // GetSourceFromPaths -> config.Loader
@@ -318,7 +330,7 @@ GetParser task
 
 GetSourceFromPaths task given name
 
-  ply my config's paths as path
+  ply config's paths as path
     ply array '.sai', ''; as extension
       set filename from PATH.join path, name+extension
       try
@@ -338,7 +350,7 @@ GetSourceFromPaths task given name
     success false
     context '''
       SAI.GetSourceFromPaths: cannot load ${name}
-      Check paths: ${my config.paths.join(';')}
+      Check paths: ${config.paths.join(';')}
 
       
 // Compile
@@ -358,24 +370,24 @@ Compile task given source
 
 GetProtogen task given name
   
-  set my protogens[name] default from task
+  set protogens\name default from task
     set s1 new ~Date
-    set load from my config's Loader name
+    set load from config's Loader name
     unless load.success
       throw new ~Error `SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
-    set source from my Parse load's source, undefined, load's context
+    set source from Parse load's source, undefined, load's context
     set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
-    set protogen from my Compile source
+    set protogen from Compile source
     //debug source
     unless protogen
       throw new ~Error 'SAI.GetProtogen: Error in generated code ${name}'
     set s2 new ~Date
-    if my config's options's speedometer
+    if config's options's speedometer
       debug 'SAI: Compiled ${name} in ${s2-s1}ms.'
-    set my source[name] source
+    set sources\name source
     return protogen
 
-  return my protogens[name]
+  return protogens\name
   
   
 // Expression
@@ -384,8 +396,8 @@ GetProtogen task given name
 //
 
 Expression task given source
-  set js 'return ${my Parse(source, undefined, undefined)}'
-  return my Compile(js)(@@, blank, ~require, SAILIB, DIRNAME)
+  set js 'return ${Parse(source, undefined, undefined)}'
+  return Compile(js)(@@, blank, ~require, SAILIB, DIRNAME)
 
 
 // GetAncestors
@@ -402,8 +414,8 @@ GetAncestors task given name
   while shift'd heritage as leaf
     unless nodupes\leaf
       set nodupes\leaf to true
-      set obj to new my proto name
-      set protogen from my GetProtogen leaf
+      set obj to new protoConstructor name
+      set protogen from GetProtogen leaf
       set opts: name leaf
       protogen obj, opts, ~require, SAILIB, DIRNAME
       obj.Constructor
@@ -425,26 +437,26 @@ GetAncestors task given name
 //
 
 GetPrototype task given name, bindings
-  set my prototypes[name] default from task
-    set ancestors from my GetAncestors name
-    set proto to new my proto name
+  set prototypes\name default from task
+    set ancestors from GetAncestors name
+    set prototype to new protoConstructor name
     set adopt to task given name
-      ply ancestors[name]
+      ply ancestors\name
         adopt it
-      set protogen from my GetProtogen name
-      protogen proto, fields name name;, require, SAILIB, DIRNAME
+      set protogen from GetProtogen name
+      protogen prototype, fields name name;, require, SAILIB, DIRNAME
     
     adopt name
     
-    ~Object.defineProperty proto, 'isa', :enumerable false, value proto.isa;
-    if my isas[proto.isa]
-      throw new ~Error 'SAI: object defined by ${name} has a duplicate.isa type ${proto.isa} identical to ${my isas[proto.isa]}'
-    set my isas[proto.isa] name
+    ~Object.defineProperty prototype, 'isa', :enumerable false, value prototype.isa;
+    if isas[prototype.isa]
+      throw new ~Error 'SAI: object defined by ${name} has a duplicate.isa type ${prototype.isa} identical to ${isas[prototype.isa]}'
+    set isas[prototype.isa] name
 
-    SAILIB.finalizePrototype proto
-    return proto
+    SAILIB.finalizePrototype prototype
+    return prototype
     
-  return my prototypes[name]
+  return prototypes\name
 
 
 // GetSource
@@ -453,7 +465,7 @@ GetPrototype task given name, bindings
 //
 
 GetSource task as name
-  set ancestors from my GetAncestors name
+  set ancestors from GetAncestors name
   set islib to 0 <= name.indexOf('sailib')
 
   if islib
@@ -467,7 +479,7 @@ GetSource task as name
     
     "use strict";
     
-    var prototype=new function()${'{'}
+    var prototype=new function() ${'{'}
     this.Constructor=function()${'{}'};
     this.__tobelocked=[];
     this.__tobefrozen=[];
@@ -480,9 +492,9 @@ GetSource task as name
     // Generated code follows
     
   set adopt task given name
-    ply ancestors[name]
+    ply ancestors\name
       adopt it
-    set source + my source[name] + '\n'
+    set source + sources\name + '\n'
   
   adopt name
 
@@ -504,7 +516,7 @@ GetSource task as name
 //
 
 Require task given name
-  exists from my GetPrototype name
+  exists from GetPrototype name
     exists .constructor
       return it
   throw new ~Error 'SAI.Require: do not know how to create object ${name}'
@@ -517,7 +529,7 @@ Require task given name
 //
 
 Create task given name, parameters
-  exists from my GetPrototype name
+  exists from GetPrototype name
     set obj from ~Object.create it
     if obj.Constructor .. obj.Constructor
     if obj.Instantiate .. obj.Instantiate.apply obj, parameters
@@ -530,15 +542,15 @@ Create task given name, parameters
 // Update configuration settings individually or as a group
 //
 
-Configure task given config
-  exists config.paths
-    set my config.paths it
-  exists config.verbs
-    set my config.verbs update it
-  exists config.options
-    set my config.options update it
-  exists config.Loader
-    set my config.Loader it
+Configure task given c
+  exists c.paths
+    set config.paths it
+  exists c.verbs
+    set config.verbs update it
+  exists c.options
+    set config.options update it
+  exists c.Loader
+    set config.Loader it
   
-  if my config.options.beautify
-    set my Beautify require('js-beautify').js_beautify
+  if config.options.beautify
+    set Beautify require('js-beautify').js_beautify

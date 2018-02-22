@@ -304,16 +304,16 @@ Instantiate task
   debug NaN is ~parseInt('The one ring.')
   debug isNaN ~parseInt('The one ring.')
   
-  // overlay
+  // update
   debug '\nOVERLAY'
   set list1 to list Apple, Banana, Citron
   set list2 to list Kiwi, undefined, Mango
   set traits1 to: a 1, b 2, c 3
   set traits2 to: '1' 4, d 5
-  debug list1 overlay list2
-  debug list1 overlay traits2
-  debug traits1 overlay traits2
-  debug traits1 overlay list2
+  debug list1 update list2
+  debug list1 update traits2
+  debug traits1 update traits2
+  debug traits1 update list2
   
   // collect
   debug '\nCOLLECT'
@@ -559,7 +559,7 @@ Instantiate task
     name Sally
     age 32
     province QC
-  ... overlay traits
+  ... update traits
     #cat
     province ON
   

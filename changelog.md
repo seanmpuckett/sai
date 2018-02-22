@@ -1,9 +1,24 @@
 ## Change log
 
+### 0.1.19
+
+#### Breaking changes
+
+ - the `overlay` operator keyword has been replaced with `update`. No change in functionality, you can just search/replace carefully to fix this. The intent is to reducing excess reserved words.
+
+#### Enhancements
+
+ - member methods now do a quick-and-dirty test to very that their `this` value is valid -- if not, an error is thrown. This should be only a very minor performance impact but really helps chase down hard to find errors, especially in programs with lots of callbacks.
+ - new `unbound` modifier for object method definitions `task`, `process` and `promise` that disables that binding check
+ - new `bind` operator for binding function references to specific object contexts.
+ - runtime manager updated to not use `my` which was a little fraught because bad variable choices
+ - you can now create `promise` member functions. Yay?
+ 
+
 ### 0.1.18
 
  - instance variables intended to be 'undefined' were not.
- - fixed problem with forward bareword referencing of instance variables, you can now use them before an object declares them and a linker will clean it up!  Yay.
+ - fixed problem with forward bareword referencing of instance variables from 0.1.16, you can now use them before an object declares them and a linker will clean it up!  Yay.
  - fixed another problem with instance variables
  - errors thrown by parser and runtime now identify themselves a bit better
 
