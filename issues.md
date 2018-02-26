@@ -39,6 +39,88 @@
 
 
 ## Notes
+\\
+
+
+  
+    chain from Foo
+      then bind Bar
+      then promise
+        Timer 1000, task
+          debug "son of bar"
+          resolve array Rando(), Rando(), Rando(), Mightfail()
+      then promise given randomlist any randomlist limit -3
+      catch promise as msg
+        debug "it was bad: "+msg
+        debug "  but it will be good again"
+        resolve "failed but recovering"
+      then promise as a
+        debug "ANY status of ${a}"
+        resolve 
+      then promise all array Rando(), Rando(), Rando()
+      then promise adopt ~Promise.all(array Rando(), Rando(), Rando())
+      then promise as a
+        debug "ALL status of ${a}"
+        resolve 
+      then bind Baz
+      catch task given e
+        debug e
+
+
+    async 
+    then e
+    catch e
+    all e
+    any e
+    finally e
+    
+
+
+
+
+
+
+    async
+    
+    any
+    
+    all
+    
+    then
+    
+    then
+    
+    catch
+    
+    finally
+    
+    
+    
+    
+
+    promised [promise object]
+    resolve 
+      code block turned into a promise
+    
+    resolve all 
+    resolve any
+    
+    
+    then [promise generator]
+    then (given th)
+      code block turned into a promise
+    
+    catch [promise generator]
+    catch (given error)
+      code block turned into an error handler
+    
+    finally [function reference]
+    finally (given parameters)
+      code block
+
+    all (expression)
+    any (expression)
+    
 
 
   

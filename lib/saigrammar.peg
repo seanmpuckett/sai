@@ -10,10 +10,14 @@
   var InstanceVars={};
   var UnresolvedLocals={};
   var readOnlyReference=true;
+  var usedMemberVar=false;
+  var DynamicTaskClauseFormatter=undefined;
   
   var _db=false;
   var lp='_'; // prefix for bareword variables
   var LeakedMagic=/\^\{([a-z0-9]+)\}/;
+  
+  if (undefined===options.constructs) options.constructs={};
   
   function addInstanceVar(v) {
     if (!InstanceVars[v]) {
@@ -35,6 +39,13 @@
     }
   }
   
+  function checkUsedMemberVar(v) {
+    if (usedMemberVar) {
+      error("SAI compiler: object task "+v+" is declared as unbound but uses a bareword access to "+usedMemberVar);
+    }
+    usedMemberVar=false;
+  }
+
   function CheckScope(v,context) {
     //console.log("check scope "+context+": "+v);
     if (References[v]) {
@@ -67,19 +78,22 @@
     if (_bindings[v]) return v;
     if (!_locals[v]) {
       UnresolvedLocals[v]=name;
-      return '^U['+v+','+name+','+location().start.offset+']';
+      return '^[U,b,?,'+v+','+name+','+location().start.offset+']';
     }
     return v;
   }
   
   function Linker(code,final) {
-    var p=/\^U\[([^,]+),([^,]+),([^\]]+)\]/g;
-    return code.replace(p,function(x,v,name,loc) {
+    var p=/\^\[U,(.),([^,]+),([^,]+),([^,]+),([^\]]+)\]/g;
+    return code.replace(p,function(x,bound,task,v,name,loc) {
       if (References[v]) return v;
       if (_bindings[v]) return v;
       if (_locals[v]) return v;
       if (InstanceVars[name]) {
-        //console.log("Resolved instance var "+name);
+        usedMemberVar=name;
+        if (bound=='u') {
+          checkUsedMemberVar(task+"(u)");
+        }
         return '$.'+name;
       }
       if (final) {
@@ -363,7 +377,7 @@
   function TaskClauseFormatter(o) {
     var params=['p'];
     var expects='',locals=[];//$unused=this';
-    if (o.expects && o.as) Error("cannot have both EXPECTS and AS in a function declaration");
+    if (o.expects && o.as) error("SAI compile: cannot have both EXPECTS and AS in a function declaration");
     if (o.expects && o.expects.length) {
       expects=GetExpectsTester(o.expects,'in-line');
     } else if (o.as) {
@@ -411,7 +425,7 @@
     if (SafetyFetch) { addLocal('$_b'); SafetyFetch=false; }
     if (FunctionChain) { addLocal('$_c'); addLocal('$_d'); FunctionChain=false; }
     if (!o.nothis) {
-      if (o.unbound) {
+      if (o.unbound || o.property) {
         addLocal('$','=this');
       } else {
         addLocal('$','=this['+fn+']?this:$bindfail('+fn+')');
@@ -426,7 +440,13 @@
       tail=';\n';
     }
   
+    if (o.unbound) {
+      o.body=o.body.replace(/\^\[U,b,\?/g, "^[U,u,"+o.name);
+    }
     o.body=Linker(o.body,false);
+    if (o.unbound) {
+      checkUsedMemberVar(fn+'(t)');
+    } usedMemberVar=false;
     if (!o.preface) o.preface='';
     if (!o.postface) o.postface='';
     var fun=o.kind+'('+params+') {\n'+o.preface+FunStart()+getLocals();
@@ -619,7 +639,7 @@ PropertyClause
  = _ g:(GET/SET) _ w:MultiOutput? _ b:Block EOLs { 
    if (!g) g='get'; 
    if (g=='get') w=null; 
-   return [g,TaskFormatter({prefix:g,as:w,unbound:true,body:b,kind:'function'})]; 
+   return [g,TaskFormatter({prefix:g,as:w,property:true,body:b,kind:'function'})]; 
   }
 
 Task
@@ -647,6 +667,7 @@ TaskEvent
    return {
     name:vn
     ,expects:x
+    ,unbound:unbound
     ,as:o
     ,nothis:true
     ,kind:'function'
@@ -675,8 +696,29 @@ IteratorClause
   return TaskClauseFormatter({expects:x,as:o,block:b,kind:'function*'});
 }
 
+
 PromiseClause
-= x:Expects? _ o:MultiOutput? _ b:Block {
+= o:MultiOutput? _ option:(ANY/ALL/ADOPT) _ x:Expression {
+  var f='';
+  if (option=='any') {
+    f="Promise.race("+x+")";
+  } else if (option=='all') {
+    f="Promise.all("+x+")";
+  } else {
+    f=x;
+  }
+  
+  var b=RV('^{f}.then( function(){ $_resolve.apply($,arguments); } ).catch( function(){ $_reject.apply($,arguments); });',{f:f});
+  
+  return TaskClauseFormatter({
+    as:o
+    ,block:b
+    ,kind:'function'
+    ,preface:'return new Promise(function($_resolve,$_reject) {'
+    ,postface:'});'
+  });
+}
+ / x:Expects? _ o:MultiOutput? _ b:Block {
   return TaskClauseFormatter({
     expects:x
     ,as:o
@@ -718,10 +760,34 @@ Line
  / SwapStatement
  // LocalStatement
  / MiscStatement
+ / ConstructStatement
  / VerbStatement
  
 
-
+ConstructStatement
+ = i:Identifier &{return options.constructs[i];} _ a:ConstructArg? 
+   cl:(EOLs cli:Identifier &{return options.constructs[i].clauses[cli];} _ cla:ConstructArg? {return [cli,cla];})* {
+    var work=[[i,a]].concat(cl);
+    var work2=[];
+    for (var i1=0; i1<work.length; i1++) {
+      var j=work[i1];
+      var syntax=j[1].shift();
+      work2.push({
+        clause: j[0],
+        syntax: syntax,
+        type: j[0]+'-'+syntax,
+        args: j[1]
+      });
+    }
+    var result=options.constructs[i].handler(work2);
+    if (result.error) error(result.error);
+    return result.body;
+ }
+ 
+ConstructArg
+ = mo:MultiOutput? _ b:Block { return [ 'block', mo, b ]; }
+ / pl:ParameterList { return [ 'exprs', pl ]; }
+ 
  
 
 MiscStatement
@@ -1230,6 +1296,7 @@ LLocal
  = v:Identifier { 
    //console.log("LLocal "+v);
    if (InstanceVars[v]) {
+     usedMemberVar=v;
      return [['this',''],[ 'attribute',v ]]; 
    }
    if (!options.globals[v]) addLocal(lp+v); 
@@ -1240,6 +1307,7 @@ RLocal
  = v:Identifier { 
    //console.log("RLocal "+v);
    if (InstanceVars[v]) {
+     usedMemberVar=v;
      return [['this',''],[ 'attribute',v ]]; 
    }
    if (!options.globals[v]) {
@@ -2212,8 +2280,11 @@ __OFFSET = '__offset'
 __COLUMN = '__column'
 __LINE = '__line'
 
+ADOPT = 'adopt'
+ALL = 'all'
 AND = 'and'
 ANDB = 'andb'
+ANY = 'any'
 ARGUMENTS = 'arguments'
 ARRAY = 'array'
 AS = 'as'
@@ -2314,6 +2385,7 @@ SWAP = 'swap'
 SUPER = 'super'
 SWITCH = 'switch'
 TASK = 'task'
+THEN = 'then'
 THROW = 'throw'
 THRU = 'thru'
 TRAITS = 'traits'

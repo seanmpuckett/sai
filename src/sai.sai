@@ -38,6 +38,8 @@ reference:
       'debug' '$AI.debug_op'
       'require' 'require'
       'assert' '$AI.assert'
+      'Error' 'Error'
+    constructs: blank // initialized later
     paths:
       DIRNAME + '/'
     options:
@@ -105,6 +107,49 @@ Clean task
     SAILIB.import from Require.bind me
     SAILIB.create_op from Create.bind me
 
+    config.constructs blank
+      //async:
+      //  clauses: #then, #catch, #finally, #any, #all
+      //  handler bind AsyncConstruct
+
+
+// AsyncConstruct
+
+AsyncConstruct task given work
+
+  with (work last).clause
+    unless it is 'finally' or it is 'catch'
+      return: error "SAI compiler: final clause in ASYNC must be CATCH or FINALLY"
+
+  set body ''
+  
+  each work 
+
+    if "block" is .syntax 
+      return: error "SAI compiler: ASYNC clause ${toUpperCase'd .clause} expects an expression (which might be TASK or PROMISE definition)"
+
+    debug '${.type}: ${~JSON.stringify(.args)}'
+    switch .type
+      case 'async-exprs'
+        set body + "(${.args.0.1})"
+      case 'then-exprs'
+        set body + ".then(${.args.0.1})"
+      case 'catch-exprs'
+        set body + ".catch(${.args.0.1})"
+      case 'finally-exprs'
+        nop
+      case 'all-exprs'
+        nop
+      case 'any-exprs'
+        nop
+      default
+        return: error "SAI compiler: async construct unhandled type ${.type}"
+
+  set body + ';\n'
+  debug "\nresult:"
+  debug body
+  return: body ''
+  
   
 // Dedenter
 //
@@ -156,7 +201,7 @@ Dedenter task given src
             push'd lines '{'
         case 1
           if depth <= heredepth
-            throw new ~Error "SAI: multi-line quotes must be indented ${from Context lineno}"
+            throw new Error "SAI: multi-line quotes must be indented ${from Context lineno}"
           push'd lines '{'
           unshift'd indent depth
           set heredepth depth
@@ -171,7 +216,7 @@ Dedenter task given src
           push'd lines '}'
           shift'd indent 
         if depth isnt indent.0
-          throw new ~Error "SAI: incorrect indentation ${from Context lineno}"
+          throw new Error "SAI: incorrect indentation ${from Context lineno}"
 
     push'd lines trimmed
     
@@ -267,7 +312,7 @@ GetParser task
     if grammar
       set msg from WrapExtract grammar, error.location.start.offset
         
-    throw new ~Error msg
+    throw new Error msg
     
   set mainParser from ~eval mainParser
   
@@ -282,6 +327,7 @@ GetParser task
         startrule fn ?? 'startFile' :: 'startExpression'
         bound bound
         globals config.verbs
+        constructs config.constructs
         persist persist
         filename fn
     
@@ -293,7 +339,7 @@ GetParser task
         set location to number trial.1 
 
       if location
-        throw new ~Error '''
+        throw new Error '''
           SAI: Syntax error <HERE> in ${~JSON.stringify(fn)}
           
           ${Contextualize(source, location)}
@@ -301,7 +347,7 @@ GetParser task
           ${error.message}
           
       else
-        throw new ~Error '''
+        throw new Error '''
           SAI: Error creating prototype:
           
           ${error.toString()}
@@ -374,13 +420,13 @@ GetProtogen task given name
     set s1 new ~Date
     set load from config's Loader name
     unless load.success
-      throw new ~Error `SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
+      throw new Error `SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
     set source from Parse load's source, undefined, load's context
     set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
     set protogen from Compile source
     //debug source
     unless protogen
-      throw new ~Error 'SAI.GetProtogen: Error in generated code ${name}'
+      throw new Error 'SAI.GetProtogen: Error in generated code ${name}'
     set s2 new ~Date
     if config's options's speedometer
       debug 'SAI: Compiled ${name} in ${s2-s1}ms.'
@@ -420,7 +466,7 @@ GetAncestors task given name
       protogen obj, opts, ~require, SAILIB, DIRNAME
       obj.Constructor
       unless obj.isa
-        throw new ~Error 'SAI GetPrototype: object loaded as ${leaf} does not have an isa type identifier.'
+        throw new Error 'SAI GetPrototype: object loaded as ${leaf} does not have an isa type identifier.'
       with obj.__inherits
         set ancestors\leaf it
         ply it
@@ -450,7 +496,7 @@ GetPrototype task given name, bindings
     
     ~Object.defineProperty prototype, 'isa', :enumerable false, value prototype.isa;
     if isas[prototype.isa]
-      throw new ~Error 'SAI: object defined by ${name} has a duplicate.isa type ${prototype.isa} identical to ${isas[prototype.isa]}'
+      throw new Error 'SAI: object defined by ${name} has a duplicate.isa type ${prototype.isa} identical to ${isas[prototype.isa]}'
     set isas[prototype.isa] name
 
     SAILIB.finalizePrototype prototype
@@ -519,7 +565,7 @@ Require task given name
   exists from GetPrototype name
     exists .constructor
       return it
-  throw new ~Error 'SAI.Require: do not know how to create object ${name}'
+  throw new Error 'SAI.Require: do not know how to create object ${name}'
   
 
 
@@ -534,7 +580,7 @@ Create task given name, parameters
     if obj.Constructor .. obj.Constructor
     if obj.Instantiate .. obj.Instantiate.apply obj, parameters
     return obj
-  throw new ~Error 'SAI.Create: do not know how to create object ${name}'
+  throw new Error 'SAI.Create: do not know how to create object ${name}'
 
 
 // Configure

@@ -1,5 +1,12 @@
 ## Change log
 
+### 0.1.20
+
+ - More compile-time checks for inappropriate usage of bareword members, especially in functions marked as `unbound`.  If ya want to use self-member variables in unbound functions, you have to use the scoping prefix.
+ - added `promise any`, `promise all` and `promise adopt` variants of the `promise` function syntax.
+ - added `Error` as a defined global, mapping to the regular Error object. It's about time.
+ 
+
 ### 0.1.19
 
 #### Breaking changes
