@@ -87,7 +87,7 @@ Instantiate task
   
   // ASCENDING
   debug '\nASCENDING'
-  debug list Bob, Carol, Ted, Alice; by ascending
+  debug list Bob, Carol, Ted, Alice; by asc
   
   // AUDIT
   debug '\nAUDIT'
@@ -111,7 +111,7 @@ Instantiate task
   // ERROR
   debug '\nERROR'
   try
-    noFunction
+    throw new Error "caught"
   catch
    debug error
   
@@ -381,8 +381,8 @@ Instantiate task
   debug fruit thru using instrument
   
   // instruments
-  debug '\nINSTRUMENTS'
-  debug 'line: ${__line}'
+  //debug '\nINSTRUMENTS'
+  //debug 'line: ${__line}'
 
   // task
   debug '\nTASK'
@@ -402,14 +402,14 @@ Instantiate task
   debug newStudent expects studentRules
 
   // promise
-  debug '\nPROMISE'
-  set doThing to promise given url
-    HeyServer url, task given request, result
-      if result.success
-        resolve result
-      else
-        reject result
-  debug doThing.toString()
+  //debug '\nPROMISE'
+  //set doThing to promise given url
+  //  HeyServer url, task given request, result
+  //    if result.success
+  //      resolve result
+  //    else
+  //      reject result
+  //debug doThing.toString()
   
   // from
   debug '\nFROM'
@@ -518,6 +518,7 @@ Instantiate task
 
   // assert
   debug '\nASSERT'
+  set everythingIsAwesome false
   assert not everythingIsAwesome, 'I have some bad news...'
   
   // copy

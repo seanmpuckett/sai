@@ -76,7 +76,8 @@ Instantiate task given SAI
     Build task given src, dest
       local objectName PATH.basename(src)
       SAI.Clean
-      SAI.Configure: paths: PATH.dirname(src)
+      SAI.Configure: 
+        paths: PATH.dirname(src)
       try
         SAI.Require objectName 
         unless flags.test

@@ -12,6 +12,28 @@
   var readOnlyReference=true;
   var usedMemberVar=false;
   var DynamicTaskClauseFormatter=undefined;
+
+  var ResWords={},ResWordsA=("andb,and,array,as,asc,audit,"+
+    "bind,blank,break,by,"+
+    "case,chain,create,collect,concat,copy,"+
+    "default,delete,desc,down,"+
+    "empty,enlist,entrait,enum,exists,expects,"+
+    "false,fields,first,from,"+
+    "get,"+
+    "has,highest,"+
+    "into,is,isnt,isNaN,iterate,"+
+    "keys,"+
+    "last,limit,list,lowest,"+
+    "me,my,"+
+    "NaN,nand,new,nor,notb,not,number,null,"+
+    "observe,orb,or,"+
+    "promise,process,"+
+    "self,set,singleton,swap,"+
+    "task,trial,throw,thru,to,traits,true,typeof,"+
+    "undefined,update,using,"+
+    "values,via,"+
+    "xorb,xor").split(/,/);
+  for (var i=0; i<ResWordsA.length; i++) ResWords[ResWordsA[i]]=1;
   
   var _db=false;
   var lp='_'; // prefix for bareword variables
@@ -97,6 +119,7 @@
         return '$.'+name;
       }
       if (final) {
+        //console.log(JSON.stringify(InstanceVars));
         error('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
       } 
       return x; // unchanged
@@ -375,7 +398,10 @@
   // preface
   // appendix
   function TaskClauseFormatter(o) {
-    var params=['p'];
+    var params=[];
+    if (!o.nodefaultparam) {
+      params.push('p');
+    }
     var expects='',locals=[];//$unused=this';
     if (o.expects && o.as) error("SAI compile: cannot have both EXPECTS and AS in a function declaration");
     if (o.expects && o.expects.length) {
@@ -383,7 +409,7 @@
     } else if (o.as) {
       for (var i in o.as) {
         if (i==0) {
-          locals.push(o.as[i][0][1]+'=p');
+          locals.push(o.as[i][0][1]+'='+params[0]);
         } else {
           params.push(o.as[i][0][1]);
         }
@@ -394,7 +420,7 @@
     var finallocals=[];
     for (var i in locals) if (!References[locals[i]]) finallocals.push(locals[i]);
     locals=locals.length?('var '+finallocals.join(',')+';'):'';
-    var code = o.kind+'('+params.join(',')+'){'+o.preface+FunStart()+locals+expects+'{'+o.block+'}'+FunStop()+o.postface+'}';
+    var code = o.kind+'('+params.join(',')+'){'+o.preface+locals+expects+'{'+o.block+'}'+o.postface+'}';
     if (o.execute) code+='()';
     return code;
   }
@@ -449,11 +475,11 @@
     } usedMemberVar=false;
     if (!o.preface) o.preface='';
     if (!o.postface) o.postface='';
-    var fun=o.kind+'('+params+') {\n'+o.preface+FunStart()+getLocals();
+    var fun=o.kind+'('+params+') {\n'+o.preface+getLocals();
     if (o.expects) {
       fun+=GetExpectsTester(o.expects,fn);
     }
-    fun+='{'+o.body+'}'+FunStop()+o.postface; // function body
+    fun+='{'+o.body+'}'+o.postface; // function body
     fun+='}';
   
     if (o.name) {
@@ -519,14 +545,6 @@
   function GlobVar() {
     return '$'+(options.persist.globalcount++)+'g';
   }
-  function FunStart() {
-    return '';
-    //return ' /*:FUNSTART:*/ ';
-  }
-  function FunStop() {
-    return '';
-    //return ' /*:FUNSTOP:*/ ';
-  }
   function VarUse(v) {
     return '';
     //return [].concat(v).map(function(v) { return ' /*:VAR:'+v+':*/ '});
@@ -547,6 +565,7 @@ startFile
     if (r) code+=r;
     code+=o.join('\n')
     MagicCheck(code);
+    //console.log(code);
     code=Linker(code,true);
     return code;
   }
@@ -708,11 +727,12 @@ PromiseClause
     f=x;
   }
   
-  var b=RV('^{f}.then( function(){ $_resolve.apply($,arguments); } ).catch( function(){ $_reject.apply($,arguments); });',{f:f});
-  
+  var b=RV('^{f}.then( function(){ return $_resolve.apply($,arguments); } ).catch( function(){ $_reject.apply($,arguments); });',{f:f});
+
   return TaskClauseFormatter({
     as:o
     ,block:b
+    ,nodefaultparam:true
     ,kind:'function'
     ,preface:'return new Promise(function($_resolve,$_reject) {'
     ,postface:'});'
@@ -765,28 +785,71 @@ Line
  
 
 ConstructStatement
- = i:Identifier &{return options.constructs[i];} _ a:ConstructArg? 
-   cl:(EOLs cli:Identifier &{return options.constructs[i].clauses[cli];} _ cla:ConstructArg? {return [cli,cla];})* {
-    var work=[[i,a]].concat(cl);
-    var work2=[];
-    for (var i1=0; i1<work.length; i1++) {
-      var j=work[i1];
-      var syntax=j[1].shift();
-      work2.push({
-        clause: j[0],
-        syntax: syntax,
-        type: j[0]+'-'+syntax,
-        args: j[1]
-      });
-    }
-    var result=options.constructs[i].handler(work2);
+  = i:Identifier &{ return options.constructs[i]; } _ 
+    a:(
+        ca:CAExprblock &{return options.constructs[i].clauses[i].exprblock} {return ca}
+       /ca:CABlock &{return options.constructs[i].clauses[i].block} {return ca}
+       /ca:CAExprs &{return options.constructs[i].clauses[i].exprs} {return ca}
+       /ca:CAVerb &{return options.constructs[i].clauses[i].verb} {return ca}
+       /ca:CANone &{return options.constructs[i].clauses[i].none} {return ca}
+      )
+    cl:(EOLs cli:Identifier &{
+      if (cli===i && !options.constructs[i].repeats) return false;
+      return options.constructs[i].clauses[cli];
+    } _ cla:
+      (
+        claa:CAExprblock &{return options.constructs[i].clauses[cli].exprblock}{return claa}
+       /claa:CABlock &{return options.constructs[i].clauses[cli].block}{return claa}
+       /claa:CAExprs &{return options.constructs[i].clauses[cli].exprs}{return claa}
+       /claa:CAVerb &{return options.constructs[i].clauses[cli].verb}{return claa}
+       /claa:CANone &{return options.constructs[i].clauses[cli].none}{return claa}
+      )
+ {return [cli,cla];})* {
+   
+     var typedesc={
+       'exprs':'one or more expressions, comma separated',
+       'exprblock':'an expression and an indented code block',
+       'block':'an indented code block'
+     };
+     var checkargs=function(clause,argtype) {
+       var wants=[];
+       var construct=options.constructs[i];
+       for (var j in construct.clauses[clause]) wants.push(typedesc[j]);
+       wants=wants.join(", or ");
+       if (!construct.clauses[clause][argtype]) {
+         error("SAI Compiler: "+(clause.toUpperCase())+" should be followed by "+wants+" (found "+argtype+")");
+       }
+     }
+     var work=[[i,a]].concat(cl);
+     var work2=[];
+     for (var i1=0; i1<work.length; i1++) {
+       var j=work[i1];
+       var syntax=j[1][0];
+       checkargs(j[0],syntax);
+       work2.push({
+         clause: j[0],
+         syntax: syntax,
+         type: j[0]+'.'+syntax,
+         args: j[1]
+       });
+     }
+    var result=options.constructs[i].handler({
+      clauses:work2,
+      tools:{
+        addlocal:addLocal,
+        replacer:RV,
+        tasker:TaskClauseFormatter
+      }
+    });
     if (result.error) error(result.error);
     return result.body;
  }
  
-ConstructArg
- = mo:MultiOutput? _ b:Block { return [ 'block', mo, b ]; }
- / pl:ParameterList { return [ 'exprs', pl ]; }
+CAExprblock = x:Expression _ mo:MultiOutput? _ b:Block { return ['exprblock', x, mo, b] }
+CABlock = mo:MultiOutput? _ b:Block { return [ 'block', mo, b ]; }
+CAExprs = pl:ParameterList { return [ 'exprs', pl ]; }
+CAVerb = v:VerbSentence { return [ 'verb', v ]; }
+CANone = _ &EOLs { return [ 'none' ]; }
  
  
 
@@ -1016,8 +1079,8 @@ ReturnStatement
   }
 
 ResolveReject
- = RESOLVE { return '$_resolve' }
- / REJECT { return '$_reject' }
+ = RESOLVE { return 'return $_resolve' }
+ / REJECT { return 'return $_reject' }
 
 NoneClause
  = ELSE Sep b:Block  { return '{'+b+'}\n' }
@@ -1437,7 +1500,7 @@ Terms
  = v:(TermSep)* t:(Term) { return v.concat(t) }
   
 TermLine
- = v:Terms EOLs { return v }
+ = !DEDENT v:Terms EOLs { return v }
 
 TermBlock
  = v:(TermLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
@@ -1517,6 +1580,7 @@ MultiOutput
  
 ParameterCandidate
 = v:Identifier {
+   
    CheckScope(v,"parameter/as/given");
    if (!options.globals[v]) addLocal(lp+v); 
    return [[ 'local',lp+v ]];
@@ -1947,7 +2011,7 @@ Keyword
  // n:Number { return quoted(n.toString()); }
  
 Identifier
- = !ReservedWord v:IdentifierProto { return v; }  
+ = v:IdentifierProto !{var hop=ResWords.hasOwnProperty(v);return hop;} { return v; }  
 
 JSIdentifier
  = v1:[a-zA-Z_] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
@@ -2127,14 +2191,15 @@ StringQuoteChar
  = v:[^\"\n] { return [true,v] }
 
 MultiString
- = "'''" _ EOLs INDENT EOLs v:(v:Bareline EOL { return v} )* DEDENT &EOLs { return v.join("+'\\n'+") } 
+ = "'''" _ EOLs INDENT EOLs v:(v:Bareline EOL { return v} )* DEDENT &EOLs { return v.join("+'\\n'+"); } 
 
 
 Bareline
- = v:(EscapedChar/StringTemplate/BarelineStringChar)* &EOLs { return assembleLiteral(v) }
+ = !DEDENT v:(EscapedChar/StringTemplate/BarelineStringChar)* &EOLs { return assembleLiteral(v) }
 
 BarelineStringChar
- = v:[^\n}] { return [true,v] }  
+ = '^' { return [true, "\\"+"x5e"] }
+ / v:[^\n] { return [true,v] }  
   
 EscapedChar
  = '\\' "'" { return [true,'\\'+"'"] }
@@ -2192,88 +2257,6 @@ CBRACE
  = '}'
 
 
-ReservedWord
- = ReservedWords ![a-zA-Z_0-9] 
-
-ReservedWords
- = SET
- / FROM
- / IS
- / TASK
- / TO
- / MY
- / UNDEFINED
- / ARRAY
- / NEW
- / ITERATE
-
- / ANDB 
- / AND
- / AS 
- / ASC
- / AUDIT
- / BIND
- / BLANK
- / BREAK
- / BY
- / CASE
- / CHAIN
- / CREATE
- / COLLECT
- / CONCAT
- / COPY
- / DEFAULT
- / DELETE
- / DESC
- / DOWN
- / EMPTY
- / ENLIST
- / ENTRAIT
- / ENUM
- / EXISTS
- / EXPECTS
- / FALSE
- / FIELDS
- / FIRST 
- / GET
- / HAS 
- / HIGHEST 
- / INTO
- / ISNT
- / ISNAN
- / KEYS
- / LAST
- / LIMIT
- / LIST
- / LOWEST 
- / ME
- / NaN
- / NAND
- / NOR
- / NOTB
- / NOT
- / NUMBER
- / NULL
- / OBSERVE
- / ORB
- / OR
- / PROMISE
- / PROCESS
- / SELF
- / SINGLETON
- / SWAP
- / TRIAL
- / THROW
- / THRU
- / TRAITS
- / TRUE
- / TYPEOF
- / UPDATE
- / USING
- / VALUES
- / VIA
- / XORB
- / XOR
  
 __SOURCE = '__source'
 __OFFSET = '__offset'
@@ -2414,8 +2397,8 @@ HASH = '#'
 SEMI = ';'
 COMMA = ','
 COLON  = ':' !':' { return ':' }
-INDENT = '{'
-DEDENT = '}'
+INDENT = '%%INDENT%%'
+DEDENT = '%%DEDENT%%'
 EQUALS = '='
 LPAREN = '('
 RPAREN = ')'

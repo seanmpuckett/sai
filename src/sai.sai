@@ -12,6 +12,8 @@ reference:
   PATH from require 'path'
   SAILIB from require 'sai-library'
   DIRNAME ~__dirname
+  INDENT '%%INDENT%%'
+  DEDENT '%%DEDENT%%'
   
   ////////////////////////////////////////////////////////////////////////////////////
   //
@@ -27,6 +29,9 @@ reference:
   //  OPTIONS
   //  as shown
   //
+  //  CONSTRUCTS
+  //  Second-class language constructions for domain-specific extensions.
+  //
   //  LOADER
   //  The Loader is a function that, when passed the name of an object, returns the SAI
   //  source code for that object. Change the loader if you want to load code from somewhere
@@ -39,6 +44,7 @@ reference:
       'require' 'require'
       'assert' '$AI.assert'
       'Error' 'Error'
+      'Math' 'Math'
     constructs: blank // initialized later
     paths:
       DIRNAME + '/'
@@ -107,49 +113,181 @@ Clean task
     SAILIB.import from Require.bind me
     SAILIB.create_op from Create.bind me
 
-    config.constructs blank
-      //async:
-      //  clauses: #then, #catch, #finally, #any, #all
-      //  handler bind AsyncConstruct
+    config.constructs:
+
+      promising:
+        repeats false
+        clauses: 
+          promising: #verb, #block
+          then: #verb, #block
+          catch: #verb, #block
+          finally: #verb, #block
+          all: #exprs, #none
+          any: #exprs, #none
+          resolving: #exprs, #none
+          rejecting: #exprs, #none
+          finalizing: #none
+        handler bind PromisingConstruct
+
+      state:
+        repeats true
+        clauses:
+          state: #exprblock
+        handler bind StateConstruct
 
 
-// AsyncConstruct
+///////////////////////////////
+//
+//  CONSTRUCT HANDLERS
+//
 
-AsyncConstruct task given work
+//  STATE
+//
+StateConstruct task as work
 
-  with (work last).clause
-    unless it is 'finally' or it is 'catch'
-      return: error "SAI compiler: final clause in ASYNC must be CATCH or FINALLY"
+  set
+    tools to work's tools
+    header to '''
+      var ^{temp}=function (){
+      var _goto,_then;
+      var $states={
 
-  set body ''
-  
-  each work 
+    header from tools.replacer header, fields temp undefined
 
-    if "block" is .syntax 
-      return: error "SAI compiler: ASYNC clause ${toUpperCase'd .clause} expects an expression (which might be TASK or PROMISE definition)"
+    trailer '''
+      }
+        var $getstatefn=function(state) {
+          return $AI.assert($states[state],"SAI runtime: STATE "+state+" does not exist; available states are "+$AI.keys_op($states).join(','));
+        }
+        _goto=function(state){
+          var statefn=$getstatefn(state);
+          var fn=undefined;
+          var l=arguments.length, args=new Array(l-1);
+          for (var li=1; li<l; li++) args[li-1]=arguments[li];
+          fn=function(){statefn.apply(undefined,args)};
+          setImmediate(fn);
+        };
+        _then=function(state){
+          var statefn=$getstatefn(state);
+          return function(){statefn.apply(undefined,arguments);};
+        };
+        _goto(${work's clauses.0's args.1});
+      }();    
 
-    debug '${.type}: ${~JSON.stringify(.args)}'
+    names blank
+    states empty
+
+  each work's clauses
     switch .type
-      case 'async-exprs'
-        set body + "(${.args.0.1})"
-      case 'then-exprs'
-        set body + ".then(${.args.0.1})"
-      case 'catch-exprs'
-        set body + ".catch(${.args.0.1})"
-      case 'finally-exprs'
-        nop
-      case 'all-exprs'
-        nop
-      case 'any-exprs'
-        nop
+      case 'state.exprblock'
+        set name .args.1
+        
+        if names\name
+          return: error 'SAI compile: duplicate state ${name} in STATE construct'
+        inc names\name
+        
+        set block from tools.tasker:
+          'as' .args.2
+          block .args.3
+          kind 'function'
+        push'd states "${name}:${block}"
+
+  tools.addlocal '_goto'
+  tools.addlocal '_then'
+  
+  set body to "${header}${join'd states ','}${trailer}"
+  return: body body
+
+
+
+
+//  PROMISING
+//
+PromisingConstruct task as work
+
+  with (work's clauses last).clause
+    unless it is 'finally' or it is 'catch' or it is 'rejecting' or it is 'finalizing'
+      return: error "SAI compiler: final clause in PROMISING must be CATCH, FINALLY, REJECTING or FINALIZING, not ${toUpperCase'd it}"
+
+  set tasker to task  
+    set options:
+      'as' $args.1
+      block $args.2
+      kind 'function'
+      execute $execute
+    if $ispromise
+      set options update:
+        preface 'return new Promise(function($_resolve,$_reject) {'
+        postface 'if ($_resolve) return $_resolve();})'
+    return from work's tools.tasker options
+
+  set body 'var $tthen=function(t){if (!t || !t.then) throw new Error("SAI Runtime: THEN should be followed by a verb returning a promise (or an indented block of code)."); return t;};\n'
+  
+  each work's clauses
+    switch .type
+
+      case 'promising.verb'
+        set body + "$tthen(${.args.1})"
+
+      case 'promising.block'
+        set block from tasker: args .args, #ispromise, #execute
+        set body + "(${block})"
+
+      case 'then.verb'
+        set body + ".then(function(p){return $tthen(${.args.1});})"
+
+      case 'then.block'
+        set block from tasker: args .args, #ispromise
+        set body + ".then(${block})"
+
+      case 'catch.verb'
+        set body + ".catch(function(p){return $tthen(${.args.1});})"
+
+      case 'catch.block'
+        set block from tasker: args .args
+        set body + ".catch(${block})"
+
+      case 'finally.verb'
+        set body + ".finally(function(p){return $tthen(${.args.1});})"
+
+      case 'finally.block'
+        set block from tasker: args .args
+        set body + ".finally(${block})"
+
+      case 'resolving.exprs'
+        set body + ".then(function(p){return $_resolve(${.args.1.1});})"
+        
+      case 'resolving.none'
+        set body + ".then(function(){return $_resolve.apply(null,arguments);})"
+        
+      case 'rejecting.exprs'
+        set body + ".catch(function(p){return $_reject(${.args.1.1});})"
+
+      case 'rejecting.none'
+        set body + ".catch(function(){return $_reject.apply(null,arguments);})"
+        
+      case 'finalizing.none'
+        set body + ".then(function(){return $_resolve.apply(null,arguments);})"
+        set body + ".catch(function(){return $_reject.apply(null,arguments);})"
+
+      case 'all.exprs'
+        set body + ".then(function(p){return Promise.all(${.args.1.1});})"
+
+      case 'any.exprs'
+        set body + ".then(function(p){return Promise.any(${.args.1.1});})"
+
       default
-        return: error "SAI compiler: async construct unhandled type ${.type}"
+        return: error "SAI compiler: PROMISING construct unhandled type ${.type}"
+
 
   set body + ';\n'
-  debug "\nresult:"
-  debug body
-  return: body ''
-  
+  return: body body
+
+    
+//
+//
+////////////////////////////////////
+
   
 // Dedenter
 //
@@ -172,6 +310,7 @@ Dedenter task given src
           set result + '${counter}:${counter is lineno ?? '->' :: '  '} ${it}\n'
       return result
     
+
   if '#!' is (rawlines.0 limit 0, 2)
     shift'd rawlines
     
@@ -198,11 +337,11 @@ Dedenter task given src
             set heredepth depth
           if depth > indent.0
             unshift'd indent depth
-            push'd lines '{'
+            push'd lines INDENT
         case 1
           if depth <= heredepth
             throw new Error "SAI: multi-line quotes must be indented ${from Context lineno}"
-          push'd lines '{'
+          push'd lines INDENT
           unshift'd indent depth
           set heredepth depth
           set heredocstate 2
@@ -213,7 +352,7 @@ Dedenter task given src
             set trimmed (line limit heredepth, undefined)
       if depth < indent.0
         while depth < indent.0
-          push'd lines '}'
+          push'd lines DEDENT
           shift'd indent 
         if depth isnt indent.0
           throw new Error "SAI: incorrect indentation ${from Context lineno}"
@@ -221,11 +360,12 @@ Dedenter task given src
     push'd lines trimmed
     
   while shift'd indent
-    push'd lines '}'
+    push'd lines DEDENT
 
   push'd lines ''
+  set lines join'd self '\n'
 
-  return join'd lines '\n'
+  return lines
   
   
 // WrapExtract
@@ -252,14 +392,14 @@ Contextualize task given source, offset
     newcontext ''
     
   ply lines as line
-    if line is '{' .. inc ind
-    else if line is '}' .. dec ind
+    if line is INDENT .. inc ind
+    else if line is DEDENT .. dec ind
     set minind ?< ind
   set ind to - minind
 
   ply lines as line
-    if line is '{' .. inc ind
-    else if line is '}' .. dec ind
+    if line is INDENT .. inc ind
+    else if line is DEDENT .. dec ind
     else 
       set newcontext + (repeat'd '  ' ind) + line + '\n'
       
@@ -595,6 +735,8 @@ Configure task given c
     set config.verbs update it
   exists c.options
     set config.options update it
+  exists c.constructs
+    set config.constructs update it
   exists c.Loader
     set config.Loader it
   

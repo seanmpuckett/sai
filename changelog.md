@@ -1,5 +1,19 @@
 ## Change log
 
+### 0.1.21
+
+#### Enhancements
+
+ - `promising` and `state` constructs, plus general construct support to empower DSL creation.
+ - See new documentation file `21.Constructs.md` for preliminary info on both of these.
+ - added `Math` to be used as an unscoped global.  I don't like polluting the name space though. Thinky.
+ - better handling of reserved words results in 2x compile speed-up.  So that's cool.
+
+#### Bug fixes
+ 
+ - fixed parsing of braces in here documents. Still some character combinations that will make it barf, e.g. `^{...}`  
+ 
+
 ### 0.1.20
 
  - More compile-time checks for inappropriate usage of bareword members, especially in functions marked as `unbound`.  If ya want to use self-member variables in unbound functions, you have to use the scoping prefix.
