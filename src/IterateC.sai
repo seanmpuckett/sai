@@ -1,0 +1,204 @@
+
+object IterateC
+
+inherit: Construct
+
+// MANIFEST
+
+manifest get 
+  return:
+    'every':
+      repeats false
+      clauses:
+        'every': #exprusing, #exproutblock
+        'else': #block
+      handler bind EveryConstruct
+      
+    'iterate':
+      repeats false
+      clauses:
+        'iterate': #exprusing, #exproutblock
+        'else': #block
+      handler bind IterateConstruct
+
+
+OutVarHelper task given out
+  set vars empty
+  if out
+    ply out
+      push'd vars it.0.1
+  return vars
+
+
+EveryConstruct task expects $clauses, $tools
+
+  if $clauses.length > 2
+    return: error 'SAI compile: EVERY can have at most one ELSE clause.'
+
+  set main $clauses.0
+  set none $clauses.1
+
+  try
+    
+    switch main.type
+  
+      case 'every.exproutblock'
+
+        set 
+          outs from OutVarHelper main.args.out
+        
+          vars:
+            block main.args.block
+            'source' main.args.expr
+            'this' outs.0 default false
+            'key' outs.1 default false
+            iter false
+            elem false
+            none ?none.args.block 
+      
+          preface '''
+            var ^{iter}=$AI.kviterate_op(^{source});
+            var ^{elem}=^{iter}.next();
+
+          elseclause from task
+            unless none
+              return '''
+                if (!^{elem}.done)
+            else
+              return '''
+                if (^{elem}.done) { ^{none} } else
+        
+          loop '''
+            do {
+            ^{this}=^{elem}.value[1];
+            ^{key}=^{elem}.value[0];
+            ^{block}
+            ^{elem}=^{iter}.next();
+            } while (!^{elem}.done);
+        
+          text from $tools.replacer preface + elseclause + loop, vars
+
+      case 'every.exprusing'
+
+        set 
+          vars:
+            'task' main.args.using
+            source main.args.expr
+            iter false
+            elem false
+            none ?none.args.block 
+      
+          preface '''
+            var ^{iter}=$AI.kviterate_op(^{source});
+            var ^{elem}=^{iter}.next();
+
+          elseclause from task
+            unless none
+              return '''
+                if (!^{elem}.done)
+            else
+              return '''
+                if (^{elem}.done) { ^{none} } else
+        
+          loop '''
+            do {
+            ^{task}(^{elem}.value[1], ^{elem}.value[0]); 
+            ^{elem}=^{iter}.next();
+            } while (!^{elem}.done);
+        
+          text from $tools.replacer preface + elseclause + loop, vars
+      
+      default
+        return: error "Unhandled construct type ${main.type} in EveryConstruct"
+  
+  catch
+    debug error
+  
+  return: body text
+
+
+
+IterateConstruct task expects $clauses, $tools
+
+  if $clauses.length > 2
+    return: error 'SAI compile: ITERATE can have at most one ELSE clause.'
+
+  set main $clauses.0
+  set none $clauses.1
+
+  try
+    
+    switch main.type
+  
+      case 'iterate.exproutblock'
+
+        set 
+          outs from OutVarHelper main.args.out
+        
+          vars:
+            block main.args.block
+            'source' main.args.expr
+            'this' outs.0 default false
+            'key' outs.1 default false
+            iter false
+            elem false
+            none ?none.args.block default false
+      
+          preface '''
+            var ^{iter}=$AI.iterator_op(^{source});
+            var ^{elem}=^{iter}.next();
+
+          elseclause from task
+            unless none
+              return '''
+                if (!^{elem}.done)
+            else
+              return '''
+                if (^{elem}.done) { ^{none} } else
+        
+          loop '''
+            for (var ^{key}=0; !^{elem}.done; ^{elem}=^{iter}.next()){
+            ^{this}=^{elem}.value;
+            ^{block};
+            ^{key}++;
+            }
+        
+          text from $tools.replacer preface + elseclause + loop, vars
+
+      case 'iterate.exprusing'
+
+        set 
+          vars:
+            'task' main.args.using
+            source main.args.expr
+            'key' false
+            iter false
+            elem false
+            none ?none.args.block default false
+      
+          preface '''
+            var ^{iter}=$AI.iterator_op(^{source});
+            var ^{elem}=^{iter}.next();
+            var ^{key}=0;
+
+          elseclause from task
+            unless none
+              return '''
+                if (!^{elem}.done)
+            else
+              return '''
+                if (^{elem}.done) { ^{none} } else
+        
+          loop '''
+            do {
+            ^{task}(^{elem}.value, ^{key}); 
+            ^{key}++;
+            ^{elem}=^{iter}.next();
+            } while (!^{elem}.done);
+        
+          text from $tools.replacer preface + elseclause + loop, vars
+  
+  catch
+    debug error
+  
+  return: body text

@@ -4,7 +4,8 @@
   "description": "An object-oriented language designed to afford code comprehension and maintenance. Transpiles in-place to Javascript.",
   "main": "lib/sai.js",
   "scripts": {
-    "prepare": "sai-build -o lib src/sai src/StateC src/PromisingC",
+    "prepare": "sai-build -o lib src",
+    "smoke": "sai-build -o ci src && cp -p lib/saigrammar.peg ci && cd ci && node sai && ./sai-ci && cd ..",
     "test": "test/Test.sai"
   },
   "bin": {

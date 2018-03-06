@@ -10,10 +10,10 @@ manifest get
     promising:
       repeats false
       clauses: 
-        promising: #verb, #block
-        then: #verb, #block
-        catch: #verb, #block
-        finally: #verb, #block
+        promising: #verb, #outblock
+        then: #verb, #outblock
+        catch: #verb, #outblock
+        finally: #verb, #outblock
         all: #exprs, #none
         any: #exprs, #none
         resolving: #exprs, #none
@@ -32,8 +32,8 @@ PromisingConstruct task as work
 
   set tasker to task  
     set options:
-      'as' $args.1
-      block $args.2
+      'as' $args.out
+      block $args.block
       kind 'function'
       execute $execute
     if $ispromise
@@ -48,41 +48,41 @@ PromisingConstruct task as work
     switch .type
 
       case 'promising.verb'
-        set body + "$tthen(${.args.1})"
+        set body + "$tthen(${.args.verb})"
 
-      case 'promising.block'
+      case 'promising.outblock'
         set block from tasker: args .args, #ispromise, #execute
         set body + "(${block})"
 
       case 'then.verb'
-        set body + ".then(function(p){return $tthen(${.args.1});})"
+        set body + ".then(function(p){return $tthen(${.args.verb});})"
 
-      case 'then.block'
+      case 'then.outblock'
         set block from tasker: args .args, #ispromise
         set body + ".then(${block})"
 
       case 'catch.verb'
-        set body + ".catch(function(p){return $tthen(${.args.1});})"
+        set body + ".catch(function(p){return $tthen(${.args.verb});})"
 
-      case 'catch.block'
+      case 'catch.outblock'
         set block from tasker: args .args
         set body + ".catch(${block})"
 
       case 'finally.verb'
-        set body + ".finally(function(p){return $tthen(${.args.1});})"
+        set body + ".finally(function(p){return $tthen(${.args.verb});})"
 
-      case 'finally.block'
+      case 'finally.outblock'
         set block from tasker: args .args
         set body + ".finally(${block})"
 
       case 'resolving.exprs'
-        set body + ".then(function(p){return $_resolve(${.args.1.1});})"
+        set body + ".then(function(p){return $_resolve(${.args.exprs.1});})"
         
       case 'resolving.none'
         set body + ".then(function(){return $_resolve.apply(null,arguments);})"
         
       case 'rejecting.exprs'
-        set body + ".catch(function(p){return $_reject(${.args.1.1});})"
+        set body + ".catch(function(p){return $_reject(${.args.exprs.1});})"
 
       case 'rejecting.none'
         set body + ".catch(function(){return $_reject.apply(null,arguments);})"
@@ -92,10 +92,10 @@ PromisingConstruct task as work
         set body + ".catch(function(){return $_reject.apply(null,arguments);})"
 
       case 'all.exprs'
-        set body + ".then(function(p){return Promise.all(${.args.1.1});})"
+        set body + ".then(function(p){return Promise.all(${.args.exprs.1});})"
 
       case 'any.exprs'
-        set body + ".then(function(p){return Promise.any(${.args.1.1});})"
+        set body + ".then(function(p){return Promise.any(${.args.exprs.1});})"
 
       default
         return: error "SAI compiler: PROMISING construct unhandled type ${.type}"

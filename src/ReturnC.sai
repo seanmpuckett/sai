@@ -1,0 +1,83 @@
+
+object ReturnC
+
+inherit: Construct
+
+// MANIFEST
+
+manifest get 
+  return:
+    'return':
+      repeats false
+      clauses:
+        'return': #exprs, #none
+      handler bind ReturnConstruct
+      
+    'resolve':
+      repeats false
+      clauses:
+        'resolve': #exprs, #none
+      handler bind ReturnConstruct
+      
+    'reject':
+      repeats false
+      clauses:
+        'reject': #exprs, #none
+      handler bind ReturnConstruct
+      
+    'yielding':
+      repeats false
+      clauses:
+        'yielding': #exprs
+      handler bind ReturnConstruct
+      
+    'yield':
+      repeats false
+      clauses:
+        'yield': #exprs
+      handler bind ReturnConstruct
+
+
+ReturnConstruct task
+
+  if $clauses.length > 1
+    return: error 'SAI bug: error parsing RETURN-type constructs with multiple clauses: ${join'd ($clauses keys) ', '}'
+
+  set body ''
+
+  // args.exprs.0 = 'array' / 'fields'
+  // args.exprs.1 = insertable text
+  // args.exprs.2 = heirarchical structure of elements
+
+  each $clauses
+    switch .type
+      case 'return.exprs'
+        set body 'return (${.args.exprs.1});\n'
+
+      case 'return.none'
+        set body 'return;\n'
+        
+      case 'resolve.exprs'
+        set body 'return $_resolve(${.args.exprs.1});\n'
+
+      case 'resolve.none'
+        set body 'return $_resolve();\n'
+
+      case 'reject.exprs'
+        set body 'return $_reject(${.args.exprs.1});\n'
+
+      case 'reject.none'
+        set body 'return $_reject();\n'
+
+      case 'yielding.exprs'
+        set body 'yield *(${.args.exprs.1});\n'
+
+      case 'yield.exprs'
+        set body 'yield (${.args.exprs.1});\n'
+    
+      default
+        return: error "SAI compiler: unhandled ${.type} -- this is a compiler bug."
+      
+  return: body body
+
+

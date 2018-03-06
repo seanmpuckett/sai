@@ -59,6 +59,8 @@ reference:
   CONSTRUCTS list 
     StateC
     PromisingC
+    ReturnC
+    IterateC
 
 
 
@@ -121,11 +123,44 @@ Clean task
     SAILIB.import from Require.bind me
     SAILIB.create_op from Create.bind me
 
-  ply CONSTRUCTS
+
+  
+  // integrate the external constructs
+  
+  set validSyntax to: 
+    #block
+    #exproutblock
+    #exprs
+    #exprusing
+    #none
+    #outblock
+    #verb
+
+  set requiredElements to:
+    'clauses' 'clauses list'
+    'repeats' 'repeats flag'
+    'handler' 'handler function'
+  
+  set fail to task given msg
+    throw new Error 'SAI Construct Manager: manifest for ${file}/${constructName}${msg}'
+    
+  ply CONSTRUCTS as file
     try
-      set p to "./"+it
-      set construct from require p
-      set config's constructs update construct's manifest
+      set fn to "./"+file
+      set implementation from require fn
+      set manifest to implementation's manifest
+      
+      // a little validation
+      each manifest as construct, constructName
+        each requiredElements as description, element
+          unless exists construct\element
+            fail ' is missing ${description}.'
+        each construct.clauses as requestedSyntax, clauseName
+          each requestedSyntax as x, type
+            unless validSyntax\type
+              fail '/${clauseName} asks for illegal syntax "${type}"'
+      
+      set config's constructs update manifest
     catch
       debug error
       

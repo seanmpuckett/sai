@@ -772,7 +772,7 @@ Line
  = ConstructStatement
  / IfStatement
  / SetStatement
- / ReturnStatement
+ // ReturnStatement
  / IterateStatement
  / WithStatement
  / SwitchStatement
@@ -785,51 +785,40 @@ Line
  
 
 ConstructStatement
-  = i:Identifier &{ return options.constructs[i]; } _ 
+  = i:JSIdentifier &{ return options.constructs[i]; } _ 
     a:(
-         &{return options.constructs[i].clauses[i].exprblock}   ca:CAExprblock  {return ca}
-       / &{return options.constructs[i].clauses[i].block}       ca:CABlock      {return ca}
-       / &{return options.constructs[i].clauses[i].exprs}       ca:CAExprs      {return ca}
-       / &{return options.constructs[i].clauses[i].verb}        ca:CAVerb       {return ca}
-       / &{return options.constructs[i].clauses[i].none}        ca:CANone       {return ca}
+         &{return options.constructs[i].clauses[i].exproutblock}   ca:CAExproutblock  {return ca}
+       / &{return options.constructs[i].clauses[i].exprusing}      ca:CAExprusing     {return ca}
+       / &{return options.constructs[i].clauses[i].outblock}       ca:CAOutblock      {return ca}
+       / &{return options.constructs[i].clauses[i].block}          ca:CABlock      {return ca}
+       / &{return options.constructs[i].clauses[i].exprs}          ca:CAExprs      {return ca}
+       / &{return options.constructs[i].clauses[i].verb}           ca:CAVerb       {return ca}
+       / &{return options.constructs[i].clauses[i].none}           ca:CANone       {return ca}
       )
     cl:(EOLs cli:Identifier &{
       if (cli===i && !options.constructs[i].repeats) return false;
       return options.constructs[i].clauses[cli];
     } _ cla:
       (
-         &{return options.constructs[i].clauses[cli].exprblock} claa:CAExprblock {return claa}
-       / &{return options.constructs[i].clauses[cli].block}     claa:CABlock {return claa}
-       / &{return options.constructs[i].clauses[cli].exprs}     claa:CAExprs {return claa}
-       / &{return options.constructs[i].clauses[cli].verb}      claa:CAVerb {return claa}
-       / &{return options.constructs[i].clauses[cli].none}      claa:CANone{return claa}
+         &{return options.constructs[i].clauses[cli].exproutblock} claa:CAExproutblock {return claa}
+       / &{return options.constructs[i].clauses[cli].exprusing}    claa:CAExprusing {return claa}
+       / &{return options.constructs[i].clauses[cli].outblock}     claa:CAOutblock {return claa}
+       / &{return options.constructs[i].clauses[cli].block}        claa:CABlock {return claa}
+       / &{return options.constructs[i].clauses[cli].exprs}        claa:CAExprs {return claa}
+       / &{return options.constructs[i].clauses[cli].verb}         claa:CAVerb {return claa}
+       / &{return options.constructs[i].clauses[cli].none}         claa:CANone{return claa}
       )
  {return [cli,cla];})* {
    
-     var typedesc={
-       'exprs':'one or more expressions, comma separated',
-       'exprblock':'an expression and an indented code block',
-       'block':'an indented code block'
-     };
-     var checkargs=function(clause,argtype) {
-       var wants=[];
-       var construct=options.constructs[i];
-       for (var j in construct.clauses[clause]) wants.push(typedesc[j]);
-       wants=wants.join(", or ");
-       if (!construct.clauses[clause][argtype]) {
-         error("SAI Compiler: "+(clause.toUpperCase())+" should be followed by "+wants+" (found "+argtype+")");
-       }
-     }
      var work=[[i,a]].concat(cl);
      var work2=[];
      for (var i1=0; i1<work.length; i1++) {
        var j=work[i1];
-       var syntax=j[1][0];
-       checkargs(j[0],syntax);
+       //console.log(j);
        work2.push({
          clause: j[0],
-         syntax: syntax,
-         type: j[0]+'.'+syntax,
+         syntax: j[1].syntax,
+         type: j[0]+'.'+j[1].syntax,
          args: j[1]
        });
      }
@@ -845,11 +834,43 @@ ConstructStatement
     return result.body;
  }
  
-CAExprblock = x:Expression _ mo:MultiOutput? _ b:Block { return ['exprblock', x, mo, b] }
-CABlock = mo:MultiOutput? _ b:Block { return [ 'block', mo, b ]; }
-CAExprs = pl:ParameterList { return [ 'exprs', pl ]; }
-CAVerb = v:VerbSentence { return [ 'verb', v ]; }
-CANone = _ &EOLs { return [ 'none' ]; }
+CAExproutblock = x:Expression _ mo:MultiOutput? _ b:Block { return {
+  syntax: 'exproutblock',
+  expr: x,
+  out: mo,
+  block: b
+}; }
+
+CAExprusing = x:Expression _ USING Sep task:Value { return {
+  syntax: 'exprusing',
+  expr: x,
+  using: task
+}; }
+
+CAOutblock = mo:MultiOutput? _ b:Block { return {
+  syntax: 'outblock',
+  out: mo,
+  block: b
+}; }
+
+CABlock = _ b:Block { return {
+  syntax: 'block',
+  block: b
+}; }
+
+CAExprs = pl:ParameterList { return {
+  syntax: 'exprs',
+  exprs: pl
+}; }
+
+CAVerb = v:VerbSentence { return {
+  syntax: 'verb',
+  verb: v
+}; }
+
+CANone = _ &EOLs { return { 
+  syntax: 'none' 
+}; }
  
  
 
@@ -957,7 +978,7 @@ SwapStatement
  = SWAP Sep a:LValue Sep b:LValue {
    return RV('var ^{t1}=^{v1}; var ^{t2}=^{v2}; ^{v2}=^{t1}; ^{v1}=^{t2};',{t1:tempvar(),t2:tempvar(),v1:a,v2:b});
  }
- 
+
 
 SetStatement
  = SET _ t:SetTerms { return t }
@@ -1064,6 +1085,8 @@ VerbStatement
  / v:VerbSentence  { return v+";\n"; }
  / v:VerbChain { return '$AI.drain_op('+v+');\n'; }
  
+
+
 ReturnStatement
  = RETURN k:(Sep k:Expression { return k })?  { 
    return 'return '+(k?k:'')+';\n' 
@@ -1087,7 +1110,8 @@ NoneClause
 
 
 IterateStatement
- = EVERY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+ =
+/*  EVERY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
    var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
    var setup='var ^{t1}=$AI.kviterate_op(^{v}), ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
@@ -1101,7 +1125,8 @@ IterateStatement
    var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value[1],^{t2}.value[0]); ^{t2}=^{t1}.next();}\n';
    return RV(setup+none+iterate,w); 
   }
- / ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+ /
+  ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
    var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
    var setup='var ^{t1}=$AI.iterator_op(^{v}), ^{t2}=^{t1}.next();\n';
    var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
@@ -1115,7 +1140,10 @@ IterateStatement
    var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value,^{key}); ^{t2}=^{t1}.next(); ^{key}++; }\n';
    return RV(setup+none+iterate,w); 
   }
- / EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
+ / 
+ */
+ 
+ EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
      var w={block:b,j:tempvar(),v:v,n:n,k:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
      var setup='var ^{list}=^{v};\nif (undefined===^{list}) ^{list}=[];';
      var iterate='for (var ^{key} in ^{list}) { var ^{this}=^{list}[^{key}];\n^{block}}\n'+(n?'if (undefined===^{key}) { ^{n} }\n':'');

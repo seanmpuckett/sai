@@ -10,7 +10,7 @@ manifest get
     state:
       repeats true
       clauses:
-        state: #exprblock
+        state: #exproutblock
       handler bind StateConstruct
 
 
@@ -44,7 +44,7 @@ StateConstruct task as work
           var statefn=$getstatefn(state);
           return function(){statefn.apply(undefined,arguments);};
         };
-        _goto(${work's clauses.0's args.1});
+        _goto(${work's clauses.0's args.expr});
       }();    
 
     names blank
@@ -52,16 +52,16 @@ StateConstruct task as work
 
   each work's clauses
     switch .type
-      case 'state.exprblock'
-        set name .args.1
+      case 'state.exproutblock'
+        set name .args.expr
         
         if names\name
           return: error 'SAI compile: duplicate state ${name} in STATE construct'
         inc names\name
         
         set block from tools.tasker:
-          'as' .args.2
-          block .args.3
+          'as' .args.out
+          block .args.block
           kind 'function'
         push'd states "${name}:${block}"
 

@@ -1,5 +1,5 @@
 reference:
-  CATCH_EXCEPTIONS false
+  CATCH_EXCEPTIONS true
 
 object Harness
 

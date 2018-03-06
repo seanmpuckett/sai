@@ -85,7 +85,7 @@ Instantiate task given SAI
           FS.writeFileSync dest, SAI.GetSource(objectName)
         if flags.verbose .. debug '${src} -> ${dest}'
       catch
-        unless error.message.indexOf('Contractually required')
+        unless error.message.indexOf('Contractually required') >-1
           debug '${src} -> ERROR'
           debug error
           set exitflag 1
@@ -95,7 +95,7 @@ Instantiate task given SAI
     // given a file or folder, recursively build .sai files within
     ProcessArg task given path, branch
       if IsDirectory(path)
-        every FS.readdirSync(path) as leaf
+        every FS.readdirSync(path) as leaf,k
           local candidate PATH.join(path, leaf)
           if '.sai' is PATH.extname(leaf)
             ProcessArg candidate, branch
