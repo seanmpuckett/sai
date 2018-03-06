@@ -769,7 +769,8 @@ LineTerm
  = v:Line EOLs { return v }
 
 Line
- = IfStatement
+ = ConstructStatement
+ / IfStatement
  / SetStatement
  / ReturnStatement
  / IterateStatement
@@ -780,29 +781,28 @@ Line
  / SwapStatement
  // LocalStatement
  / MiscStatement
- / ConstructStatement
  / VerbStatement
  
 
 ConstructStatement
   = i:Identifier &{ return options.constructs[i]; } _ 
     a:(
-        ca:CAExprblock &{return options.constructs[i].clauses[i].exprblock} {return ca}
-       /ca:CABlock &{return options.constructs[i].clauses[i].block} {return ca}
-       /ca:CAExprs &{return options.constructs[i].clauses[i].exprs} {return ca}
-       /ca:CAVerb &{return options.constructs[i].clauses[i].verb} {return ca}
-       /ca:CANone &{return options.constructs[i].clauses[i].none} {return ca}
+         &{return options.constructs[i].clauses[i].exprblock}   ca:CAExprblock  {return ca}
+       / &{return options.constructs[i].clauses[i].block}       ca:CABlock      {return ca}
+       / &{return options.constructs[i].clauses[i].exprs}       ca:CAExprs      {return ca}
+       / &{return options.constructs[i].clauses[i].verb}        ca:CAVerb       {return ca}
+       / &{return options.constructs[i].clauses[i].none}        ca:CANone       {return ca}
       )
     cl:(EOLs cli:Identifier &{
       if (cli===i && !options.constructs[i].repeats) return false;
       return options.constructs[i].clauses[cli];
     } _ cla:
       (
-        claa:CAExprblock &{return options.constructs[i].clauses[cli].exprblock}{return claa}
-       /claa:CABlock &{return options.constructs[i].clauses[cli].block}{return claa}
-       /claa:CAExprs &{return options.constructs[i].clauses[cli].exprs}{return claa}
-       /claa:CAVerb &{return options.constructs[i].clauses[cli].verb}{return claa}
-       /claa:CANone &{return options.constructs[i].clauses[cli].none}{return claa}
+         &{return options.constructs[i].clauses[cli].exprblock} claa:CAExprblock {return claa}
+       / &{return options.constructs[i].clauses[cli].block}     claa:CABlock {return claa}
+       / &{return options.constructs[i].clauses[cli].exprs}     claa:CAExprs {return claa}
+       / &{return options.constructs[i].clauses[cli].verb}      claa:CAVerb {return claa}
+       / &{return options.constructs[i].clauses[cli].none}      claa:CANone{return claa}
       )
  {return [cli,cla];})* {
    

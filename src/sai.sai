@@ -45,7 +45,7 @@ reference:
       'assert' '$AI.assert'
       'Error' 'Error'
       'Math' 'Math'
-    constructs: blank // initialized later
+    constructs blank // initialized later
     paths:
       DIRNAME + '/'
     options:
@@ -53,6 +53,14 @@ reference:
       beautify true
     Loader:
       'default source loader linked later in file'
+
+  //// Built-in constructs
+
+  CONSTRUCTS list 
+    StateC
+    PromisingC
+
+
 
 
 object SAI singleton
@@ -113,180 +121,16 @@ Clean task
     SAILIB.import from Require.bind me
     SAILIB.create_op from Create.bind me
 
-    config.constructs:
-
-      promising:
-        repeats false
-        clauses: 
-          promising: #verb, #block
-          then: #verb, #block
-          catch: #verb, #block
-          finally: #verb, #block
-          all: #exprs, #none
-          any: #exprs, #none
-          resolving: #exprs, #none
-          rejecting: #exprs, #none
-          finalizing: #none
-        handler bind PromisingConstruct
-
-      state:
-        repeats true
-        clauses:
-          state: #exprblock
-        handler bind StateConstruct
+  ply CONSTRUCTS
+    try
+      set p to "./"+it
+      set construct from require p
+      set config's constructs update construct's manifest
+    catch
+      debug error
+      
 
 
-///////////////////////////////
-//
-//  CONSTRUCT HANDLERS
-//
-
-//  STATE
-//
-StateConstruct task as work
-
-  set
-    tools to work's tools
-    header to '''
-      var ^{temp}=function (){
-      var _goto,_then;
-      var $states={
-
-    header from tools.replacer header, fields temp undefined
-
-    trailer '''
-      }
-        var $getstatefn=function(state) {
-          return $AI.assert($states[state],"SAI runtime: STATE "+state+" does not exist; available states are "+$AI.keys_op($states).join(','));
-        }
-        _goto=function(state){
-          var statefn=$getstatefn(state);
-          var fn=undefined;
-          var l=arguments.length, args=new Array(l-1);
-          for (var li=1; li<l; li++) args[li-1]=arguments[li];
-          fn=function(){statefn.apply(undefined,args)};
-          setImmediate(fn);
-        };
-        _then=function(state){
-          var statefn=$getstatefn(state);
-          return function(){statefn.apply(undefined,arguments);};
-        };
-        _goto(${work's clauses.0's args.1});
-      }();    
-
-    names blank
-    states empty
-
-  each work's clauses
-    switch .type
-      case 'state.exprblock'
-        set name .args.1
-        
-        if names\name
-          return: error 'SAI compile: duplicate state ${name} in STATE construct'
-        inc names\name
-        
-        set block from tools.tasker:
-          'as' .args.2
-          block .args.3
-          kind 'function'
-        push'd states "${name}:${block}"
-
-  tools.addlocal '_goto'
-  tools.addlocal '_then'
-  
-  set body to "${header}${join'd states ','}${trailer}"
-  return: body body
-
-
-
-
-//  PROMISING
-//
-PromisingConstruct task as work
-
-  with (work's clauses last).clause
-    unless it is 'finally' or it is 'catch' or it is 'rejecting' or it is 'finalizing'
-      return: error "SAI compiler: final clause in PROMISING must be CATCH, FINALLY, REJECTING or FINALIZING, not ${toUpperCase'd it}"
-
-  set tasker to task  
-    set options:
-      'as' $args.1
-      block $args.2
-      kind 'function'
-      execute $execute
-    if $ispromise
-      set options update:
-        preface 'return new Promise(function($_resolve,$_reject) {'
-        postface 'if ($_resolve) return $_resolve();})'
-    return from work's tools.tasker options
-
-  set body 'var $tthen=function(t){if (!t || !t.then) throw new Error("SAI Runtime: THEN should be followed by a verb returning a promise (or an indented block of code)."); return t;};\n'
-  
-  each work's clauses
-    switch .type
-
-      case 'promising.verb'
-        set body + "$tthen(${.args.1})"
-
-      case 'promising.block'
-        set block from tasker: args .args, #ispromise, #execute
-        set body + "(${block})"
-
-      case 'then.verb'
-        set body + ".then(function(p){return $tthen(${.args.1});})"
-
-      case 'then.block'
-        set block from tasker: args .args, #ispromise
-        set body + ".then(${block})"
-
-      case 'catch.verb'
-        set body + ".catch(function(p){return $tthen(${.args.1});})"
-
-      case 'catch.block'
-        set block from tasker: args .args
-        set body + ".catch(${block})"
-
-      case 'finally.verb'
-        set body + ".finally(function(p){return $tthen(${.args.1});})"
-
-      case 'finally.block'
-        set block from tasker: args .args
-        set body + ".finally(${block})"
-
-      case 'resolving.exprs'
-        set body + ".then(function(p){return $_resolve(${.args.1.1});})"
-        
-      case 'resolving.none'
-        set body + ".then(function(){return $_resolve.apply(null,arguments);})"
-        
-      case 'rejecting.exprs'
-        set body + ".catch(function(p){return $_reject(${.args.1.1});})"
-
-      case 'rejecting.none'
-        set body + ".catch(function(){return $_reject.apply(null,arguments);})"
-        
-      case 'finalizing.none'
-        set body + ".then(function(){return $_resolve.apply(null,arguments);})"
-        set body + ".catch(function(){return $_reject.apply(null,arguments);})"
-
-      case 'all.exprs'
-        set body + ".then(function(p){return Promise.all(${.args.1.1});})"
-
-      case 'any.exprs'
-        set body + ".then(function(p){return Promise.any(${.args.1.1});})"
-
-      default
-        return: error "SAI compiler: PROMISING construct unhandled type ${.type}"
-
-
-  set body + ';\n'
-  return: body body
-
-    
-//
-//
-////////////////////////////////////
 
   
 // Dedenter

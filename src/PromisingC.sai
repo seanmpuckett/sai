@@ -1,0 +1,106 @@
+
+object PromisingC
+
+inherit: Construct
+
+// MANIFEST
+
+manifest get 
+  return:
+    promising:
+      repeats false
+      clauses: 
+        promising: #verb, #block
+        then: #verb, #block
+        catch: #verb, #block
+        finally: #verb, #block
+        all: #exprs, #none
+        any: #exprs, #none
+        resolving: #exprs, #none
+        rejecting: #exprs, #none
+        finalizing: #none
+      handler bind PromisingConstruct
+
+
+// PROMISING HANDLER
+
+PromisingConstruct task as work
+
+  with (work's clauses last).clause
+    unless it is 'finally' or it is 'catch' or it is 'rejecting' or it is 'finalizing'
+      return: error "SAI compiler: final clause in PROMISING must be CATCH, FINALLY, REJECTING or FINALIZING, not ${toUpperCase'd it}"
+
+  set tasker to task  
+    set options:
+      'as' $args.1
+      block $args.2
+      kind 'function'
+      execute $execute
+    if $ispromise
+      set options update:
+        preface 'return new Promise(function($_resolve,$_reject) {'
+        postface 'if ($_resolve) return $_resolve();})'
+    return from work's tools.tasker options
+
+  set body 'var $tthen=function(t){if (!t || !t.then) throw new Error("SAI Runtime: THEN should be followed by a verb returning a promise (or an indented block of code)."); return t;};\n'
+  
+  each work's clauses
+    switch .type
+
+      case 'promising.verb'
+        set body + "$tthen(${.args.1})"
+
+      case 'promising.block'
+        set block from tasker: args .args, #ispromise, #execute
+        set body + "(${block})"
+
+      case 'then.verb'
+        set body + ".then(function(p){return $tthen(${.args.1});})"
+
+      case 'then.block'
+        set block from tasker: args .args, #ispromise
+        set body + ".then(${block})"
+
+      case 'catch.verb'
+        set body + ".catch(function(p){return $tthen(${.args.1});})"
+
+      case 'catch.block'
+        set block from tasker: args .args
+        set body + ".catch(${block})"
+
+      case 'finally.verb'
+        set body + ".finally(function(p){return $tthen(${.args.1});})"
+
+      case 'finally.block'
+        set block from tasker: args .args
+        set body + ".finally(${block})"
+
+      case 'resolving.exprs'
+        set body + ".then(function(p){return $_resolve(${.args.1.1});})"
+        
+      case 'resolving.none'
+        set body + ".then(function(){return $_resolve.apply(null,arguments);})"
+        
+      case 'rejecting.exprs'
+        set body + ".catch(function(p){return $_reject(${.args.1.1});})"
+
+      case 'rejecting.none'
+        set body + ".catch(function(){return $_reject.apply(null,arguments);})"
+        
+      case 'finalizing.none'
+        set body + ".then(function(){return $_resolve.apply(null,arguments);})"
+        set body + ".catch(function(){return $_reject.apply(null,arguments);})"
+
+      case 'all.exprs'
+        set body + ".then(function(p){return Promise.all(${.args.1.1});})"
+
+      case 'any.exprs'
+        set body + ".then(function(p){return Promise.any(${.args.1.1});})"
+
+      default
+        return: error "SAI compiler: PROMISING construct unhandled type ${.type}"
+
+
+  set body + ';\n'
+  return: body body
+

@@ -1,0 +1,75 @@
+
+object StateC
+
+inherit: Construct
+
+// MANIFEST
+
+manifest get 
+  return:
+    state:
+      repeats true
+      clauses:
+        state: #exprblock
+      handler bind StateConstruct
+
+
+// STATE HANDLER
+
+StateConstruct task as work
+
+  set
+    tools to work's tools
+    header to '''
+      var ^{temp}=function (){
+      var _goto,_then;
+      var $states={
+
+    header from tools.replacer header, fields temp undefined
+
+    trailer '''
+      }
+        var $getstatefn=function(state) {
+          return $AI.assert($states[state],"SAI runtime: STATE "+state+" does not exist; available states are "+$AI.keys_op($states).join(','));
+        }
+        _goto=function(state){
+          var statefn=$getstatefn(state);
+          var fn=undefined;
+          var l=arguments.length, args=new Array(l-1);
+          for (var li=1; li<l; li++) args[li-1]=arguments[li];
+          fn=function(){statefn.apply(undefined,args)};
+          setImmediate(fn);
+        };
+        _then=function(state){
+          var statefn=$getstatefn(state);
+          return function(){statefn.apply(undefined,arguments);};
+        };
+        _goto(${work's clauses.0's args.1});
+      }();    
+
+    names blank
+    states empty
+
+  each work's clauses
+    switch .type
+      case 'state.exprblock'
+        set name .args.1
+        
+        if names\name
+          return: error 'SAI compile: duplicate state ${name} in STATE construct'
+        inc names\name
+        
+        set block from tools.tasker:
+          'as' .args.2
+          block .args.3
+          kind 'function'
+        push'd states "${name}:${block}"
+
+  tools.addlocal '_goto'
+  tools.addlocal '_then'
+  
+  set body to "${header}${join'd states ','}${trailer}"
+  return: body body
+
+
+

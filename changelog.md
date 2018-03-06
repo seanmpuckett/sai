@@ -1,5 +1,10 @@
 ## Change log
 
+### 0.1.22
+
+ - moved support code for Constructs outside of main sai file to facilitate additional refactoring
+
+
 ### 0.1.21
 
 #### Enhancements

@@ -85,11 +85,13 @@ Instantiate task given SAI
           FS.writeFileSync dest, SAI.GetSource(objectName)
         if flags.verbose .. debug '${src} -> ${dest}'
       catch
-        debug '${src} -> ERROR'
-        debug error
         unless error.message.indexOf('Contractually required')
+          debug '${src} -> ERROR'
+          debug error
           set exitflag 1
-  
+        else
+          debug '${src} -> Either a virtual class OR does not fulfill its contracts.'
+          
     // given a file or folder, recursively build .sai files within
     ProcessArg task given path, branch
       if IsDirectory(path)
