@@ -31,40 +31,40 @@ Execute task
       return true
     return false
     
-  @Test 'if else if', task
+  @Test 'if elsif', task
     if false
       return false
-    else if true
+    elsif true
       return true
     else
       return false
     return false
     
-  @Test 'if else unless', task
+  @Test 'if elsunless', task
     if false
       return false
-    else unless false
+    elsunless false
       return true
     return false
     
-  @Test 'unless else unless', task
+  @Test 'unless elsunless', task
     unless true
       return false
-    else unless false
+    elsunless false
       return true
     return false
     
-  @Test 'unless else if', task
+  @Test 'unless elsif', task
     unless true
       return false
-    else if true
+    elsif true
       return true
     return false
     
-  @Test 'unless else if else', task
+  @Test 'unless elsif else', task
     unless true
       return false
-    else if false
+    elsif false
       return false
     else
       return true
@@ -113,43 +113,44 @@ Execute task
       return .b
     
     
-    
   @Test 'switch case', task
-    switch 2
-      case 1
-        return false
-      case 2
-        return true
-      default
-        return false
+    switch 2 as a
+    case 1
+      return false
+    case 2
+      return a
+    else
+      return false
     return false
     
   @Test 'switch multicase', task
     switch 2
-      case 1
+    case 1
+      return false
+    case 0,3,2
+      switch 1
+      case 1,2
+        return true
+      else
         return false
-      case 0,3,2
-        switch 1
-          case 1,2
-            return true
-          default
-            return false
-      default
-        return false
+    else
+      return false
     return false
     
   @Test 'switch default', task
     switch 2
-      case 1
-        return false
-      default
-        return true
+    case 1
+      return false
+    else
+      return true
     return false
     
   @Test 'switch none', task
     switch 2
-      case 1
-        return false
+    case 1
+      return false
+    else
+      nop
     return true
     
     

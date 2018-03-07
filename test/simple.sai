@@ -2,7 +2,7 @@
 
 object Simple
 
-instance:
+instance: 
   a true
 
 Instantiate task

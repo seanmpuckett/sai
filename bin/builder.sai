@@ -99,7 +99,7 @@ Instantiate task given SAI
           local candidate PATH.join(path, leaf)
           if '.sai' is PATH.extname(leaf)
             ProcessArg candidate, branch
-          else if leaf isnt '.' and leaf isnt '..' and IsDirectory(candidate)
+          elsif leaf isnt '.' and leaf isnt '..' and IsDirectory(candidate)
             ProcessArg candidate, PATH.join(branch, leaf)
       else 
         Build path, DestPath(path, branch)

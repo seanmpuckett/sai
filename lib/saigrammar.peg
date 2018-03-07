@@ -13,9 +13,10 @@
   var usedMemberVar=false;
   var DynamicTaskClauseFormatter=undefined;
 
-  var ResWords={},ResWordsA=("andb,and,array,as,asc,audit,"+
+  var ResWords={},ResWordsA=(
+    "andb,and,array,as,asc,audit,"+
     "bind,blank,break,by,"+
-    "case,chain,create,collect,concat,copy,"+
+    "chain,create,collect,concat,copy,"+
     "default,delete,desc,down,"+
     "empty,enlist,entrait,enum,exists,expects,"+
     "false,fields,first,from,"+
@@ -120,6 +121,7 @@
       }
       if (final) {
         //console.log(JSON.stringify(InstanceVars));
+        //console.log('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
         error('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
       } 
       return x; // unchanged
@@ -772,12 +774,9 @@ Line
  = ConstructStatement
  / IfStatement
  / SetStatement
- // ReturnStatement
  / IterateStatement
  / WithStatement
  / SwitchStatement
- / TryStatement
- / ThrowStatement
  / SwapStatement
  // LocalStatement
  / MiscStatement
@@ -788,6 +787,8 @@ ConstructStatement
   = i:JSIdentifier &{ return options.constructs[i]; } _ 
     a:(
          &{return options.constructs[i].clauses[i].exproutblock}   ca:CAExproutblock  {return ca}
+       / &{return options.constructs[i].clauses[i].exprout}        ca:CAExprout     {return ca}
+       / &{return options.constructs[i].clauses[i].exprsblock}     ca:CAExprsblock     {return ca}
        / &{return options.constructs[i].clauses[i].exprusing}      ca:CAExprusing     {return ca}
        / &{return options.constructs[i].clauses[i].outblock}       ca:CAOutblock      {return ca}
        / &{return options.constructs[i].clauses[i].block}          ca:CABlock      {return ca}
@@ -801,6 +802,8 @@ ConstructStatement
     } _ cla:
       (
          &{return options.constructs[i].clauses[cli].exproutblock} claa:CAExproutblock {return claa}
+       / &{return options.constructs[i].clauses[cli].exprout}      claa:CAExprout {return claa}
+       / &{return options.constructs[i].clauses[cli].exprsblock}   claa:CAExprsblock {return claa}
        / &{return options.constructs[i].clauses[cli].exprusing}    claa:CAExprusing {return claa}
        / &{return options.constructs[i].clauses[cli].outblock}     claa:CAOutblock {return claa}
        / &{return options.constructs[i].clauses[cli].block}        claa:CABlock {return claa}
@@ -825,7 +828,7 @@ ConstructStatement
     var result=options.constructs[i].handler({
       clauses:work2,
       tools:{
-        addlocal:addLocal,
+        addlocal:function(v){ if (!v) v=tempvar(); addLocal(v); return v; },
         replacer:RV,
         tasker:TaskClauseFormatter
       }
@@ -839,6 +842,12 @@ CAExproutblock = x:Expression _ mo:MultiOutput? _ b:Block { return {
   expr: x,
   out: mo,
   block: b
+}; }
+
+CAExprout = x:Expression _ mo:MultiOutput? _ { return {
+  syntax: 'exprout',
+  expr: x,
+  out: mo,
 }; }
 
 CAExprusing = x:Expression _ USING Sep task:Value { return {
@@ -863,6 +872,12 @@ CAExprs = pl:ParameterList { return {
   exprs: pl
 }; }
 
+CAExprsblock = _ pl:ParameterList _ b:Block { return {
+  syntax: 'exprsblock',
+  exprs: pl,
+  block: b
+}; }
+
 CAVerb = v:VerbSentence { return {
   syntax: 'verb',
   verb: v
@@ -875,9 +890,7 @@ CANone = _ &EOLs { return {
  
 
 MiscStatement
- = BREAK _ { return 'break;\n'; }
- / CONTINUE _ { return 'continue;\n' }
- / ORPHAN _ { return 'var $=this;\n' }
+ = ORPHAN _ { return 'var $=this;\n' }
  / NOP _ { return ';' }
 
 
@@ -906,32 +919,6 @@ CaseClause
 
 DefaultClause
  = DEFAULT Sep b:Block { return b; }
-
-
-
-ThrowStatement // maybe get an accurate line number in here someday?!
- = THROW _ p:Expression { // test 'throw'
- return 'throw '+p+';\n' }
-
-TryStatement // test 'try*'
- = t:TryClause c:(EOLs c:CatchClause {return c})? f:(EOLs f:FinallyClause {return f})? {
-   if (!(c||f)) error("SAI Compiler: TRY needs a CATCH and/or FINALLY");
-   return t+(c?c:'')+(f?f:'');
- }
-
-TryClause
- = TRY _ b:Block { return 'try {'+b+'}\n'; }
- 
-CatchClause // test 'catch*'
- = CATCH _ o:Output? _ b:Block { 
-   o=o?o:tempvar();
-   addLocal(o);
-   return RV('catch (^{error}) {'+b+'}\n',{error:o}); 
- }
- 
-FinallyClause // test 'finally*'
- = FINALLY _ b:Block { return 'finally {'+b+'}\n' }
- 
 
 
 IfStatement
@@ -1085,91 +1072,12 @@ VerbStatement
  / v:VerbSentence  { return v+";\n"; }
  / v:VerbChain { return '$AI.drain_op('+v+');\n'; }
  
-
-
-ReturnStatement
- = RETURN k:(Sep k:Expression { return k })?  { 
-   return 'return '+(k?k:'')+';\n' 
-  }
- / r:(ResolveReject) Sep k:Expression?   { 
-   return r+'('+(k?k:'')+');\n' ;
-  }
- / YIELDING Sep k:Expression { 
-   return 'yield *'+'('+k+');\n' ;
-  }
- / YIELD Sep k:Expression { 
-   return 'yield '+'('+k+');\n' ;
-  }
-
-ResolveReject
- = RESOLVE { return 'return $_resolve' }
- / REJECT { return 'return $_reject' }
-
 NoneClause
  = ELSE Sep b:Block  { return '{'+b+'}\n' }
 
 
 IterateStatement
- =
-/*  EVERY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-   var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
-   var setup='var ^{t1}=$AI.kviterate_op(^{v}), ^{t2}=^{t1}.next();\n';
-   var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
-   var iterate='for (; !^{t2}.done; ^{t2}=^{t1}.next()) { ^{this}=^{t2}.value[1]; ^{key}=^{t2}.value[0]; ^{block}; }\n';
-   return RV(setup+none+iterate,w); 
-  }
- / EVERY Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
-   var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,key:tempvar()};
-   var setup='var ^{t1}=$AI.kviterate_op(^{v}), ^{t2}=^{t1}.next();\n';
-   var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
-   var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value[1],^{t2}.value[0]); ^{t2}=^{t1}.next();}\n';
-   return RV(setup+none+iterate,w); 
-  }
- /
-  ITERATE Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-   var w={block:b,t1:tempvar(),t2:tempvar(),v:v,none:n,key:(o?o[1]:false),this:(o?o[0]:false)};
-   var setup='var ^{t1}=$AI.iterator_op(^{v}), ^{t2}=^{t1}.next();\n';
-   var none=n?'if (^{t2}.done) { ^{none} } else \n':'if (!^{t2}.done) ';
-   var iterate='for (var ^{key}=0; !^{t2}.done; ^{t2}=^{t1}.next(), ^{key}++) { ^{this}=^{t2}.value; ^{block}; }\n';
-   return RV(setup+none+iterate,w); 
-  }
- / ITERATE Sep v:Expression _ USING Sep task:Value n:(EOLs n:NoneClause {return n})? {
-   var w={task:task,t1:tempvar(),t2:tempvar(),v:v,none:n,key:tempvar()};
-   var setup='var ^{t1}=$AI.iterator_op(^{v}), ^{t2}=^{t1}.next(), ^{key}=0;\n';
-   var none=n?'if (^{t2}.done) { ^{none} } else \n':'';
-   var iterate='while (!^{t2}.done) { ^{task}(^{t2}.value,^{key}); ^{t2}=^{t1}.next(); ^{key}++; }\n';
-   return RV(setup+none+iterate,w); 
-  }
- / 
- */
- 
- EACH Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-     var w={block:b,j:tempvar(),v:v,n:n,k:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
-     var setup='var ^{list}=^{v};\nif (undefined===^{list}) ^{list}=[];';
-     var iterate='for (var ^{key} in ^{list}) { var ^{this}=^{list}[^{key}];\n^{block}}\n'+(n?'if (undefined===^{key}) { ^{n} }\n':'');
-     return RV(setup+iterate,w); 
-  }
- / EACH Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
-     var w={task:task,list:list,j:tempvar(),k:tempvar(),none:none};
-     var setup='var ^{j}=^{list};\nif (undefined===^{j}) ^{j}=[]; ';
-     var iterate='for (var ^{k} in ^{j}) ^{task}(^{j}[^{k}],^{k},^{j});\n';
-     var final=none?'if (^{k}===undefined) { ^{none} }\n':'';
-     return RV(setup+iterate+final,w); 
-  }
- / PLY Sep v:Expression o:IterateOutput? b:Block n:(EOLs n:NoneClause {return n})? {
-     var w={block:b,j:tempvar(),v:v,n:n,k:tempvar(),l:tempvar(),key:(o?o[1]:false),this:(o?o[0]:false),list:(o?o[2]:false)};
-     var setup='var ^{list}=^{v};\nif (undefined===^{list}) ^{list}=[]; ';
-     var iterate='var ^{l}=^{list}.length; if (^{l}) { var ^{this},^{key}=0; for (;^{key}<^{l};^{key}++) { ^{this}=^{list}[^{key}];\n^{block}\n} } '+(n?'else { ^{n} }':'')+'\n';
-     return RV(setup+iterate,w); 
-  }
- / PLY Sep list:Expression _ USING Sep task:Value none:(EOLs n:NoneClause {return n})? {
-     var w={task:task,list:list,l:tempvar(),j:tempvar(),k:tempvar(),none:none};
-     var setup='var ^{j}=^{list};\nif (undefined===^{j}) ^{j}=[]; var ^{l}=^{j}.length;\n';
-     var test=none?'if (!^{l}) ^{none} else ':'';
-     var iterate='for (var ^{k}=0; ^{k}<^{l}; ^{k}++) { ^{task}(^{j}[^{k}],^{k},^{j}) };\n';
-     return RV(setup+test+iterate,w); 
-  }
- / COUNT Sep DOWN Sep start:Expression stop:(TO Sep x:Expression {return x})? step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
+ = COUNT Sep DOWN Sep start:Expression stop:(TO Sep x:Expression {return x})? step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
      if (!stop) stop=0;
      var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),counter:(out?out[0]:false),step:(step?step:'-1')};
      var setup='var ^{counter}=^{start},^{dest}=^{stop};\n ';
@@ -1184,18 +1092,6 @@ IterateStatement
      var alternate=none ? 'if (^{counter}>=^{dest}) { ^{none} } else ' : '';
      var iterate='for (; ^{counter}<^{dest}; ^{counter}+=^{step}) { ^{block} }\n';
      return RV(setup+alternate+iterate,w); 
-  }
-  / WHILE Sep v:Expression o:IterateOutput? b:Block {
-    return RV('var ^{this}; while (^{this}=( ^{v})) { ^{block} }\n',{v:v,block:b,this:(o?o[0]:false)});
-  }
-  / UNTIL Sep v:Expression b:Block {
-    return 'while (!('+v+')) { '+b+' }\n';
-  }
-  / DO Sep WHILE Sep v:Expression b:Block {
-    return 'do { '+b+' } while ('+v+');\n';
-  }
-  / DO Sep UNTIL Sep v:Expression b:Block {
-    return 'do { '+b+' } while (!('+v+'));\n';
   }
 
 StepCount
@@ -2004,8 +1900,6 @@ Value
  / FROM Sep v:VerbSentence _ { return v }
  / BIND Sep v:Value _ { return  'function(){return ('+v+').apply($,arguments);}'; }
  / Verbd
- / YIELDING Sep v:Value _ { return 'yield *'+v; }
- / YIELD Sep v:Value _ { return 'yield'+v; }
  / '?' v:RValueSafe _ { return v }
  / v:RValue _ { return v }
  / VerbChain 
@@ -2303,7 +2197,6 @@ ASC = 'asc'
 AUDIT = 'audit'
 BIND = 'bind'
 BLANK = 'blank'
-BREAK = 'break'
 BY = 'by'
 CASE = 'case'
 CATCH = 'catch'
@@ -2311,7 +2204,6 @@ CHAIN = 'chain'
 COLLECT = 'collect'
 COPY = 'copy'
 CONCAT = 'concat'
-CONTINUE = 'continue'
 CONTRACT = 'contract'
 COUNT = 'count'
 COUNTER = 'counter'
@@ -2322,17 +2214,14 @@ DELETE = 'delete'
 DESC = 'desc'
 DO = 'do'
 DOWN = 'down'
-EACH = 'each'
 ELSE = 'else'
 EMPTY = 'empty'
 ENUM = 'enum'
 ENLIST = 'enlist'
 ENTRAIT = 'entrait'
 ERROR = 'error'
-EVERY = 'every'
 EXISTS = 'exists'
 EXPECTS = 'expects'
-FINALLY = 'finally'
 FIELDS = 'fields'
 FIRST = 'first'
 FROM = 'from'
@@ -2379,13 +2268,9 @@ OR = 'or'
 ORB = 'orb'
 TRUE = 'true'
 FALSE = 'false'
-PLY = 'ply'
 PROMISE = 'promise'
 PROCESS = 'process'
-RESOLVE = 'resolve'
-REJECT = 'reject'
 REFERENCE = 'reference'
-RETURN = 'return'
 SELECT = 'select'
 SELF = 'self'
 SET = 'set'
@@ -2397,7 +2282,6 @@ SUPER = 'super'
 SWITCH = 'switch'
 TASK = 'task'
 THEN = 'then'
-THROW = 'throw'
 THRU = 'thru'
 TRAITS = 'traits'
 TRIAL = 'trial'
@@ -2416,8 +2300,6 @@ WHILE = 'while'
 WITH = 'with'
 XOR  = 'xor'
 XORB  = 'xorb'
-YIELDING = 'yielding'
-YIELD = 'yield'
 
 BANG = '!'
 DOT = '.'

@@ -4,6 +4,14 @@ object Construct
 contract:
   manifest
 
+
+OutVarHelper task given out
+  set vars empty
+  if out
+    ply out
+      push'd vars it.0.1
+  return vars
+
   
   
 

@@ -9,7 +9,7 @@ inherit:
 Execute task
 
   // first section tests low level functionality, not the parser
-
+  
 
   set friends to:
     :name 'Sara', age 23, #cat, province 'ON'

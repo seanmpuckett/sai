@@ -2,6 +2,14 @@
 
 ### 0.1.22
 
+#### Breaking Changes
+
+ - refactoring the `do while` and `do until` loops into the constructs system means they can no longer have a two-word keyword. So now they're __dowhile__ and __dountil__.
+- similarly `else if` `else unless` and `else exists` are now __elsif__, __elsunless__ and __elsexists__.  This should be just a simple search / replace to fix.
+- and similarly `switch` has been updated -- each __case__ element should _no longer be indented_ and the `default` clause has been renamed __else__.  Also, the compiler will _insist_ that there is an __else__ clause at the end of every switch statement. It's good programming practice.
+
+#### Infrastructure
+
  - moved support code for Constructs outside of main sai file to facilitate additional refactoring
 
 

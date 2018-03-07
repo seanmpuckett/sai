@@ -61,6 +61,9 @@ reference:
     PromisingC
     ReturnC
     IterateC
+    TryCatchC
+    IfElseC
+    SwitchC
 
 
 
@@ -129,8 +132,10 @@ Clean task
   
   set validSyntax to: 
     #block
+    #exprout
     #exproutblock
     #exprs
+    #exprsblock
     #exprusing
     #none
     #outblock
@@ -155,6 +160,8 @@ Clean task
         each requiredElements as description, element
           unless exists construct\element
             fail ' is missing ${description}.'
+        unless construct.clauses count
+          fail ' has no clauses defined'
         each construct.clauses as requestedSyntax, clauseName
           each requestedSyntax as x, type
             unless validSyntax\type
@@ -227,7 +234,7 @@ Dedenter task given src
         case 2
           if depth < heredepth
             set heredocstate 0
-          else if depth > heredepth
+          elsif depth > heredepth
             set trimmed (line limit heredepth, undefined)
       if depth < indent.0
         while depth < indent.0
@@ -272,13 +279,13 @@ Contextualize task given source, offset
     
   ply lines as line
     if line is INDENT .. inc ind
-    else if line is DEDENT .. dec ind
+    elsif line is DEDENT .. dec ind
     set minind ?< ind
   set ind to - minind
 
   ply lines as line
     if line is INDENT .. inc ind
-    else if line is DEDENT .. dec ind
+    elsif line is DEDENT .. dec ind
     else 
       set newcontext + (repeat'd '  ' ind) + line + '\n'
       
@@ -366,10 +373,11 @@ GetParser task
           ${error.message}
           
       else
+        debug error
         throw new Error '''
           SAI: Error creating prototype:
           
-          ${error.toString()}
+          ${error}
           
     if config.options.beautify
       set js from Beautify js, fields
@@ -425,8 +433,12 @@ GetSourceFromPaths task given name
 //
 
 Compile task given source
-  return new ~Function 'prototype','options','require','$AI','__dirname', source
-
+  try
+    return new ~Function 'prototype','options','require','$AI','__dirname', source
+  catch
+    debug "ERROR IN HERE"
+    debug source
+    debug error
 
 // ProtoGen
 //
@@ -443,7 +455,7 @@ GetProtogen task given name
     set source from Parse load's source, undefined, load's context
     set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
     set protogen from Compile source
-    //debug source
+    //debug source 
     unless protogen
       throw new Error 'SAI.GetProtogen: Error in generated code ${name}'
     set s2 new ~Date

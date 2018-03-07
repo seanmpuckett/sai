@@ -7,6 +7,7 @@ inherit: Construct
 
 manifest get 
   return:
+  
     'every':
       repeats false
       clauses:
@@ -21,14 +22,84 @@ manifest get
         'else': #block
       handler bind IterateConstruct
 
+    'each':
+      repeats false
+      clauses:
+        'each': #exprusing, #exproutblock
+        'else': #block
+      handler bind EachConstruct
 
-OutVarHelper task given out
-  set vars empty
-  if out
-    ply out
-      push'd vars it.0.1
-  return vars
+    'ply':
+      repeats false
+      clauses:
+        'ply': #exprusing, #exproutblock
+        'else': #block
+      handler bind PlyConstruct
 
+    'while':
+      repeats false
+      clauses:
+        'while': #exproutblock
+      handler bind WhileConstruct
+      
+    'until':
+      repeats false
+      clauses:
+        'until': #exproutblock
+      handler bind WhileConstruct
+      
+    'dowhile':
+      repeats false
+      clauses:
+        'dowhile': #exproutblock
+      handler bind WhileConstruct
+      
+    'dountil':
+      repeats false
+      clauses:
+        'dountil': #exproutblock
+      handler bind WhileConstruct
+
+    'break':
+      repeats false
+      clauses:
+        'break': #none
+      handler bind FlowControlConstruct
+  
+    'continue':
+      repeats false
+      clauses:
+        'continue': #none
+      handler bind FlowControlConstruct
+  
+
+
+//////////////  FLOW CONTROL
+//
+//
+
+FlowControlConstruct task expects $clauses, $tools
+  set body ''
+  with $clauses.0
+    switch .type
+    
+      case 'break.none'
+        set body 'break;\n'
+    
+      case 'continue.none'
+        set body 'continue;\n'
+    
+      default
+        return: error "SAI compiler: unhandled ${.type} in FlowControlConstruct -- this is a compiler bug."
+  
+  return: body body
+
+
+
+
+///////////////   EVERY
+//
+//
 
 EveryConstruct task expects $clauses, $tools
 
@@ -45,7 +116,7 @@ EveryConstruct task expects $clauses, $tools
       case 'every.exproutblock'
 
         set 
-          outs from OutVarHelper main.args.out
+          outs from my OutVarHelper main.args.out
         
           vars:
             block main.args.block
@@ -118,6 +189,10 @@ EveryConstruct task expects $clauses, $tools
 
 
 
+///////////////   ITERATE
+//
+//
+
 IterateConstruct task expects $clauses, $tools
 
   if $clauses.length > 2
@@ -133,7 +208,7 @@ IterateConstruct task expects $clauses, $tools
       case 'iterate.exproutblock'
 
         set 
-          outs from OutVarHelper main.args.out
+          outs from my OutVarHelper main.args.out
         
           vars:
             block main.args.block
@@ -197,8 +272,274 @@ IterateConstruct task expects $clauses, $tools
             } while (!^{elem}.done);
         
           text from $tools.replacer preface + elseclause + loop, vars
+
+      default
+        return: error "Unhandled construct type ${main.type} in IterateConstruct"
   
   catch
     debug error
   
   return: body text
+
+
+
+///////////////   EACH
+//
+//
+
+EachConstruct task expects $clauses, $tools
+
+  if $clauses.length > 2
+    return: error 'SAI compile: EACH can have at most one ELSE clause.'
+
+  set main $clauses.0
+  set none $clauses.1
+
+  try
+    
+    switch main.type
+  
+      case 'each.exproutblock'
+
+        set 
+          outs from my OutVarHelper main.args.out
+        
+          vars:
+            block main.args.block
+            'source' main.args.expr
+            'this' outs.0 default false
+            'key' outs.1 default false
+            'list' outs.2 default false
+            none ?none.args.block default false
+      
+          preface '''
+            var ^{list}=^{source},^{key}=undefined;
+            if (undefined===^{list}) ^{list}={};
+
+          loop '''
+            for (^{key} in ^{list}) {
+            ^{this}=^{list}[^{key}];
+            ^{block};
+            }
+        
+          elseclause from task
+            unless none
+              return ''
+            else
+              return '''
+                if (^{key}===undefined) { ^{none} } 
+        
+          text from $tools.replacer preface + loop + elseclause, vars
+
+      case 'each.exprusing'
+
+        set 
+          vars:
+            'task' main.args.using
+            source main.args.expr
+            'key' false
+            'list' false
+            none ?none.args.block default false
+      
+          preface '''
+            var ^{list}=^{source},^{key}=undefined;
+            if (undefined===^{list}) ^{list}={};
+
+          elseclause from task
+            unless none
+              return ''
+            else
+              return '''
+                if (^{key}===undefined) { ^{none} } 
+        
+          loop '''
+            for (^{key} in ^{list}) {
+            ^{task}(^{list}[^{key}],^{key},^{list});
+            }
+        
+          text from $tools.replacer preface + loop + elseclause, vars
+
+      default
+        return: error "Unhandled construct type ${main.type} in EachConstruct"
+  
+  catch
+    debug error
+    
+  return: body text
+
+
+
+///////////////   PLY
+//
+//
+
+PlyConstruct task expects $clauses, $tools
+
+  if $clauses.length > 2
+    return: error 'SAI compile: PLY can have at most one ELSE clause.'
+
+  set main $clauses.0
+  set none $clauses.1
+
+  try
+    
+    switch main.type
+  
+      case 'ply.exproutblock'
+
+        set 
+          outs from my OutVarHelper main.args.out
+        
+          vars:
+            block main.args.block
+            'source' main.args.expr
+            'this' outs.0 default false
+            'key' outs.1 default false
+            'list' outs.2 default false
+            'length' false
+            none ?none.args.block default false
+      
+          preface '''
+            var ^{list}=^{source},^{key};
+            if (undefined===^{list}) ^{list}=[];
+            var ^{length}=^{list}.length;
+
+          loop '''
+            for (^{key}=0; ^{key}<^{length}; ^{key}++) {
+            ^{this}=^{list}[^{key}];
+            ^{block};
+            }
+        
+          elseclause from task
+            unless none
+              return ''
+            else
+              return '''
+                if (^{key}===0) { ^{none} } 
+        
+          text from $tools.replacer preface + loop + elseclause, vars
+
+      case 'ply.exprusing'
+
+        set 
+          vars:
+            'task' main.args.using
+            source main.args.expr
+            'key' false
+            'list' false
+            'length' false
+            none ?none.args.block default false
+      
+          preface '''
+            var ^{list}=^{source},^{key};
+            if (undefined===^{list}) ^{list}=[];
+            var ^{length}=^{list}.length;
+
+          elseclause from task
+            unless none
+              return ''
+            else
+              return '''
+                if (^{key}===0) { ^{none} } 
+        
+          loop '''
+            for (^{key}=0; ^{key}<^{length}; ^{key}++) {
+            ^{task}(^{list}[^{key}],^{key},^{list});
+            }
+        
+          text from $tools.replacer preface + loop + elseclause, vars
+
+      default
+        return: error "Unhandled construct type ${main.type} in PlyConstruct"
+  
+  catch
+    debug error
+    
+  return: body text
+
+
+///////////////   WHILE / UNTIL
+//
+//
+
+WhileConstruct task expects $clauses, $tools
+
+  set main $clauses.0
+
+  try
+    
+    switch main.type
+  
+      case 'while.exproutblock'
+
+        set 
+          outs from my OutVarHelper main.args.out
+        
+          vars:
+            block main.args.block
+            'source' main.args.expr
+            'this' outs.0 default false
+      
+          preface '''
+            var ^{this};
+
+          loop '''
+            while (^{this}=(^{source})) {
+            ^{block}
+            }
+        
+          text from $tools.replacer preface + loop, vars
+
+      case 'until.exproutblock'
+
+        set 
+          vars:
+            block main.args.block
+            'source' main.args.expr
+      
+          loop '''
+            while (!(^{source})) {
+            ^{block}
+            }
+        
+          text from $tools.replacer loop, vars
+
+      case 'dowhile.exproutblock'
+
+        set 
+          vars:
+            block main.args.block
+            'source' main.args.expr
+      
+          loop '''
+            do { 
+            ^{block}
+            } while (^{source});
+        
+          text from $tools.replacer loop, vars
+
+      case 'dountil.exproutblock'
+
+        set 
+          vars:
+            block main.args.block
+            'source' main.args.expr
+      
+          loop '''
+            do { 
+            ^{block}
+            } while (!(^{source}));
+        
+          text from $tools.replacer loop, vars
+
+
+      default
+        return: error "Unhandled construct type ${main.type} in WhileConstruct"
+  
+  catch
+    debug error
+    
+  return: body text
+
+
+ 

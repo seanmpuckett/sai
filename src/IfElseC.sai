@@ -1,0 +1,157 @@
+
+object IfElseC
+
+inherit: Construct
+
+// MANIFEST
+
+manifest get 
+  return:
+  
+    'if':
+      repeats false
+      clauses:
+        'if': #exproutblock
+        'elsif': #exproutblock
+        'elsunless': #exproutblock
+        'elsexists': #exproutblock
+        'else': #block
+      handler bind IfElseConstruct
+
+    'unless':
+      repeats false
+      clauses:
+        'unless': #exproutblock
+        'elsif': #exproutblock
+        'elsunless': #exproutblock
+        'elsexists': #exproutblock
+        'else': #block
+      handler bind IfElseConstruct
+
+    'exists':
+      repeats false
+      clauses:
+        'exists': #exproutblock
+        'elsif': #exproutblock
+        'elsunless': #exproutblock
+        'elsexists': #exproutblock
+        'else': #block
+      handler bind IfElseConstruct
+      
+
+///////////////   IF ELSE
+//
+//
+
+IfElseConstruct task expects $clauses, $tools
+
+  ply $clauses limit 0, -1
+    if .clause is 'else'
+       return: error 'SAI Compiler: ELSE, if present, must be the last clause in an IF/UNLESS/EXISTS construct.'
+
+  set body ''
+
+  ply $clauses
+
+    set outs from my OutVarHelper it.args.out
+      
+    switch .type
+      case 'if.exproutblock'
+        set
+          vars:
+            'trial' outs.0
+            'condition' .args.expr
+            'block' .args.block
+          
+          text '''
+            if (^{trial}=(^{condition})) {
+            ^{block}
+            }
+            
+          body + from $tools.replacer text, vars
+          
+      case 'unless.exproutblock'
+        set
+          vars:
+            'condition' .args.expr
+            'block' .args.block
+          
+          text '''
+            if (!(^{condition})) {
+            ^{block}
+            }
+            
+          body + from $tools.replacer text, vars
+
+      case 'exists.exproutblock'
+        set
+          vars:
+            'this' outs.0
+            'condition' .args.expr
+            'block' .args.block
+          
+          text '''
+            if (undefined !== (^{this}=(^{condition}))) {
+            ^{block}
+            }
+            
+          body + from $tools.replacer text, vars
+          
+      case 'elsif.exproutblock'
+        set
+          vars:
+            'trial' outs.0
+            'condition' .args.expr
+            'block' .args.block
+          
+          text '''
+            else if (^{trial}=(^{condition})) {
+            ^{block}
+            }
+            
+          body + from $tools.replacer text, vars
+          
+      case 'elsexists.exproutblock'
+        set
+          vars:
+            'this' outs.0
+            'condition' .args.expr
+            'block' .args.block
+          
+          text '''
+            else if (undefined !== (^{this}=(^{condition}))) {
+            ^{block}
+            }
+            
+          body + from $tools.replacer text, vars
+
+      case 'elsunless.exproutblock'
+        set
+          vars:
+            'condition' .args.expr
+            'block' .args.block
+          
+          text '''
+            else if (!(^{condition})) {
+            ^{block}
+            }
+            
+          body + from $tools.replacer text, vars
+
+      case 'else.block'
+        set
+          vars:
+            'block' .args.block
+          
+          text '''
+            else {
+            ^{block}
+            }
+            
+          body + from $tools.replacer text, vars
+      
+      default
+        return: error "Unhandled construct type ${.type} in IfElseConstruct"
+  
+  return: body body
+
