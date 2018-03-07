@@ -462,7 +462,7 @@
     var head='', tail='';
     var sup=GlobVar();
     if (o.prefix!='get' && o.prefix!='set') {
-      addToList('lock',fn);
+      addToList('lock',fn.substring(1,fn.length-1));
       head='var '+sup+'=prototype['+fn+'] || function(){};\n';
       head+='prototype['+fn+']=';
       tail=';\n';
@@ -773,10 +773,8 @@ LineTerm
 Line
  = ConstructStatement
  / SetStatement
- / IterateStatement
  / WithStatement
  / SwapStatement
- // LocalStatement
  / MiscStatement
  / VerbStatement
  
@@ -787,6 +785,7 @@ ConstructStatement
          &{return options.constructs[i].clauses[i].exproutblock}   ca:CAExproutblock  {return ca}
        / &{return options.constructs[i].clauses[i].exprout}        ca:CAExprout     {return ca}
        / &{return options.constructs[i].clauses[i].exprsblock}     ca:CAExprsblock     {return ca}
+       / &{return options.constructs[i].clauses[i].exprsoutblock}  ca:CAExprsoutblock     {return ca}
        / &{return options.constructs[i].clauses[i].exprusing}      ca:CAExprusing     {return ca}
        / &{return options.constructs[i].clauses[i].outblock}       ca:CAOutblock      {return ca}
        / &{return options.constructs[i].clauses[i].block}          ca:CABlock      {return ca}
@@ -799,15 +798,16 @@ ConstructStatement
       return options.constructs[i].clauses[cli];
     } _ cla:
       (
-         &{return options.constructs[i].clauses[cli].exproutblock} claa:CAExproutblock {return claa}
-       / &{return options.constructs[i].clauses[cli].exprout}      claa:CAExprout {return claa}
-       / &{return options.constructs[i].clauses[cli].exprsblock}   claa:CAExprsblock {return claa}
-       / &{return options.constructs[i].clauses[cli].exprusing}    claa:CAExprusing {return claa}
-       / &{return options.constructs[i].clauses[cli].outblock}     claa:CAOutblock {return claa}
-       / &{return options.constructs[i].clauses[cli].block}        claa:CABlock {return claa}
-       / &{return options.constructs[i].clauses[cli].exprs}        claa:CAExprs {return claa}
-       / &{return options.constructs[i].clauses[cli].verb}         claa:CAVerb {return claa}
-       / &{return options.constructs[i].clauses[cli].none}         claa:CANone{return claa}
+         &{return options.constructs[i].clauses[cli].exproutblock}  claa:CAExproutblock {return claa}
+       / &{return options.constructs[i].clauses[cli].exprout}       claa:CAExprout {return claa}
+       / &{return options.constructs[i].clauses[cli].exprsblock}    claa:CAExprsblock {return claa}
+       / &{return options.constructs[i].clauses[cli].exprsoutblock} claa:CAExprsoutblock {return claa}
+       / &{return options.constructs[i].clauses[cli].exprusing}     claa:CAExprusing {return claa}
+       / &{return options.constructs[i].clauses[cli].outblock}      claa:CAOutblock {return claa}
+       / &{return options.constructs[i].clauses[cli].block}         claa:CABlock {return claa}
+       / &{return options.constructs[i].clauses[cli].exprs}         claa:CAExprs {return claa}
+       / &{return options.constructs[i].clauses[cli].verb}          claa:CAVerb {return claa}
+       / &{return options.constructs[i].clauses[cli].none}          claa:CANone{return claa}
       )
  {return [cli,cla];})* {
    
@@ -835,6 +835,13 @@ ConstructStatement
     return result.body;
  }
  
+CAExprsoutblock = pl:ParameterList _ mo:MultiOutput? _ b:Block { return {
+  syntax: 'exprsoutblock',
+  exprs: pl,
+  out: mo,
+  block: b
+}; }
+
 CAExproutblock = x:Expression _ mo:MultiOutput? _ b:Block { return {
   syntax: 'exproutblock',
   expr: x,
@@ -891,16 +898,7 @@ MiscStatement
  = ORPHAN _ { return 'var $=this;\n' }
  / NOP _ { return ';' }
 
- 
-LocalStatement
- = LOCAL _ l:(l:LLocal _ ',' _ { return l } )* o:LLocal _ {
-   l=l||[]; l.push(o);
-   var j=[]; for (var i in l) j.push(l[i][0][1]);
-   for (var i in j) CheckScope(j[i].substring(1),"local");
-   return 'var '+j.join(',')+';\n';
- } 
- 
- 
+
 WithStatement
   = WITH Sep value:Expression out:Output? block:Block {
       var r={this:(out?out:tempvar())};
@@ -1019,32 +1017,6 @@ VerbStatement
  / v:VerbSentence  { return v+";\n"; }
  / v:VerbChain { return '$AI.drain_op('+v+');\n'; }
  
-NoneClause
- = ELSE Sep b:Block  { return '{'+b+'}\n' }
-
-
-IterateStatement
- = COUNT Sep DOWN Sep start:Expression stop:(TO Sep x:Expression {return x})? step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
-     if (!stop) stop=0;
-     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),counter:(out?out[0]:false),step:(step?step:'-1')};
-     var setup='var ^{counter}=^{start},^{dest}=^{stop};\n ';
-     var alternate=none ? 'if (^{counter}<=^{dest}) { ^{none} } else ' : '';
-     var iterate='for (^{counter}+=^{step}; ^{counter}>=^{dest}; ^{counter}+=^{step}) { ^{block} }\n';
-     return RV(setup+alternate+iterate,w); 
-  }
- / COUNT Sep start:(x:Expression _ TO Sep { return x })? stop:Expression step:(StepCount)? out:IterateOutput? block:Block none:(EOLs n:NoneClause {return n})? { // test 'count to*'
-     if (!start) start=0;
-     var w={start:start,stop:stop,out:out,block:block,none:none,dest:tempvar(),counter:(out?out[0]:false),step:(step?step:'1')};
-     var setup='var ^{counter}=^{start},^{dest}=^{stop};\n ';
-     var alternate=none ? 'if (^{counter}>=^{dest}) { ^{none} } else ' : '';
-     var iterate='for (; ^{counter}<^{dest}; ^{counter}+=^{step}) { ^{block} }\n';
-     return RV(setup+alternate+iterate,w); 
-  }
-
-StepCount
- = STEP Sep v:Expression _ { return v }
-
-
 LValues
  = v:LValue a:LValueSep* _ { return [v].concat(a) }
  

@@ -72,6 +72,19 @@ manifest get
         'continue': #none
       handler bind FlowControlConstruct
   
+    'count':
+      repeats false
+      clauses:
+        'count': #exprsoutblock
+        'else': #block
+      handler bind CountConstruct
+
+    'countdown':
+      repeats false
+      clauses:
+        'countdown': #exprsoutblock
+        'else': #block
+      handler bind CountConstruct
 
 
 //////////////  FLOW CONTROL
@@ -542,4 +555,112 @@ WhileConstruct task expects $clauses, $tools
   return: body text
 
 
- 
+///////////////   COUNT
+//
+//
+
+CountConstruct task expects $clauses, $tools
+
+ if $clauses.length > 2
+   return: error 'SAI compile: COUNT can have at most one ELSE clause.'
+
+ set main $clauses.0
+ set none $clauses.1
+
+ try
+  
+   set outs from my OutVarHelper main.args.out
+
+   switch main.type
+
+   case 'count.exprsoutblock'
+
+     unless main.args.exprs.2.0 
+       return: error 'SAI Compiler: Missing end value in COUNT'
+
+     set
+       iStart main.args.exprs.2.0 
+       iStop main.args.exprs.2.1 
+       iStep main.args.exprs.2.2 default 1
+       
+     if undefined is iStop
+      set iStop to iStart
+      set iStart to 0
+      
+     set 
+       vars:
+         block main.args.block
+         'start' iStart
+         'kstop' iStop
+         'stop' false
+         'kstep' iStep
+         'step' false
+         'counter' outs.0 default false
+         none ?none.args.block default false
+  
+       preface '''
+         var ^{counter}=^{start},^{stop}=^{kstop},^{step}=^{kstep};
+         if (^{step}<=0) throw new Error("SAI Runtime: COUNT STEP value should be positive.");
+
+       elseclause from task
+         unless none
+           return ''
+         else
+           return '''
+             if (^{counter}>=^{stop}) { ^{none} } else 
+             
+       loop '''
+         for (; ^{counter}<^{stop}; ^{counter}=^{counter}+^{step}) {
+         ^{block};
+         }
+    
+       text from $tools.replacer preface + elseclause + loop, vars
+
+   case 'countdown.exprsoutblock'
+
+     unless main.args.exprs.2.0 
+       return: error 'SAI Compiler: Missing start value in COUNTDOWN'
+
+     set
+       iStart main.args.exprs.2.0 
+       iStop main.args.exprs.2.1 default 0
+       iStep main.args.exprs.2.2 default -1
+       
+     set 
+       vars:
+         block main.args.block
+         'start' iStart
+         'kstop' iStop
+         'stop' false
+         'kstep' iStep
+         'step' false
+         'counter' outs.0 default false
+         none ?none.args.block default false
+  
+       preface '''
+         var ^{stop}=^{kstop},^{step}=^{kstep},^{counter}=^{start}+^{step};
+         if (^{step}>=0) throw new Error("SAI Runtime: COUNTDOWN STEP value should be negative.");
+
+       elseclause from task
+         unless none
+           return ''
+         else
+           return '''
+             if (^{counter}<^{stop}) { ^{none} } else 
+             
+       loop '''
+         for (; ^{counter}>=^{stop}; ^{counter}=^{counter}+^{step}) {
+         ^{block};
+         }
+    
+       text from $tools.replacer preface + elseclause + loop, vars
+
+   else
+     return: error "Unhandled construct type ${main.type} in CountConstruct"
+
+ catch
+   debug error
+  
+ return: body text
+
+

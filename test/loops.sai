@@ -18,7 +18,7 @@ Execute task
 
   @Match 'count to 1-5', 10, task
     set a to 0
-    count 1 to 5
+    count 1, 5
       set a + counter
     else
       return false
@@ -32,7 +32,7 @@ Execute task
     return false
 
   @Test 'count to 1-1', task
-    count 1 to 1
+    count 1, 1
       return false
     else
       return true
@@ -40,7 +40,7 @@ Execute task
 
   @Match 'count down 4', 6, task
     set a to 0
-    count down 4
+    countdown 4
       set a + counter
     else
       return false
@@ -48,7 +48,7 @@ Execute task
 
   @Match 'count down 4 2', 5, task
     set a to 0
-    count down 4 to 2
+    countdown 4, 2
       set a + counter
     else
       return false
@@ -56,7 +56,15 @@ Execute task
 
   @Test 'count down 0', task
     set a to 0
-    count down 0
+    countdown 0
+      return false
+    else
+      return true
+    return false
+
+  @Test 'count nothing', task
+    set a to 0
+    countdown 0
       return false
     else
       return true
@@ -250,13 +258,13 @@ Execute task
     return true
     
   @Test 'count down break', task
-    count down 10
+    countdown 10
       break
       return false
     return true
     
   @Test 'count down continue', task
-    count down 10
+    countdown 10
       continue
       return false
     return true

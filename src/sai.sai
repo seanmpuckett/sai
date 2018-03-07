@@ -136,6 +136,7 @@ Clean task
     #exproutblock
     #exprs
     #exprsblock
+    #exprsoutblock
     #exprusing
     #none
     #outblock
@@ -191,7 +192,7 @@ Dedenter task given src
 
     Context task given lineno
       set result 'near line ${lineno}:\n'
-      count lineno-3 to lineno+4
+      count lineno-3, lineno+4
         exists rawlines\counter
           set result + '${counter}:${counter is lineno ?? '->' :: '  '} ${it}\n'
       return result
@@ -214,6 +215,7 @@ Dedenter task given src
     set isBlank 0 is trimmed's length
     
     unless isComment or isBlank
+    
       set heredoc "'''" is (line limit -3)
 
       switch heredocstate
@@ -275,7 +277,6 @@ Contextualize task given source, offset
   set
     context from WrapExtract source, offset
     lines from context.split '\n'
-
     ind 0
     minind 0
     newcontext ''
@@ -284,6 +285,7 @@ Contextualize task given source, offset
     if line is INDENT .. inc ind
     elsif line is DEDENT .. dec ind
     set minind ?< ind
+    
   set ind to - minind
 
   ply lines as line
@@ -554,7 +556,7 @@ GetSource task as name
   set source '''
     #!/usr/bin/env node
     
-    \/\/ Javascript source for ${name} transipled by SAI
+    \/\/ Javascript source for ${name} transpiled by SAI
     \/\/
     
     "use strict";

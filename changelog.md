@@ -5,12 +5,20 @@
 #### Breaking Changes
 
  - refactoring the `do while` and `do until` loops into the constructs system means they can no longer have a two-word keyword. So now they're __dowhile__ and __dountil__.
-- similarly `else if` `else unless` and `else exists` are now __elsif__, __elsunless__ and __elsexists__.  This should be just a simple search / replace to fix.
-- and similarly `switch` has been updated -- each __case__ element should _no longer be indented_ and the `default` clause has been renamed __else__.  Also, the compiler will _insist_ that there is an __else__ clause at the end of every switch statement. It's good programming practice.
+ 
+-  `else if` `else unless` and `else exists` are now __elsif__, __elsunless__ and __elsexists__.  This should be just a simple search / replace to fix.
+
+- `switch` has been updated -- each __case__ element should _no longer be indented_ and the `default` clause has been renamed __else__.  Also, the compiler will _insist_ that there is an __else__ clause at the end of every switch statement. It's good programming practice.
+
+- __count__ is the biggest and most annoying change; its complex syntax with `to` and `step` has been eliminated to take one, two or three comma-separated parameters. Further the `count down` variant has been renamed __countdown__, with the same one, two or three comma separated parameters.  On the other hand, the runtime will throw an error if there's a risk of an infinite loop, so that's a plus.
 
 #### Infrastructure
 
  - moved support code for Constructs outside of main sai file to facilitate additional refactoring
+
+#### Bugs
+
+ - Fixed long standing invisible error that resulted in object methods not actually being locked/frozen.  Oops.
 
 
 ### 0.1.21
