@@ -772,11 +772,9 @@ LineTerm
 
 Line
  = ConstructStatement
- / IfStatement
  / SetStatement
  / IterateStatement
  / WithStatement
- / SwitchStatement
  / SwapStatement
  // LocalStatement
  / MiscStatement
@@ -893,57 +891,6 @@ MiscStatement
  = ORPHAN _ { return 'var $=this;\n' }
  / NOP _ { return ';' }
 
-
-SwitchStatement // test 'switch*'
- = s:SwitchClause o:Output? EOLs INDENT c:(EOLs c:CaseClause {return c})+ d:(EOLs d:DefaultClause {return d})? EOLs DEDENT {
-   o=o?o:tempvar();
-   addLocal(o);
-   var repl={trial:o};
-   var r=RV('switch (^{trial}=('+s+')) {\n',repl);
-   for (var i in c) {
-     for (var j in c[i][0]) {
-       r+='case ('+c[i][0][j]+'): ';
-     }
-     r+=RV(c[i][1]+' break; \n',repl);
-   }
-   if (d) r+=RV('default: '+d+' break; \n',repl);
-   r+='}\n';
-   return r;
- }
-
-SwitchClause
- = SWITCH Sep e:Expression { return e; }
-
-CaseClause
- = CASE Sep e:Items _ b:Block { return [e,b]; }
-
-DefaultClause
- = DEFAULT Sep b:Block { return b; }
-
-
-IfStatement
- = i:IfClause l:(EOLs l:ElseIfClause {return l})* e:(EOLs e:ElseClause {return e})? { return i+l.join('')+(e?e:'') }
-
-
-IfClause
- = EXISTS _ c:Expression out:Output? b:Block  { // test 'exists*'
-   if (!out) out=tempvar();
-   addLocal(out);
-   return RV('if (undefined !==(^{this}=(^{condition}))) {\n'+b+'\n}\n',{this:out,condition:c}); 
- }
- / IF _ c:Expression out:Output? b:Block  { // test 'if*'
-   if (!out) out=tempvar();
-   addLocal(out);
-   return RV('if ((^{trial}=(^{condition}))) {\n'+b+'\n}\n',{trial:out,condition:c}); 
- }
- / UNLESS _ c:Expression b:Block  { // test 'unless*'
-   return 'if (!('+c+')) {\n'+b+'\n}\n' }
-
-ElseIfClause
- = ELSE _ b:IfClause { return 'else '+b+'\n' }
- 
-ElseClause
- = ELSE _ b:Block   { return 'else {'+b+'}\n' }
  
 LocalStatement
  = LOCAL _ l:(l:LLocal _ ',' _ { return l } )* o:LLocal _ {
@@ -2198,7 +2145,6 @@ AUDIT = 'audit'
 BIND = 'bind'
 BLANK = 'blank'
 BY = 'by'
-CASE = 'case'
 CATCH = 'catch'
 CHAIN = 'chain'
 COLLECT = 'collect'
@@ -2229,7 +2175,6 @@ GET = 'get'
 GIVEN = 'given'
 HAS = 'has'
 HIGHEST = 'highest'
-IF = 'if'
 INFINITY = 'Infinity'
 INSTANCE = 'instance'
 INTO = 'into'
@@ -2279,7 +2224,6 @@ STEP = 'step'
 SUM = 'sum'
 SWAP = 'swap'
 SUPER = 'super'
-SWITCH = 'switch'
 TASK = 'task'
 THEN = 'then'
 THRU = 'thru'
@@ -2288,15 +2232,12 @@ TRIAL = 'trial'
 TRY = 'try'
 TO = 'to'
 TYPEOF = 'typeof'
-UNLESS = 'unless'
-UNTIL = 'until'
 UNBOUND = 'unbound'
 UNDEFINED = 'undefined'
 UPDATE = 'update'
 USING = 'using'
 VALUES = 'values'
 VIA = 'via'
-WHILE = 'while'
 WITH = 'with'
 XOR  = 'xor'
 XORB  = 'xorb'

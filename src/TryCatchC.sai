@@ -37,25 +37,25 @@ TryConstruct task expects $clauses, $tools
   each $clauses
   
     switch .type
-      case 'try.block'
-        set body + 'try { ${.args.block} }\n'
+    case 'try.block'
+      set body + 'try { ${.args.block} }\n'
 
-      case 'catch.outblock'
-        set outs from my OutVarHelper .args.out
-        set vars:
-          'error' outs.0
-          'block' .args.block
+    case 'catch.outblock'
+      set outs from my OutVarHelper .args.out
+      set vars:
+        'error' outs.0
+        'block' .args.block
 
-        set text '''
-          catch(^{error}) { ^{block} }
-          
-        set body + from $tools.replacer text, vars
+      set text '''
+        catch(^{error}) { ^{block} }
         
-      case 'finally.block'
-        set body + 'finally { ${.args.block} }\n'
+      set body + from $tools.replacer text, vars
+      
+    case 'finally.block'
+      set body + 'finally { ${.args.block} }\n'
 
-      default
-        return: error "SAI compiler: unhandled ${.type} in TryConstruct -- this is a compiler bug."
+    else
+      return: error "SAI compiler: unhandled ${.type} in TryConstruct -- this is a compiler bug."
       
   return: body body
 
@@ -63,11 +63,12 @@ TryConstruct task expects $clauses, $tools
 ThrowConstruct task expects $clauses, $tools
   set body ''
   with $clauses.0
+  
     switch .type
-      case 'throw.exprs'
-        set body 'throw ${.args.exprs.1};\n'
-      default
-        return: error "SAI compiler: unhandled ${.type} in ThrowConstruct -- this is a compiler bug."
+    case 'throw.exprs'
+      set body 'throw ${.args.exprs.1};\n'
+    else
+      return: error "SAI compiler: unhandled ${.type} in ThrowConstruct -- this is a compiler bug."
   
   return: body body
 

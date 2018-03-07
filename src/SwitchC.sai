@@ -24,60 +24,59 @@ manifest get
 SwitchConstruct task expects $clauses, $tools
 
   if ($clauses last).clause isnt 'else'
-    return: error "SAI Complier: Every SWITCH statement should have an ELSE clause at the end."
+    return: error "SAI Complier: Every SWITCH statement should have an ELSE clause at the end. (If it's in the middle of the CASES, move it to the end.)"
 
   with ($clauses has .clause is 'else') count
     if it > 1
-      return: error "SAI Compiler: Found ${it} ELSE clause in SWITCH; only one is required."
+      return: error "SAI Compiler: Found ${it} ELSE clauses in SWITCH; only one is required."
       
-  set body ''
-
-  set outs from my OutVarHelper $clauses.0.args.out
-  
-  set trialvar:
-    'trial' outs.0 or from $tools.addlocal 
+  set 
+    body ''
+    outs from my OutVarHelper $clauses.0.args.out
+    trialvar fields 'trial' outs.0 or from $tools.addlocal 
 
   ply $clauses
+  
     switch .type
-      case 'switch.exprout'
-        set
-          vars to trialvar update:
-            'condition' .args.expr
-            
-          text '''
-            switch (^{trial}=(^{condition})) {
-            
-          body + from $tools.replacer text, vars 
-        
-      case 'case.exprsblock'
-        set
-          cases .args.exprs.2 into '' sum + 'case ${.}:\n'
-            
-          vars trialvar update:
-            'cases' cases
-            'block' .args.block
-
-          text '''
-            ^{cases}
-            ^{block}
-            break;
-            
-          body + from $tools.replacer text, vars
+    case 'switch.exprout'
+      set
+        vars to trialvar update:
+          'condition' .args.expr
           
-      case 'else.block'
-        set
-          vars trialvar update:
-            'block' .args.block
+        text '''
+          switch (^{trial}=(^{condition})) {
+          
+        body + from $tools.replacer text, vars 
+      
+    case 'case.exprsblock'
+      set
+        cases to .args.exprs.2 into '' sum + 'case ${.}:\n'
+          
+        vars trialvar update:
+          'cases' cases
+          'block' .args.block
 
-          text '''
-            default:
-            ^{block}
-            break;
-            
-          body + from $tools.replacer text, vars
-                
-      default
-        return: error "Unhandled construct type ${.type} in SwitchConstruct"
+        text '''
+          ^{cases}
+          ^{block}
+          break;
+          
+        body + from $tools.replacer text, vars
+        
+    case 'else.block'
+      set
+        vars trialvar update:
+          'block' .args.block
+
+        text '''
+          default:
+          ^{block}
+          break;
+          
+        body + from $tools.replacer text, vars
+              
+    else
+      return: error "Unhandled construct type ${.type} in SwitchConstruct"
 
   set body + '}'
 

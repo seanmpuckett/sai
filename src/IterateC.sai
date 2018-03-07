@@ -83,14 +83,14 @@ FlowControlConstruct task expects $clauses, $tools
   with $clauses.0
     switch .type
     
-      case 'break.none'
-        set body 'break;\n'
-    
-      case 'continue.none'
-        set body 'continue;\n'
-    
-      default
-        return: error "SAI compiler: unhandled ${.type} in FlowControlConstruct -- this is a compiler bug."
+    case 'break.none'
+      set body 'break;\n'
+  
+    case 'continue.none'
+      set body 'continue;\n'
+  
+    else
+      return: error "SAI compiler: unhandled ${.type} in FlowControlConstruct -- this is a compiler bug."
   
   return: body body
 
@@ -113,74 +113,74 @@ EveryConstruct task expects $clauses, $tools
     
     switch main.type
   
-      case 'every.exproutblock'
+    case 'every.exproutblock'
 
-        set 
-          outs from my OutVarHelper main.args.out
-        
-          vars:
-            block main.args.block
-            'source' main.args.expr
-            'this' outs.0 default false
-            'key' outs.1 default false
-            iter false
-            elem false
-            none ?none.args.block 
+      set 
+        outs from my OutVarHelper main.args.out
       
-          preface '''
-            var ^{iter}=$AI.kviterate_op(^{source});
-            var ^{elem}=^{iter}.next();
+        vars:
+          block main.args.block
+          'source' main.args.expr
+          'this' outs.0 default false
+          'key' outs.1 default false
+          iter false
+          elem false
+          none ?none.args.block 
+    
+        preface '''
+          var ^{iter}=$AI.kviterate_op(^{source});
+          var ^{elem}=^{iter}.next();
 
-          elseclause from task
-            unless none
-              return '''
-                if (!^{elem}.done)
-            else
-              return '''
-                if (^{elem}.done) { ^{none} } else
-        
-          loop '''
-            do {
-            ^{this}=^{elem}.value[1];
-            ^{key}=^{elem}.value[0];
-            ^{block}
-            ^{elem}=^{iter}.next();
-            } while (!^{elem}.done);
-        
-          text from $tools.replacer preface + elseclause + loop, vars
-
-      case 'every.exprusing'
-
-        set 
-          vars:
-            'task' main.args.using
-            source main.args.expr
-            iter false
-            elem false
-            none ?none.args.block 
+        elseclause from task
+          unless none
+            return '''
+              if (!^{elem}.done)
+          else
+            return '''
+              if (^{elem}.done) { ^{none} } else
       
-          preface '''
-            var ^{iter}=$AI.kviterate_op(^{source});
-            var ^{elem}=^{iter}.next();
-
-          elseclause from task
-            unless none
-              return '''
-                if (!^{elem}.done)
-            else
-              return '''
-                if (^{elem}.done) { ^{none} } else
-        
-          loop '''
-            do {
-            ^{task}(^{elem}.value[1], ^{elem}.value[0]); 
-            ^{elem}=^{iter}.next();
-            } while (!^{elem}.done);
-        
-          text from $tools.replacer preface + elseclause + loop, vars
+        loop '''
+          do {
+          ^{this}=^{elem}.value[1];
+          ^{key}=^{elem}.value[0];
+          ^{block}
+          ^{elem}=^{iter}.next();
+          } while (!^{elem}.done);
       
-      default
-        return: error "Unhandled construct type ${main.type} in EveryConstruct"
+        text from $tools.replacer preface + elseclause + loop, vars
+
+    case 'every.exprusing'
+
+      set 
+        vars:
+          'task' main.args.using
+          source main.args.expr
+          iter false
+          elem false
+          none ?none.args.block 
+    
+        preface '''
+          var ^{iter}=$AI.kviterate_op(^{source});
+          var ^{elem}=^{iter}.next();
+
+        elseclause from task
+          unless none
+            return '''
+              if (!^{elem}.done)
+          else
+            return '''
+              if (^{elem}.done) { ^{none} } else
+      
+        loop '''
+          do {
+          ^{task}(^{elem}.value[1], ^{elem}.value[0]); 
+          ^{elem}=^{iter}.next();
+          } while (!^{elem}.done);
+      
+        text from $tools.replacer preface + elseclause + loop, vars
+    
+    else
+      return: error "Unhandled construct type ${main.type} in EveryConstruct"
   
   catch
     debug error
@@ -205,76 +205,76 @@ IterateConstruct task expects $clauses, $tools
     
     switch main.type
   
-      case 'iterate.exproutblock'
+    case 'iterate.exproutblock'
 
-        set 
-          outs from my OutVarHelper main.args.out
-        
-          vars:
-            block main.args.block
-            'source' main.args.expr
-            'this' outs.0 default false
-            'key' outs.1 default false
-            iter false
-            elem false
-            none ?none.args.block default false
+      set 
+        outs from my OutVarHelper main.args.out
       
-          preface '''
-            var ^{iter}=$AI.iterator_op(^{source});
-            var ^{elem}=^{iter}.next();
+        vars:
+          block main.args.block
+          'source' main.args.expr
+          'this' outs.0 default false
+          'key' outs.1 default false
+          iter false
+          elem false
+          none ?none.args.block default false
+    
+        preface '''
+          var ^{iter}=$AI.iterator_op(^{source});
+          var ^{elem}=^{iter}.next();
 
-          elseclause from task
-            unless none
-              return '''
-                if (!^{elem}.done)
-            else
-              return '''
-                if (^{elem}.done) { ^{none} } else
-        
-          loop '''
-            for (var ^{key}=0; !^{elem}.done; ^{elem}=^{iter}.next()){
-            ^{this}=^{elem}.value;
-            ^{block};
-            ^{key}++;
-            }
-        
-          text from $tools.replacer preface + elseclause + loop, vars
-
-      case 'iterate.exprusing'
-
-        set 
-          vars:
-            'task' main.args.using
-            source main.args.expr
-            'key' false
-            iter false
-            elem false
-            none ?none.args.block default false
+        elseclause from task
+          unless none
+            return '''
+              if (!^{elem}.done)
+          else
+            return '''
+              if (^{elem}.done) { ^{none} } else
       
-          preface '''
-            var ^{iter}=$AI.iterator_op(^{source});
-            var ^{elem}=^{iter}.next();
-            var ^{key}=0;
+        loop '''
+          for (var ^{key}=0; !^{elem}.done; ^{elem}=^{iter}.next()){
+          ^{this}=^{elem}.value;
+          ^{block};
+          ^{key}++;
+          }
+      
+        text from $tools.replacer preface + elseclause + loop, vars
 
-          elseclause from task
-            unless none
-              return '''
-                if (!^{elem}.done)
-            else
-              return '''
-                if (^{elem}.done) { ^{none} } else
-        
-          loop '''
-            do {
-            ^{task}(^{elem}.value, ^{key}); 
-            ^{key}++;
-            ^{elem}=^{iter}.next();
-            } while (!^{elem}.done);
-        
-          text from $tools.replacer preface + elseclause + loop, vars
+    case 'iterate.exprusing'
 
-      default
-        return: error "Unhandled construct type ${main.type} in IterateConstruct"
+      set 
+        vars:
+          'task' main.args.using
+          source main.args.expr
+          'key' false
+          iter false
+          elem false
+          none ?none.args.block default false
+    
+        preface '''
+          var ^{iter}=$AI.iterator_op(^{source});
+          var ^{elem}=^{iter}.next();
+          var ^{key}=0;
+
+        elseclause from task
+          unless none
+            return '''
+              if (!^{elem}.done)
+          else
+            return '''
+              if (^{elem}.done) { ^{none} } else
+      
+        loop '''
+          do {
+          ^{task}(^{elem}.value, ^{key}); 
+          ^{key}++;
+          ^{elem}=^{iter}.next();
+          } while (!^{elem}.done);
+      
+        text from $tools.replacer preface + elseclause + loop, vars
+
+    else
+      return: error "Unhandled construct type ${main.type} in IterateConstruct"
   
   catch
     debug error
@@ -299,68 +299,68 @@ EachConstruct task expects $clauses, $tools
     
     switch main.type
   
-      case 'each.exproutblock'
+    case 'each.exproutblock'
 
-        set 
-          outs from my OutVarHelper main.args.out
-        
-          vars:
-            block main.args.block
-            'source' main.args.expr
-            'this' outs.0 default false
-            'key' outs.1 default false
-            'list' outs.2 default false
-            none ?none.args.block default false
+      set 
+        outs from my OutVarHelper main.args.out
       
-          preface '''
-            var ^{list}=^{source},^{key}=undefined;
-            if (undefined===^{list}) ^{list}={};
+        vars:
+          block main.args.block
+          'source' main.args.expr
+          'this' outs.0 default false
+          'key' outs.1 default false
+          'list' outs.2 default false
+          none ?none.args.block default false
+    
+        preface '''
+          var ^{list}=^{source},^{key}=undefined;
+          if (undefined===^{list}) ^{list}={};
 
-          loop '''
-            for (^{key} in ^{list}) {
-            ^{this}=^{list}[^{key}];
-            ^{block};
-            }
-        
-          elseclause from task
-            unless none
-              return ''
-            else
-              return '''
-                if (^{key}===undefined) { ^{none} } 
-        
-          text from $tools.replacer preface + loop + elseclause, vars
-
-      case 'each.exprusing'
-
-        set 
-          vars:
-            'task' main.args.using
-            source main.args.expr
-            'key' false
-            'list' false
-            none ?none.args.block default false
+        loop '''
+          for (^{key} in ^{list}) {
+          ^{this}=^{list}[^{key}];
+          ^{block};
+          }
       
-          preface '''
-            var ^{list}=^{source},^{key}=undefined;
-            if (undefined===^{list}) ^{list}={};
+        elseclause from task
+          unless none
+            return ''
+          else
+            return '''
+              if (^{key}===undefined) { ^{none} } 
+      
+        text from $tools.replacer preface + loop + elseclause, vars
 
-          elseclause from task
-            unless none
-              return ''
-            else
-              return '''
-                if (^{key}===undefined) { ^{none} } 
-        
-          loop '''
-            for (^{key} in ^{list}) {
-            ^{task}(^{list}[^{key}],^{key},^{list});
-            }
-        
-          text from $tools.replacer preface + loop + elseclause, vars
+    case 'each.exprusing'
 
-      default
-        return: error "Unhandled construct type ${main.type} in EachConstruct"
+      set 
+        vars:
+          'task' main.args.using
+          source main.args.expr
+          'key' false
+          'list' false
+          none ?none.args.block default false
+    
+        preface '''
+          var ^{list}=^{source},^{key}=undefined;
+          if (undefined===^{list}) ^{list}={};
+
+        elseclause from task
+          unless none
+            return ''
+          else
+            return '''
+              if (^{key}===undefined) { ^{none} } 
+      
+        loop '''
+          for (^{key} in ^{list}) {
+          ^{task}(^{list}[^{key}],^{key},^{list});
+          }
+      
+        text from $tools.replacer preface + loop + elseclause, vars
+
+    else
+      return: error "Unhandled construct type ${main.type} in EachConstruct"
   
   catch
     debug error
@@ -385,72 +385,72 @@ PlyConstruct task expects $clauses, $tools
     
     switch main.type
   
-      case 'ply.exproutblock'
+    case 'ply.exproutblock'
 
-        set 
-          outs from my OutVarHelper main.args.out
-        
-          vars:
-            block main.args.block
-            'source' main.args.expr
-            'this' outs.0 default false
-            'key' outs.1 default false
-            'list' outs.2 default false
-            'length' false
-            none ?none.args.block default false
+      set 
+        outs from my OutVarHelper main.args.out
       
-          preface '''
-            var ^{list}=^{source},^{key};
-            if (undefined===^{list}) ^{list}=[];
-            var ^{length}=^{list}.length;
+        vars:
+          block main.args.block
+          'source' main.args.expr
+          'this' outs.0 default false
+          'key' outs.1 default false
+          'list' outs.2 default false
+          'length' false
+          none ?none.args.block default false
+    
+        preface '''
+          var ^{list}=^{source},^{key};
+          if (undefined===^{list}) ^{list}=[];
+          var ^{length}=^{list}.length;
 
-          loop '''
-            for (^{key}=0; ^{key}<^{length}; ^{key}++) {
-            ^{this}=^{list}[^{key}];
-            ^{block};
-            }
-        
-          elseclause from task
-            unless none
-              return ''
-            else
-              return '''
-                if (^{key}===0) { ^{none} } 
-        
-          text from $tools.replacer preface + loop + elseclause, vars
-
-      case 'ply.exprusing'
-
-        set 
-          vars:
-            'task' main.args.using
-            source main.args.expr
-            'key' false
-            'list' false
-            'length' false
-            none ?none.args.block default false
+        loop '''
+          for (^{key}=0; ^{key}<^{length}; ^{key}++) {
+          ^{this}=^{list}[^{key}];
+          ^{block};
+          }
       
-          preface '''
-            var ^{list}=^{source},^{key};
-            if (undefined===^{list}) ^{list}=[];
-            var ^{length}=^{list}.length;
+        elseclause from task
+          unless none
+            return ''
+          else
+            return '''
+              if (^{key}===0) { ^{none} } 
+      
+        text from $tools.replacer preface + loop + elseclause, vars
 
-          elseclause from task
-            unless none
-              return ''
-            else
-              return '''
-                if (^{key}===0) { ^{none} } 
-        
-          loop '''
-            for (^{key}=0; ^{key}<^{length}; ^{key}++) {
-            ^{task}(^{list}[^{key}],^{key},^{list});
-            }
-        
-          text from $tools.replacer preface + loop + elseclause, vars
+    case 'ply.exprusing'
 
-      default
-        return: error "Unhandled construct type ${main.type} in PlyConstruct"
+      set 
+        vars:
+          'task' main.args.using
+          source main.args.expr
+          'key' false
+          'list' false
+          'length' false
+          none ?none.args.block default false
+    
+        preface '''
+          var ^{list}=^{source},^{key};
+          if (undefined===^{list}) ^{list}=[];
+          var ^{length}=^{list}.length;
+
+        elseclause from task
+          unless none
+            return ''
+          else
+            return '''
+              if (^{key}===0) { ^{none} } 
+      
+        loop '''
+          for (^{key}=0; ^{key}<^{length}; ^{key}++) {
+          ^{task}(^{list}[^{key}],^{key},^{list});
+          }
+      
+        text from $tools.replacer preface + loop + elseclause, vars
+
+    else
+      return: error "Unhandled construct type ${main.type} in PlyConstruct"
   
   catch
     debug error
@@ -470,72 +470,72 @@ WhileConstruct task expects $clauses, $tools
     
     switch main.type
   
-      case 'while.exproutblock'
+    case 'while.exproutblock'
 
-        set 
-          outs from my OutVarHelper main.args.out
-        
-          vars:
-            block main.args.block
-            'source' main.args.expr
-            'this' outs.0 default false
+      set 
+        outs from my OutVarHelper main.args.out
       
-          preface '''
-            var ^{this};
+        vars:
+          block main.args.block
+          'source' main.args.expr
+          'this' outs.0 default false
+    
+        preface '''
+          var ^{this};
 
-          loop '''
-            while (^{this}=(^{source})) {
-            ^{block}
-            }
-        
-          text from $tools.replacer preface + loop, vars
-
-      case 'until.exproutblock'
-
-        set 
-          vars:
-            block main.args.block
-            'source' main.args.expr
+        loop '''
+          while (^{this}=(^{source})) {
+          ^{block}
+          }
       
-          loop '''
-            while (!(^{source})) {
-            ^{block}
-            }
-        
-          text from $tools.replacer loop, vars
+        text from $tools.replacer preface + loop, vars
 
-      case 'dowhile.exproutblock'
+    case 'until.exproutblock'
 
-        set 
-          vars:
-            block main.args.block
-            'source' main.args.expr
+      set 
+        vars:
+          block main.args.block
+          'source' main.args.expr
+    
+        loop '''
+          while (!(^{source})) {
+          ^{block}
+          }
       
-          loop '''
-            do { 
-            ^{block}
-            } while (^{source});
-        
-          text from $tools.replacer loop, vars
+        text from $tools.replacer loop, vars
 
-      case 'dountil.exproutblock'
+    case 'dowhile.exproutblock'
 
-        set 
-          vars:
-            block main.args.block
-            'source' main.args.expr
+      set 
+        vars:
+          block main.args.block
+          'source' main.args.expr
+    
+        loop '''
+          do { 
+          ^{block}
+          } while (^{source});
       
-          loop '''
-            do { 
-            ^{block}
-            } while (!(^{source}));
-        
-          text from $tools.replacer loop, vars
+        text from $tools.replacer loop, vars
+
+    case 'dountil.exproutblock'
+
+      set 
+        vars:
+          block main.args.block
+          'source' main.args.expr
+    
+        loop '''
+          do { 
+          ^{block}
+          } while (!(^{source}));
+      
+        text from $tools.replacer loop, vars
 
 
-      default
-        return: error "Unhandled construct type ${main.type} in WhileConstruct"
-  
+    else
+      return: error "Unhandled construct type ${main.type} in WhileConstruct"
+
   catch
     debug error
     

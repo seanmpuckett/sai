@@ -114,15 +114,15 @@ Instantiate task given SAI
   
   while argv.shift() as arg
     switch arg
-      case '-o', '--output'
-        set dest argv.shift()
-      case '-v', '--verbose'
-        set flags.verbose true
-      case '-t', '--test'
-        debug "sai-build test mode -- no files will be saved."
-        set flags.test true
-      default
-        ProcessArg arg, ''
+    case '-o', '--output'
+      set dest argv.shift()
+    case '-v', '--verbose'
+      set flags.verbose true
+    case '-t', '--test'
+      debug "sai-build test mode -- no files will be saved."
+      set flags.test true
+    else
+      ProcessArg arg, ''
 
   ~process.exit exitflag
   

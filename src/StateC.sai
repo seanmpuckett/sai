@@ -51,20 +51,24 @@ StateConstruct task as work
     states empty
 
   each work's clauses
-    switch .type
-      case 'state.exproutblock'
-        set name .args.expr
-        
-        if names\name
-          return: error 'SAI compile: duplicate state ${name} in STATE construct'
-        inc names\name
-        
-        set block from tools.tasker:
-          'as' .args.out
-          block .args.block
-          kind 'function'
-        push'd states "${name}:${block}"
 
+    switch .type
+    case 'state.exproutblock'
+      set name .args.expr
+      
+      if names\name
+        return: error 'SAI compile: duplicate state ${name} in STATE construct'
+      inc names\name
+      
+      set block from tools.tasker:
+        'as' .args.out
+        block .args.block
+        kind 'function'
+      push'd states "${name}:${block}"
+
+    else
+      return: error "Unhandled construct type ${.type} in StateConstruct"
+    
   tools.addlocal '_goto'
   tools.addlocal '_then'
   

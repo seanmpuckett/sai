@@ -56,102 +56,102 @@ IfElseConstruct task expects $clauses, $tools
     set outs from my OutVarHelper it.args.out
       
     switch .type
-      case 'if.exproutblock'
-        set
-          vars:
-            'trial' outs.0
-            'condition' .args.expr
-            'block' .args.block
+    case 'if.exproutblock'
+      set
+        vars:
+          'trial' outs.0
+          'condition' .args.expr
+          'block' .args.block
+        
+        text '''
+          if (^{trial}=(^{condition})) {
+          ^{block}
+          }
           
-          text '''
-            if (^{trial}=(^{condition})) {
-            ^{block}
-            }
-            
-          body + from $tools.replacer text, vars
+        body + from $tools.replacer text, vars
+        
+    case 'unless.exproutblock'
+      set
+        vars:
+          'condition' .args.expr
+          'block' .args.block
+        
+        text '''
+          if (!(^{condition})) {
+          ^{block}
+          }
           
-      case 'unless.exproutblock'
-        set
-          vars:
-            'condition' .args.expr
-            'block' .args.block
-          
-          text '''
-            if (!(^{condition})) {
-            ^{block}
-            }
-            
-          body + from $tools.replacer text, vars
+        body + from $tools.replacer text, vars
 
-      case 'exists.exproutblock'
-        set
-          vars:
-            'this' outs.0
-            'condition' .args.expr
-            'block' .args.block
+    case 'exists.exproutblock'
+      set
+        vars:
+          'this' outs.0
+          'condition' .args.expr
+          'block' .args.block
+        
+        text '''
+          if (undefined !== (^{this}=(^{condition}))) {
+          ^{block}
+          }
           
-          text '''
-            if (undefined !== (^{this}=(^{condition}))) {
-            ^{block}
-            }
-            
-          body + from $tools.replacer text, vars
+        body + from $tools.replacer text, vars
+        
+    case 'elsif.exproutblock'
+      set
+        vars:
+          'trial' outs.0
+          'condition' .args.expr
+          'block' .args.block
+        
+        text '''
+          else if (^{trial}=(^{condition})) {
+          ^{block}
+          }
           
-      case 'elsif.exproutblock'
-        set
-          vars:
-            'trial' outs.0
-            'condition' .args.expr
-            'block' .args.block
+        body + from $tools.replacer text, vars
+        
+    case 'elsexists.exproutblock'
+      set
+        vars:
+          'this' outs.0
+          'condition' .args.expr
+          'block' .args.block
+        
+        text '''
+          else if (undefined !== (^{this}=(^{condition}))) {
+          ^{block}
+          }
           
-          text '''
-            else if (^{trial}=(^{condition})) {
-            ^{block}
-            }
-            
-          body + from $tools.replacer text, vars
-          
-      case 'elsexists.exproutblock'
-        set
-          vars:
-            'this' outs.0
-            'condition' .args.expr
-            'block' .args.block
-          
-          text '''
-            else if (undefined !== (^{this}=(^{condition}))) {
-            ^{block}
-            }
-            
-          body + from $tools.replacer text, vars
+        body + from $tools.replacer text, vars
 
-      case 'elsunless.exproutblock'
-        set
-          vars:
-            'condition' .args.expr
-            'block' .args.block
+    case 'elsunless.exproutblock'
+      set
+        vars:
+          'condition' .args.expr
+          'block' .args.block
+        
+        text '''
+          else if (!(^{condition})) {
+          ^{block}
+          }
           
-          text '''
-            else if (!(^{condition})) {
-            ^{block}
-            }
-            
-          body + from $tools.replacer text, vars
+        body + from $tools.replacer text, vars
 
-      case 'else.block'
-        set
-          vars:
-            'block' .args.block
+    case 'else.block'
+      set
+        vars:
+          'block' .args.block
+        
+        text '''
+          else {
+          ^{block}
+          }
           
-          text '''
-            else {
-            ^{block}
-            }
-            
-          body + from $tools.replacer text, vars
-      
-      default
-        return: error "Unhandled construct type ${.type} in IfElseConstruct"
+        body + from $tools.replacer text, vars
+    
+    else
+      return: error "Unhandled construct type ${.type} in IfElseConstruct"
   
   return: body body
 

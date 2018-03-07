@@ -45,60 +45,61 @@ PromisingConstruct task as work
   set body 'var $tthen=function(t){if (!t || !t.then) throw new Error("SAI Runtime: THEN should be followed by a verb returning a promise (or an indented block of code)."); return t;};\n'
   
   each work's clauses
+  
     switch .type
 
-      case 'promising.verb'
-        set body + "$tthen(${.args.verb})"
+    case 'promising.verb'
+      set body + "$tthen(${.args.verb})"
 
-      case 'promising.outblock'
-        set block from tasker: args .args, #ispromise, #execute
-        set body + "(${block})"
+    case 'promising.outblock'
+      set block from tasker: args .args, #ispromise, #execute
+      set body + "(${block})"
 
-      case 'then.verb'
-        set body + ".then(function(p){return $tthen(${.args.verb});})"
+    case 'then.verb'
+      set body + ".then(function(p){return $tthen(${.args.verb});})"
 
-      case 'then.outblock'
-        set block from tasker: args .args, #ispromise
-        set body + ".then(${block})"
+    case 'then.outblock'
+      set block from tasker: args .args, #ispromise
+      set body + ".then(${block})"
 
-      case 'catch.verb'
-        set body + ".catch(function(p){return $tthen(${.args.verb});})"
+    case 'catch.verb'
+      set body + ".catch(function(p){return $tthen(${.args.verb});})"
 
-      case 'catch.outblock'
-        set block from tasker: args .args
-        set body + ".catch(${block})"
+    case 'catch.outblock'
+      set block from tasker: args .args
+      set body + ".catch(${block})"
 
-      case 'finally.verb'
-        set body + ".finally(function(p){return $tthen(${.args.verb});})"
+    case 'finally.verb'
+      set body + ".finally(function(p){return $tthen(${.args.verb});})"
 
-      case 'finally.outblock'
-        set block from tasker: args .args
-        set body + ".finally(${block})"
+    case 'finally.outblock'
+      set block from tasker: args .args
+      set body + ".finally(${block})"
 
-      case 'resolving.exprs'
-        set body + ".then(function(p){return $_resolve(${.args.exprs.1});})"
-        
-      case 'resolving.none'
-        set body + ".then(function(){return $_resolve.apply(null,arguments);})"
-        
-      case 'rejecting.exprs'
-        set body + ".catch(function(p){return $_reject(${.args.exprs.1});})"
+    case 'resolving.exprs'
+      set body + ".then(function(p){return $_resolve(${.args.exprs.1});})"
+      
+    case 'resolving.none'
+      set body + ".then(function(){return $_resolve.apply(null,arguments);})"
+      
+    case 'rejecting.exprs'
+      set body + ".catch(function(p){return $_reject(${.args.exprs.1});})"
 
-      case 'rejecting.none'
-        set body + ".catch(function(){return $_reject.apply(null,arguments);})"
-        
-      case 'finalizing.none'
-        set body + ".then(function(){return $_resolve.apply(null,arguments);})"
-        set body + ".catch(function(){return $_reject.apply(null,arguments);})"
+    case 'rejecting.none'
+      set body + ".catch(function(){return $_reject.apply(null,arguments);})"
+      
+    case 'finalizing.none'
+      set body + ".then(function(){return $_resolve.apply(null,arguments);})"
+      set body + ".catch(function(){return $_reject.apply(null,arguments);})"
 
-      case 'all.exprs'
-        set body + ".then(function(p){return Promise.all(${.args.exprs.1});})"
+    case 'all.exprs'
+      set body + ".then(function(p){return Promise.all(${.args.exprs.1});})"
 
-      case 'any.exprs'
-        set body + ".then(function(p){return Promise.any(${.args.exprs.1});})"
+    case 'any.exprs'
+      set body + ".then(function(p){return Promise.any(${.args.exprs.1});})"
 
-      default
-        return: error "SAI compiler: PROMISING construct unhandled type ${.type}"
+    else
+      return: error "SAI compiler: PROMISING construct unhandled type ${.type}"
 
 
   set body + ';\n'

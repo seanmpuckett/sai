@@ -217,25 +217,28 @@ Dedenter task given src
       set heredoc "'''" is (line limit -3)
 
       switch heredocstate
-        case 0
-          if heredoc
-            set heredocstate 1
-            set heredepth depth
-          if depth > indent.0
-            unshift'd indent depth
-            push'd lines INDENT
-        case 1
-          if depth <= heredepth
-            throw new Error "SAI: multi-line quotes must be indented ${from Context lineno}"
-          push'd lines INDENT
-          unshift'd indent depth
+      case 0
+        if heredoc
+          set heredocstate 1
           set heredepth depth
-          set heredocstate 2
-        case 2
-          if depth < heredepth
-            set heredocstate 0
-          elsif depth > heredepth
-            set trimmed (line limit heredepth, undefined)
+        if depth > indent.0
+          unshift'd indent depth
+          push'd lines INDENT
+      case 1
+        if depth <= heredepth
+          throw new Error "SAI: multi-line quotes must be indented ${from Context lineno}"
+        push'd lines INDENT
+        unshift'd indent depth
+        set heredepth depth
+        set heredocstate 2
+      case 2
+        if depth < heredepth
+          set heredocstate 0
+        elsif depth > heredepth
+          set trimmed (line limit heredepth, undefined)
+      else
+        throw new Error "unknown heredoc state"
+        
       if depth < indent.0
         while depth < indent.0
           push'd lines DEDENT
