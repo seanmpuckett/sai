@@ -15,9 +15,9 @@
 
   var ResWords={},ResWordsA=(
     "andb,and,array,as,asc,audit,"+
-    "bind,blank,break,by,"+
-    "chain,create,collect,concat,copy,"+
-    "default,delete,desc,down,"+
+    "bind,blank,by,"+
+    "chain,create,collect,concat,copy,count,"+
+    "default,delete,desc,"+
     "empty,enlist,entrait,enum,exists,expects,"+
     "false,fields,first,from,"+
     "get,"+
@@ -121,8 +121,8 @@
       }
       if (final) {
         //console.log(JSON.stringify(InstanceVars));
-        //console.log('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
-        error('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
+        console.log('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
+        //error('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
       } 
       return x; // unchanged
     });
@@ -2131,7 +2131,6 @@ DEFAULT = 'default'
 DELETE = 'delete'
 DESC = 'desc'
 DO = 'do'
-DOWN = 'down'
 ELSE = 'else'
 EMPTY = 'empty'
 ENUM = 'enum'
@@ -2192,7 +2191,6 @@ SELECT = 'select'
 SELF = 'self'
 SET = 'set'
 SINGLETON = 'singleton'
-STEP = 'step'
 SUM = 'sum'
 SWAP = 'swap'
 SUPER = 'super'
