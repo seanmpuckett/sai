@@ -121,8 +121,8 @@
       }
       if (final) {
         //console.log(JSON.stringify(InstanceVars));
-        console.log('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
-        //error('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
+        //console.log('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
+        error('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
       } 
       return x; // unchanged
     });
