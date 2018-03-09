@@ -7,19 +7,20 @@ inherit: Construct
 
 manifest get 
   return:
-    promising:
-      repeats false
-      clauses: 
-        promising: #verb, #outblock
-        then: #verb, #outblock
-        catch: #verb, #outblock
-        finally: #verb, #outblock
-        all: #exprs, #none
-        any: #exprs, #none
-        resolving: #exprs, #none
-        rejecting: #exprs, #none
-        finalizing: #none
-      handler bind PromisingConstruct
+    'constructs':
+      'promising':
+        repeats false
+        clauses: 
+          promising: #verb, #outblock
+          then: #verb, #outblock
+          catch: #verb, #outblock
+          finally: #verb, #outblock
+          all: #exprs, #none
+          any: #exprs, #none
+          resolving: #exprs, #none
+          rejecting: #exprs, #none
+          finalizing: #none
+        handler bind PromisingConstruct
 
 
 // PROMISING HANDLER

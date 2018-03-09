@@ -7,11 +7,12 @@ inherit: Construct
 
 manifest get 
   return:
-    state:
-      repeats true
-      clauses:
-        state: #exproutblock
-      handler bind StateConstruct
+    'constructs':
+      state:
+        repeats true
+        clauses:
+          state: #exproutblock
+        handler bind StateConstruct
 
 
 // STATE HANDLER

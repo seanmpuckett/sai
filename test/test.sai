@@ -33,6 +33,7 @@ Instantiate task
     Reference
     CompOrderOps
     Inheritance
+    Pipers
 
   set startTime new ~Date
   ply tests
@@ -42,6 +43,7 @@ Instantiate task
     catch
       debug error
       set @fail concat "Could not execute tests in ${it}"
+      
   set endTime new ~Date
   debug 'Test time ${endTime-startTime}ms.'
   
@@ -52,21 +54,3 @@ Instantiate task
     ~process.exit 1
   else
     debug 'SUCCESS'
-
-// ok just ignore this right now
-AnalyseParseTrace task
-  set
-    filename 'parse.trace'
-    instream ~fs.createReadStream(filename)
-    outstream new ~stream
-    rl ~readline.createInterface(instream,outstream)
-    ruletally blank
-
-  rl.on 'line', task given line
-    with line.split(/\s+/)
-      set ruletally[.2] to (self default 0)+1
-
-  rl.on 'close', task
-    debug ruletally enlist by .1 desc limit 50 
-    
-

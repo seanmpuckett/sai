@@ -47,7 +47,7 @@ Execute task
     return b.a is undefined and b.b is undefined and b.c is undefined
     
   @Test 'filter iterator odds', task
-    set b to: 1,2,3,4,5; iterate has it%2
+    set b to: 1,2,3,4,5; |iterate has it%2
     count 3
       unless b.next().value = counter*2+1
         return false
@@ -71,55 +71,55 @@ Execute task
   
     
   @Test 'thru inline undef', task
-    set b to undefined thru it
+    set b to undefined |thru it
     return b is undefined
     
   @Test 'thru inline value', task
-    set b to 1 thru it+1
+    set b to 1 |thru it+1
     return b=2
     
   @Test 'thru inline list', task
-    set b to: 1, 2, 3; thru it+1
+    set b to: 1, 2, 3; |thru it+1
     return b[0]=2 and b[1]=3 and b[2]=4 and b.length=3
     
   @Test 'thru inline traits', task
-    set b to: a 1, b 2, c 3; thru it+1
+    set b to: a 1, b 2, c 3; |thru it+1
     return b.a=2 and b.b=3 and b.c=4
    
   @Match 'thru inline iterator', 5, task
-     set b to: 1,3,5; iterate thru it+2
+     set b to: 1,3,5; |iterate |thru it+2
      b.next
      return b.next().value
      
   @Test 'thru block', task
-    set b to: a 1, b 2, c 3; thru 
+    set b to: a 1, b 2, c 3; |thru 
       return it+1
     return b.a=2 and b.b=3 and b.c=4
    
   @Test 'thru using', task
     set c to task
       return $+1
-    set b to: a 1, b 2, c 3; thru using c
+    set b to: a 1, b 2, c 3; |thru using c
     return b.a=2 and b.b=3 and b.c=4
    
   @Test 'audit value', task
-    set b to 1 audit it+1
+    set b to 1 |audit it+1
     return b=1
     
   @Test 'audit list', task
-    set b to: 1, 2, 3; audit it+1
+    set b to: 1, 2, 3; |audit it+1
     return b[0]=1 and b[1]=2 and b[2]=3 and b.length=3
     
   @Test 'audit inline traits', task
     set d to 0
     set c to task
       set d + $
-    set b to: a 1, b 2, c 3; audit from c it
+    set b to: a 1, b 2, c 3; |audit from c it
     return b.a=1 and b.b=2 and b.c=3 and d=6
    
   @Test 'audit block traits', task
     set d to 0
-    set b to: a 1, b 2, c 3; audit 
+    set b to: a 1, b 2, c 3; |audit 
       set d + it
     return b.a=1 and b.b=2 and b.c=3 and d=6
    
@@ -127,11 +127,11 @@ Execute task
     set d to 0
     set c to task
       set d + $
-    set b to: a 1, b 2, c 3; audit using c
+    set b to: a 1, b 2, c 3; |audit using c
     return b.a=1 and b.b=2 and b.c=3 and d=6
    
   @Match 'audit iterator', 3, task
-     set b to: 1,3,5; iterate audit it+2
+     set b to: 1,3,5; |iterate |audit it+2
      b.next
      return b.next().value
      
@@ -139,14 +139,14 @@ Execute task
     set a to false
     set Setter to task
       set a to $
-    set b to: 1,2; observe from Setter it.length
+    set b to: 1,2; |observe from Setter it.length
     unless b.length=2 and b.0=1 and b.1=2
       return false
     return a
     
   @Test 'observe block', task
     set b to 0
-    set a to 1 observe
+    set a to 1 |observe
       set b to it+1
     return b=2 and a=1
   
@@ -154,21 +154,21 @@ Execute task
     set a to 0
     set b to task
        set a to $+1
-    set c to 1 observe from b it
+    set c to 1 |observe from b it
     return c=1 and a=2
   
   @Test 'observe using', task
     set a to 0
     set b to task
        set a to $+1
-    set c to 1 observe using b
+    set c to 1 |observe using b
     return c=1 and a=2
   
   
   // the exception is the correct case
   //@Test 'observe iterator', task
   //  try
-  //    set b to: 1,2,3; iterate observe 
+  //    set b to: 1,2,3; |iterate |observe 
   //      debug it.length
   //  catch
   //    return true
@@ -176,14 +176,14 @@ Execute task
     
     
   @Match 'set value block', 1, task
-    return 2 set
+    return 2 |set
       return 1
   
   @Match 'set value inline', 1, task
-    return 2 set 1
+    return 2 |set 1
   
   @Test 'set block', task
-    set b to: 2; set
+    set b to: 2; |set
        it.unshift 1
     if b.length=2 and b.0=1 and b.1=2
       return true
@@ -193,13 +193,13 @@ Execute task
     set Unshifter to task given l,v
       l.unshift v
       return l
-    set b to: 2; set from Unshifter it, 1
+    set b to: 2; |set from Unshifter it, 1
     if b.length=2 and b.0=1 and b.1=2
       return true
     return false
     
   @Test 'set inline 2', task
-    set b to: 2, 1; set from it.reverse
+    set b to: 2, 1; |set from it.reverse
     if b.length=2 and b.0=1 and b.1=2
       return true
     return false
@@ -207,121 +207,65 @@ Execute task
   @Test 'set using', task
     set rev to task
       return from $.reverse
-    set b to: 2, 1; set using rev
+    set b to: 2, 1; |set using rev
     if b.length=2 and b.0=1 and b.1=2
       return true
     return false
     
   @Match 'into no list', 'a', task
-    set b to empty into 'a'
+    set b to empty |into 'a'
        return sum+it
     return b
     
-  @Test 'into no list it', task
-    set b to empty into it
-       return sum+it
-    return b is undefined
-
-  @Match 'into 1 list into', 'aa', task
-    set b to list a; into 'a'
+  @Match 'into 1 list |into', 'aa', task
+    set b to list a; |into 'a'
        return sum+it
     return b
     
-  @Match 'into 1 list it', 'a', task
-    set b to list a; into it
-       return sum+it
-    return b
-
   @Match 'into 3 list ', 'abc', task
-    set b to list a,b,c; into ''
-       return sum+it
-    return b
-    
-  @Match 'into 3 list it', 'abc', task
-    set b to list a,b,c; into it
+    set b to list a,b,c; |into ''
        return sum+it
     return b
 
   @Match 'into no traits', 'a', task
-    set b to blank into 'a'
+    set b to blank |into 'a'
        return sum+key+it
     return b
-
-  @Test 'into no traits it', task
-    set b to blank into it 
-       return sum+key+it
-    return b is undefined
 
   @Match 'into 1 trait', 'a1', task
-    set b to: a 1; into ''
+    set b to: a 1; |into ''
        return sum+key+it
     return b
 
-  // GIGO result expected because into can't intuit key+it value
-  @Match 'into 1 traits it', 1, task
-    set b to: a 1; into it 
+  @Match '3 traits |into', 'a1b2c3', task
+    set b to: a 1, b 2, c 3;  |into ''
        return sum+key+it
     return b
 
-  @Match '3 traits into', 'a1b2c3', task
-    set b to: a 1, b 2, c 3;  into ''
-       return sum+key+it
-    return b
-
-  // GIGO result expected because into can't intuit key+it value
-  @Match 'into 3 traits it', '1b2c3', task
-    set b to: a 1, b 2, c 3; into it 
-       return sum+key+it
-    return b
-
-  @Match 'into value it', 'a', task
-    set b to 'a' into it
-      return sum+it
-    return b
-    
   @Match 'into value ', 'ba', task
-    set b to 'a' into 'b'
+    set b to 'a' |into 'b'
       return sum+it
     return b
     
-  @Test 'into undefined it', task
-    set b to undefined into it
-      return sum+it
-    return b is undefined
-     
   @Match 'into 1 iterable ', 'aa', task
-    set b to list a; iterate into 'a'
+    set b to list a; |iterate |into 'a'
        return sum+it
     return b.next().value
     
-  @Match 'into 1 iterable it', 'a', task
-    set b to list a; iterate into it
-       return sum+it
-    return b.next().value
-
   @Match 'into 3 iterable', 'abc', task
-    set b to list a,b,c; iterate into ''
+    set b to list a,b,c; |iterate |into ''
        return sum+it
     return b.next().value
     
-  @Match 'into 3 iterable it', 'abc', task
-    set b to list a,b,c; iterate into it
-       return sum+it
-    return b.next().value
-
   @Match 'into 3 iterable inline ', 'abc', task
-    set b to list a,b,c; iterate into '' sum+it
+    set b to list a,b,c; |iterate |into '' sum+it
     return b.next().value
     
-  @Match 'into 3 iterable inline it', 'abc', task
-    set b to list a,b,c; iterate into it sum+it
-    return b.next().value
-
   @Match 'into nested', 4, task
     set a to:
       :1, 2
       :3, 4
-    set a to self thru . thru . * 2
+    set a to self |thru . |thru . * 2
     return a.0.1
     
   @Match 'count undefined', 0, task
@@ -338,120 +282,120 @@ Execute task
     return b count
     
   @Match 'count iterable', 4, task
-    set b array 1,2,3,4; iterate
+    set b array 1,2,3,4; |iterate
     return b count
     
-  // CONCAT  
+  // |concat  
     
   @Match 'concat undef undef', true, task
-    set a undefined concat undefined
+    set a undefined |concat undefined
     return a is undefined
 
   @Match 'concat undef val', true, task
-    set a 1 concat undefined
+    set a 1 |concat undefined
     return a[0]=1 and a.length=1
 
   @Test 'concat undef list', task
-    set a undefined concat: 1, 2
+    set a undefined |concat: 1, 2
     return a.0=1 and a.1=2 and a.length=2
     
   @Test 'concat undef iterable', task
-    set a undefined concat ((array 1, 2) iterate)
-    set a to a collect
+    set a undefined |concat ((array 1, 2) |iterate)
+    set a to a |collect
     return a.0=1 and a.1=2 and a.length=2
 
   @Test 'concat list undef', task
-    set a (array 1, 2) concat undefined
-    set a to a collect
+    set a (array 1, 2) |concat undefined
+    set a to a |collect
     return a.0=1 and a.1=2 and a.length=2
     
   @Test 'concat iterable undef', task
-    set a ((array 1, 2) iterate) concat undefined
-    set a to a collect
+    set a ((array 1, 2) |iterate) |concat undefined
+    set a to a |collect
     return a.0=1 and a.1=2 and a.length=2
 
   @Test 'concat inplace self', task
     set a: 1, 2
-    set a concat: 3, 4
+    set a |concat: 3, 4
     return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
 
   @Match 'concat val undef', true, task
-    set a undefined concat 1
+    set a undefined |concat 1
     return a[0]=1 and a.length=1
 
   @Match 'concat val val', true, task
-    set a 1 concat 2
+    set a 1 |concat 2
     return a.0=1 and a.1=2 and a.length=2
 
   @Test 'concat val list', task
-    set a 1 concat: 2, 3
+    set a 1 |concat: 2, 3
     return a.0=1 and a.1=2 and a.2=3 and a.length=3
     
   @Test 'concat list val', task
-    set a (array 1, 2) concat 3
+    set a (array 1, 2) |concat 3
     return a.0=1 and a.1=2 and a.2=3 and a.length=3
 
   @Test 'concat val obj', task
     set b: a 1
-    set a 2 concat b
+    set a 2 |concat b
     return a.0=2 and a.1.a=1 and a.length=2
     
   @Test 'concat obj val', task
     set b: a 1
-    set a b concat 2
+    set a b |concat 2
     return a.0.a=1 and a.1=2 and a.length=2
 
   @Test 'concat obj obj', task
     set c: a 1
     set d: b 2
-    set a c concat d
+    set a c |concat d
     return a.0.a=1 and a.1.b=2 and a.length=2
     
   @Test 'concat list list', task
-    set a (array 1, 2) concat (array 3, 4)
+    set a (array 1, 2) |concat (array 3, 4)
     return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
     
   @Test 'concat iter iter', task
-    set q (array 1, 2) iterate
-    set r (array 3, 4) iterate
-    set i q concat r
-    set a i collect
+    set q (array 1, 2) |iterate
+    set r (array 3, 4) |iterate
+    set i q |concat r
+    set a i |collect
     return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
     
   @Test 'concat list iter', task
     set q (array 1, 2) 
-    set r (array 3, 4) iterate
-    set i q concat r
-    set a i collect
+    set r (array 3, 4) |iterate
+    set i q |concat r
+    set a i |collect
     return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
 
   @Test 'concat iter list', task
-    set q (array 1, 2) iterate
+    set q (array 1, 2) |iterate
     set r (array 3, 4) 
-    set i q concat r
-    set a i collect
+    set i q |concat r
+    set a i |collect
     return a.0=1 and a.1=2 and a.2=3 and a.3=4 and a.length=4
 
   @Test 'concat iter val', task
-    set q (array 1, 2) iterate
-    set i q concat 3
-    set a i collect
+    set q (array 1, 2) |iterate
+    set i q |concat 3
+    set a i |collect
     return a.0=1 and a.1=2 and a.2=3 and a.length=3
 
   @Test 'concat val iter', task
-    set q (array 3, 4) iterate
-    set a 1 concat q
+    set q (array 3, 4) |iterate
+    set a 1 |concat q
     return a.0=1 and a.1=3 and a.2=4 and a.length=3
 
   @Test 'concat obj iter', task
-    set q (array 3, 4) iterate
-    set a (: a 1) concat q
+    set q (array 3, 4) |iterate
+    set a (: a 1) |concat q
     return a.0.a=1 and a.1=3 and a.2=4 and a.length=3
 
   @Test 'concat iter obj', task
-    set q (array 1, 2) iterate
-    set i q concat (: d 4)
-    set a i collect
+    set q (array 1, 2) |iterate
+    set i q |concat (: d 4)
+    set a i |collect
     return a.0=1 and a.1=2 and a.2.d=4 and a.length=3
   
      
@@ -471,33 +415,33 @@ Execute task
   @Test 'has task', task
     set a friends has using task
       return $name is 'Sara'
-    ... thru .name
+    ... |thru .name
     return a.length is 1 and a.0 is 'Sara'
 
   @Test 'by task', task
     set a friends by using task given a,b
       return a.age <=> b.age
-    ... limit 1 thru .name
+    ... limit 1 |thru .name
     return a.length is 1 and a.0 is 'Doug'
 
   @Match 'thru task', 'SARA', task
-    return friends thru using task
+    return friends |thru using task
       return from $name.toUpperCase
     ... first
     
   @Match 'into task', 185, task
-    return friends into 0 using task given acc,val
+    return friends |into 0 using task given acc,val
       return acc+val.age
     
   @Test 'into empty generator', task
     set gen process
       nop
-    set a gen into 1 sum + .
-    set a self collect 
+    set a gen |into 1 sum + .
+    set a self |collect 
     return a.0 is 1 and a.length is 1
     
-  @Match 'age total into', 185, task
-    return friends into 0
+  @Match 'age total |into', 185, task
+    return friends |into 0
       set sum + .age
   
   @Match '#cat count', 3, task
@@ -541,54 +485,54 @@ Execute task
     
   
   @Test 'enlist undefined', task
-    set a to undefined enlist
+    set a to undefined |enlist
     return a is undefined
     
   @Test 'enlist value', task
-    set a to 3 enlist
+    set a to 3 |enlist
     return ~Array.isArray(a) and a[0]=3 and a.length=1
     
   @Test 'enlist string', task
-    set a to 'bob' enlist
+    set a to 'bob' |enlist
     return ~Array.isArray(a) and a[0]='bob' and a.length=1
   
   @Test 'enlist array', task
-    set a to (:1, 2) enlist
+    set a to (:1, 2) |enlist
     return ~Array.isArray(a) and a[0]=1 and a[1]=2 and a.length=2
     
   @Test 'enlist object', task
-    set a to: a 1,  b 2; enlist
+    set a to: a 1,  b 2; |enlist
     return ~Array.isArray(a) and a.0.0='a' and a.0.1=1 and a.1.0='b' and a.1.1=2 and a.length=2
     
   @Test 'enlist iterable', task
-    set a to :1,3,5; iterate enlist
+    set a to :1,3,5; |iterate |enlist
     set b to 0
     ply a
       set b + it
     return b=9
   
   @Test 'entrait undefined', task
-    set a to undefined entrait
+    set a to undefined |entrait
     return a is undefined
     
   @Test 'entrait value', task
-    set a to 3 entrait
+    set a to 3 |entrait
     return a[3]=true
     
   @Test 'entrait array 1', task
-    set a to:(:1,4),(:2); entrait
+    set a to:(:1,4),(:2); |entrait
     return a[1]=4 and a[2] is undefined
     
   @Test 'entrait object', task
-    set a to: #a,  b 2; entrait
+    set a to: #a,  b 2; |entrait
     return a.a=true and a.b=2
     
   @Test 'entrait iterable', task
-    set a to :(:1,'a'),(:3,1),(:5); iterate entrait
+    set a to :(:1,'a'),(:3,1),(:5); |iterate |entrait
     return a.1='a' and a.3=1 and a.5 is undefined
   
-  @Test 'enlist entrait', task
-    set a to: fred 1, bill 2, cal 3; enlist entrait
+  @Test 'enlist |entrait', task
+    set a to: fred 1, bill 2, cal 3; |enlist |entrait
     return a.fred=1 and a.bill=2 and a.cal=3
   
   @Test 'limit undef', task
@@ -600,9 +544,9 @@ Execute task
     return a.length is 0
   
   @Test 'limit no gen', task
-    set a to: 1, 2, 3; iterate limit 0
+    set a to: 1, 2, 3; |iterate limit 0
     if typeof a is 'function'
-      set a self collect
+      set a self |collect
       return a.length is 0
     return false
   
@@ -729,76 +673,76 @@ Execute task
       
       
   @Test 'limit gen -x', task
-    set a to l iterate limit -2 collect
+    set a to l |iterate limit -2 |collect
     return from ListVerify a, :4,5
     
   @Test 'limit gen 0', task
-    set a to l iterate limit 0 collect
+    set a to l |iterate limit 0 |collect
     return from ListVerify a, empty
     
   @Test 'limit gen +x', task
-    set a to l iterate limit 2 collect
+    set a to l |iterate limit 2 |collect
     return from ListVerify a, :1,2
     
   @Test 'limit gen -x, -y', task//              everything except last y rows starting x from end of list
-    set a to l iterate limit -3,-1 collect
+    set a to l |iterate limit -3,-1 |collect
     return from ListVerify a, :3,4
     
   @Test 'limit gen -x, 0', task//              nothing
-    set a to l iterate limit -3,0 collect
+    set a to l |iterate limit -3,0 |collect
     return from ListVerify a, empty
     
   @Test 'limit gen -x, undef', task//           last x rows
-    set a to l iterate limit -2, undefined collect
+    set a to l |iterate limit -2, undefined |collect
     return from ListVerify a, :4, 5
     
   @Test 'limit gen -x, +y', task//                    y rows starting x from end of list
-    set a to l iterate limit -4,2 collect
+    set a to l |iterate limit -4,2 |collect
     return from ListVerify a, :2,3
     
   @Test 'limit gen 0, -y', task//everything except last y rows
-    set a to l iterate limit 0,-1 collect
+    set a to l |iterate limit 0,-1 |collect
     return from ListVerify a, :1,2,3,4
     
   @Test 'limit gen 0, 0', task //nothing
-    set a to l iterate limit 0,0 collect
+    set a to l |iterate limit 0,0 |collect
     return from ListVerify a, empty
     
   @Test 'limit gen 0, undef', task //everything 
-    set a to l iterate limit 0, undefined collect
+    set a to l |iterate limit 0, undefined |collect
     return from ListVerify a, :1,2,3,4,5
     
   @Test 'limit gen 0, +y', task //first y rows
-    set a to l iterate limit 0,2 collect
+    set a to l |iterate limit 0,2 |collect
     return from ListVerify a, :1,2
     
   @Test 'limit gen +x, -y', task//everything except last y rows starting at x
-    set a to l iterate limit 1,-2 collect
+    set a to l |iterate limit 1,-2 |collect
     return from ListVerify a, :2,3
     
   @Test 'limit gen +x, 0', task //nothing
-    set a to l iterate limit 1,0 collect
+    set a to l |iterate limit 1,0 |collect
     return from ListVerify a, empty
     
   @Test 'limit gen +x, undef', task //everything starting at x
-    set a to l iterate limit 2, undefined collect
+    set a to l |iterate limit 2, undefined |collect
     return from ListVerify a, :3,4,5
     
   @Test 'limit gen +x, +y', task //y rows starting at x
-    set a to l iterate limit 2,2 collect
+    set a to l |iterate limit 2,2 |collect
     return from ListVerify a, :3,4
       
   
   @Test 'limit entire generator', task
-    set gen to: 1, 2, 3; iterate
+    set gen to: 1, 2, 3; |iterate
     set a to gen limit 0, undefined
-    set a self collect
+    set a self |collect
     return a.length is 3 and a.1 is 2
     
   @Test 'limit chopped generator', task
-    set gen to: 1, 2, 3; iterate
+    set gen to: 1, 2, 3; |iterate
     set a to gen limit 0, 10
-    set a self collect
+    set a self |collect
     return a.length is 3 and a.1 is 2
     
   @Test 'limit on object', task
@@ -852,52 +796,45 @@ Execute task
     return a.a is 1
 
   @Test 'first on generator', task
-    set a to: 1, 2, 3; iterate first
+    set a to: 1, 2, 3; |iterate first
     return a is 1
 
   @Test 'last on generator', task
-    set a to: 1, 2, 3; iterate last
+    set a to: 1, 2, 3; |iterate last
     return a is 3
   
-  @Match 'row count on iterated audit', 3, task
-    set a to: 1, 2, 3; iterate
+  @Match 'row count on |iterated |audit', 3, task
+    set a to: 1, 2, 3; |iterate
     set b to 0
     chain a
-      audit
+      |audit
         set b + key
     return b 
     
-  @Match 'row count on iterated map', 3, task
-    set a to: 1, 2, 3; iterate
+  @Match 'row count on |iterated map', 3, task
+    set a to: 1, 2, 3; |iterate
     set b to 0
     chain a
-      thru
+      |thru
         set b + key
     return b 
     
-  @Match 'row count on iterated filter', 3, task
-    set a to: 1, 2, 3; iterate
+  @Match 'row count on |iterated filter', 3, task
+    set a to: 1, 2, 3; |iterate
     set b to 0
     chain a
       has
         set b + key
     return b 
     
-  @Match 'row count on iterated reduce', 3, task
-    set a to: 1, 2, 3; iterate
+  @Match 'row count on |iterated reduce', 3, task
+    set a to: 1, 2, 3; |iterate
     set b to 0
     chain a
-      into 0
+      |into 0
         set b + key
     return b
     
-  @Match 'row count on iterated reduce it', 5, task
-    set a to: 1, 2, 3; iterate
-    set b to 0
-    chain a // when using into it, the first generated row's function call is skipped, so there is no key 0
-      into it
-        set b + key + 1
-    return b
     
     
     

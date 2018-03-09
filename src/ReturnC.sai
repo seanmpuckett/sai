@@ -7,41 +7,42 @@ inherit: Construct
 
 manifest get 
   return:
-    'return':
-      repeats false
-      clauses:
-        'return': #exprs, #none
-      handler bind ReturnConstruct
+    'constructs':
+      'return':
+        repeats false
+        clauses:
+          'return': #exprs, #none
+        handler bind ReturnConstruct
       
-    'resolve':
-      repeats false
-      clauses:
-        'resolve': #exprs, #none
-      handler bind ReturnConstruct
+      'resolve':
+        repeats false
+        clauses:
+          'resolve': #exprs, #none
+        handler bind ReturnConstruct
       
-    'reject':
-      repeats false
-      clauses:
-        'reject': #exprs, #none
-      handler bind ReturnConstruct
+      'reject':
+        repeats false
+        clauses:
+          'reject': #exprs, #none
+        handler bind ReturnConstruct
       
-    'yielding':
-      repeats false
-      clauses:
-        'yielding': #exprs
-      handler bind ReturnConstruct
+      'yielding':
+        repeats false
+        clauses:
+          'yielding': #exprs
+        handler bind ReturnConstruct
       
-    'yield':
-      repeats false
-      clauses:
-        'yield': #exprs
-      handler bind ReturnConstruct
+      'yield':
+        repeats false
+        clauses:
+          'yield': #exprs
+        handler bind ReturnConstruct
 
 
 ReturnConstruct task
 
   if $clauses.length > 1
-    return: error 'SAI bug: error parsing RETURN-type constructs with multiple clauses: ${join'd ($clauses keys) ', '}'
+    return: error 'SAI bug: error parsing RETURN-type constructs with multiple clauses: ${join'd ($clauses | keys) ', '}'
 
   set body ''
 

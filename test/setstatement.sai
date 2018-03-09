@@ -149,7 +149,7 @@ Execute task
     return false
   
   @Test 'self delete generator', task
-    set a to: 1, 2, 3; iterate
+    set a to: 1, 2, 3;|iterate
     set b to: 1, 2
     try
       set a delete b
@@ -180,7 +180,7 @@ Execute task
 
   @Test 'self delete iterable', task
     set a to: a 1, b 2, c 3
-    set a delete (list b, d; iterate)
+    set a delete (list b, d;|iterate)
     return a.a=1 and a.b is undefined and a.c=3 and a.d is undefined
 
 
@@ -192,12 +192,12 @@ Execute task
 
   @Match 'chain', 1, task
     set a chain 1
-      audit it
+     |audit it
     return a
 
-  @Test 'set collect?', task
-    set a (: 1, 2, 3) iterate
-    set b a collect
+  @Test 'set|collect?', task
+    set a (: 1, 2, 3)|iterate
+    set b a|collect
     return b.1 = 2 and b.length = 3
 
   @Match 'self default set', 2, task
@@ -245,7 +245,7 @@ Execute task
 
   @Test 'merge list iterable', task
     set a to: 1,2,3
-    set a update (: undefined, 'a', undefined, 'b'; iterate)
+    set a update (: undefined, 'a', undefined, 'b';|iterate)
     return a.0=1 and a.1='a' and a.2='3' and a.3='b'
 
 
@@ -261,7 +261,7 @@ Execute task
   
   @Test 'merge traits iterable', task
     set a to: a 1, b 2
-    set a update (: undefined, 'a', undefined, 'b'; iterate)
+    set a update (: undefined, 'a', undefined, 'b';|iterate)
     return a.a=1 and a.b=2 and a.1='a' and a.3='b' and a.0 is undefined and a.2 is undefined
 
 

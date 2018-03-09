@@ -7,24 +7,25 @@ inherit: Construct
 
 manifest get 
   return:
-    'try':
-      repeats false
-      clauses:
-        'try': #block
-        'catch': #outblock
-        'finally': #block
-      handler bind TryConstruct
+    'constructs':
+      'try':
+        repeats false
+        clauses:
+          'try': #block
+          'catch': #outblock
+          'finally': #block
+        handler bind TryConstruct
       
-    'throw':
-      repeats false
-      clauses:
-        'throw': #exprs
-      handler bind ThrowConstruct
+      'throw':
+        repeats false
+        clauses:
+          'throw': #exprs
+        handler bind ThrowConstruct
       
 
 TryConstruct task expects $clauses, $tools
 
-  set pattern $clauses into '' sum + (.type limit 1)
+  set pattern $clauses | total (.type limit 1)
   unless pattern is 'tc' or pattern is 'tf' or pattern is 'tcf'
     return: error "SAI compiler: error in structure of TRY/CATCH/FINALLY: expected tc/tf/tcf, got ${pattern}"
   

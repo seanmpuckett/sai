@@ -45,8 +45,8 @@ Instantiate task
   // a verb. Here it is set, used for variable assignment.
 
   set Candidates to process
-    count 2 to max as x                    // greater than 1 
-      count x+1 to max as y                // greater than x
+    count 2, max as x                    // greater than 1 
+      count x+1,  max as y                // greater than x
         if x+y<max                         // sum less than max 
           yield fields
             x x
@@ -88,18 +88,24 @@ Instantiate task
   // Nevertheless, it's clearer and more maintainable to abstract away the
   // candidate generator into a process and then extract candidates into a list 
   
-  debug chain from Candidates; collect
-    
-    
+  debug chain from Candidates
+      
     // Notice the indent level has changed, we're now in the "chain"
     // 
-    // observe is a chain operator that receives the current object without
+    // The | is known as a pipe. In SAI the pipe is used to announce a special class
+    // of operators known as pipers.  Pipers are all named after the functions they
+    // perform. Collect gathers rows from processes (which Candidates is) 
+    // and converts them to an array.
+
+    | collect
+    
+    // observe receives the current object without
     // any iteration. It allows you to inspect the object without changing it. 
     // Because this is the first link in the chain, we get the value declared at
     // the start of the chain, in this case the result of 'Candidates() collect',
-    // which is an array.
+    // which is an array. 
 
-    observe from Countem it, 'Initial'
+    | observe from Countem it, 'Initial'
 
 
     // Phase 1 -- establish P's knowledge
@@ -111,7 +117,7 @@ Instantiate task
     // the default operator is used to ensure that uninitialized array elements
     // get a starting value of 0.
 
-    audit 
+    | audit 
       set pgood\.product to self?0 + 1
     
 
@@ -120,7 +126,7 @@ Instantiate task
     //
     // if pgood indicates a trivial solution for P, then flag S's solution as bad  
     
-    audit 
+    | audit 
       if pgood\.product = 1
         set sbad\.sum to true
 
@@ -129,7 +135,7 @@ Instantiate task
     
     has not sbad\.sum 
 
-    observe from Countem it, 'Phase 2'
+    | observe from Countem it, 'Phase 2'
 
 
     // phase 3 -- Since S didn't know either, P can eliminate non-trivial solutions
@@ -137,23 +143,23 @@ Instantiate task
     //
     // The remaining patterns should be familiar.
 
-    audit 
+    |audit 
       set pgood2\.product to self?0 + 1
 
     has pgood2\.product=1
     
-    observe from Countem it, 'Phase 3'
+    |observe from Countem it, 'Phase 3'
 
 
     // phase 4 -- Since P now knows, S can eliminate non-trivial solutions 
     // Filter for a new list of solutions where there is only one answer for .sum
 
-    audit 
+    |audit 
       set sgood\.sum to self?0 + 1
 
     has sgood\.sum = 1
     
-    observe from Countem it, 'Results'
+    |observe from Countem it, 'Results'
 
 
     // phase 5 -- Nicely format remaining solution(s)
@@ -163,7 +169,7 @@ Instantiate task
     // an expression to be evaluated; in this case a string literal 
     // that uses the ${} string composition tool.
      
-    thru `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
+    |thru `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
     
     
     // JOIN is not a keyword, it's a member method of Array. CHAIN knows how to

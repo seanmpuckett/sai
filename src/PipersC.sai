@@ -1,0 +1,373 @@
+
+object PipersC
+
+inherit: Construct
+
+given:
+  SPLIT '^&*SP.L.I.' + ~Math.random() + 'T.H.E.RE*&^'
+
+// MANIFEST
+
+manifest get 
+  return:
+  
+    'pipers':
+
+      'audit':
+        clauses:
+          'audit': #expr, #outblock, #use
+        handler bind AuditPiper
+        tools empty
+
+      'observe':
+        clauses:
+          'observe': #expr, #outblock, #use
+        handler bind AuditPiper
+        tools empty
+
+
+      'set':
+        clauses:
+         'set': #expr, #outblock, #use
+        handler bind ThruPiper
+        tools empty
+
+      'thru':
+        clauses:
+         'thru': #expr, #outblock, #use
+        handler bind ThruPiper
+        tools empty
+
+
+      'into':
+        clauses:
+          'into': #valexpr, #valoutblock, #valuse
+        handler bind IntoPiper
+        tools empty
+
+
+      'total':
+        clauses:
+          'total': #expr, #use, #none
+        handler bind TotalPiper
+        tools empty
+
+
+      'keys':
+        clauses:
+          'keys': #none
+        handler bind KVPiper
+        tools empty
+    
+      'values':
+        clauses:
+          'values': #none
+        handler bind KVPiper
+        tools empty
+
+
+      'iterate':
+        clauses:
+          'iterate': #none
+        handler bind ArraysPiper
+        tools empty
+
+      'concat':
+        clauses:
+          'concat': #expr
+        handler bind ArraysPiper
+        tools empty
+
+      'collect':
+        clauses:
+          'collect': #none
+        handler bind ArraysPiper
+        tools empty
+
+      'enlist':
+        clauses:
+          'enlist': #none
+        handler bind ArraysPiper
+        tools empty
+
+      'entrait':
+        clauses:
+          'entrait': #none
+        handler bind ArraysPiper
+        tools empty
+
+    
+      'replicate':
+        clauses:
+          'replicate': #expr
+        handler bind ReplicatePiper
+        
+        tools array '''
+          var $piper$replicate=function(a,c){
+            var r=new Array(c);
+            while (c>0) r[--c]=a;
+            return r;
+          }
+
+
+
+//// INTO PIPER 
+
+IntoPiper task expects $work, $tools
+
+  set 
+    pattern '(${SPLIT})'
+    tools empty
+    outs from my OutVarHelper $work.args.out
+    startvalue $work.args.val 
+    
+  switch $work.type
+  case 'into.valexpr', 'total.expr'
+    set 
+      vars:
+        'this' false
+        'key' false
+        'sum' false
+        'block' $work.args.expr
+
+      fn '''
+        function(^{sum},^{this},^{key}) { 
+          return ^{block};
+        }
+        
+      fn from $tools.replacer fn, vars
+      pattern '$AI.reduce_op_fast(${SPLIT},${fn},${startvalue})'
+
+  case 'into.valoutblock', 'total.outblock'
+    set 
+      vars:
+        'this' outs.0
+        'key' outs.1
+        'sum' outs.2
+        'block' $work.args.block
+
+      fn '''
+        function(^{sum},^{this},^{key}) { 
+          ^{block};
+          return ^{sum};
+        }
+        
+      fn from $tools.replacer fn, vars
+      pattern '$AI.reduce_op_fast(${SPLIT},${fn},${startvalue})'
+
+  case 'into.valuse', 'total.use'
+    set pattern '$AI.reduce_op_fast(${SPLIT},${$work.args.use},${startvalue})'
+
+  else
+    return: error "Unhandled piper type ${trial} in IntoPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+
+//// TOTAL PIPER
+
+TotalPiper task expects $work, $tools
+
+  set 
+    pattern '(${SPLIT})'
+    tools empty
+    
+  switch $work.type
+  case 'total.expr'
+    set 
+      vars:
+        'this' false
+        'key' false
+        'sum' false
+        'block' $work.args.expr
+
+      fn '''
+        function(^{sum},^{this},^{key}) {
+          var $t=^{block};
+          return (undefined===^{sum}) ? $t : (^{sum}+$t);
+        }
+        
+      fn from $tools.replacer fn, vars
+      pattern '$AI.reduce_op_fast(${SPLIT},${fn},undefined)'
+
+  case 'total.use'
+    set pattern '$AI.reduce_op_fast(${SPLIT},${$work.args.use},undefined)'
+
+  case 'total.none'
+    set pattern '''
+      $AI.reduce_op_fast(${SPLIT},function(s,i){
+        return (undefined===s) ? i : s+i;
+      },undefined)
+
+  else
+    return: error "Unhandled piper type ${trial} in IntoPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+//// AUDIT PIPER (AND OBSERVE)
+
+AuditPiper task expects $work, $tools
+
+  set
+    pattern '(${SPLIT})'
+    tools empty
+    op $work.clause is 'audit' ?? 'audit_op' :: 'observe_op'
+  
+  switch $work.type
+
+  case 'audit.expr', 'observe.expr'
+    set 
+      vars:
+        'this' false
+        'key' false
+        'block' $work.args.expr
+      fn '''
+        function(^{this},^{key}){ 
+          ^{block}; 
+        }
+      fn from $tools.replacer fn, vars
+      pattern '$AI.${op}(${SPLIT},${fn})'
+
+  case 'audit.outblock', 'observe.outblock'
+    set
+      outs from my OutVarHelper $work.args.out      
+      vars:
+        'this' outs.0
+        'key' outs.1
+        'block' $work.args.block
+      fn '''
+        function(^{this},^{key}){ 
+          ^{block}; 
+        }
+      fn from $tools.replacer fn, vars  
+      pattern '$AI.${op}(${SPLIT},${fn})'
+
+  case 'audit.use', 'observe.use'
+    set pattern '$AI.${op}(${SPLIT},${$work.args.use})'
+
+  else
+    return: error "Unhandled piper type ${trial} in ThruPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+//// THRU PIPER (AND SET)
+
+ThruPiper task expects $work, $tools
+
+  set
+    pattern '(${SPLIT})'
+    tools empty
+    op $work.clause is 'thru' ?? 'map_op' :: 'alter_op'
+  
+  switch $work.type
+
+  case 'thru.expr', 'set.expr'
+    set 
+      vars:
+        'this' false
+        'key' false
+        'block' $work.args.expr
+      fn '''
+        function(^{this},^{key}){ 
+          return ^{block}; 
+        }
+      fn from $tools.replacer fn, vars
+      pattern '$AI.${op}(${SPLIT},${fn})'
+
+  case 'thru.outblock', 'set.outblock'
+    set
+      outs from my OutVarHelper $work.args.out      
+      vars:
+        'this' outs.0
+        'key' outs.1
+        'block' $work.args.block
+      fn '''
+        function(^{this},^{key}){ 
+          ^{block}; 
+          return ^{this}; 
+        }
+      fn from $tools.replacer fn, vars  
+      pattern '$AI.${op}(${SPLIT},${fn})'
+
+  case 'thru.use', 'set.use'
+    set pattern '$AI.${op}(${SPLIT},${$work.args.use})'
+
+  else
+    return: error "Unhandled piper type ${trial} in ThruPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+//////////////////////// ARRAYS PIPER
+
+ArraysPiper task expects $work, $tools
+
+  set pattern '(${SPLIT})'
+  set tools empty
+  
+  switch $work.type
+
+  case 'iterate.none'
+    set pattern '$AI.iterate_op(${SPLIT})'
+
+  case 'concat.expr'
+    set pattern '$AI.concat_op(${SPLIT},${$work.args.expr})'
+
+  case 'collect.none'
+    set pattern '$AI.collect_op(${SPLIT})'
+
+  case 'enlist.none'
+    set pattern '$AI.enlist_op(${SPLIT})'
+
+  case 'entrait.none'
+    set pattern '$AI.entrait_op(${SPLIT})'
+
+  else
+    return: error "Unhandled piper type ${trial} in KVPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+//// KV PIPER
+
+KVPiper task expects $work, $tools
+
+  set pattern '(${SPLIT})'
+  set tools empty
+  
+  switch $work.type
+
+  case 'keys.none'
+    set pattern '$AI.keys_op(${SPLIT})'
+
+  case 'values.none'
+    set pattern '$AI.values_op(${SPLIT})'
+
+  else
+    return: error "Unhandled piper type ${trial} in KVPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+//// REPLICATE PIPER
+
+ReplicatePiper task expects $work, $tools
+
+  set pattern '(${SPLIT})'
+  set tools empty
+  
+  switch $work.type
+  
+  case 'replicate.expr'
+
+    set pattern '$piper$replicate((${SPLIT}),(${$work.args.expr}))'
+
+  else
+    return: error "Unhandled piper type ${trial} in ReplicatePiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+

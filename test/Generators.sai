@@ -52,61 +52,61 @@ Execute task
     return number (c10 by . limit 1)
     
   @Match 'collect value', 1, task
-    return 1 collect
+    return 1 |collect
     
   @Match 'collect iterator', 'aa', task
-    set a from Twice 'a'; collect
+    set a from Twice 'a'; |collect
     return a[0]+a[1]
     
   @Match 'limit iterator 0-5', '01234', task
     set a from @Counter 0,10; limit 5
-    set a to (self collect).join('')
+    set a to (self |collect).join('')
     return a
 
   @Match 'limit iterator 2-5', '234', task
     set a from @Counter 0,10; limit 2,3
-    set a to (self collect).join('')
+    set a to (self |collect).join('')
     return a
 
   @Match 'limit iterator 0-5 short', '012', task
     set a from @Counter 0,2; limit 5
-    set a to (self collect).join('')
+    set a to (self |collect).join('')
     return a
 
   @Match 'limit iterator -5', '56789', task
     set a from @Counter 0,9; limit -5
-    set a to (self collect).join('')
+    set a to (self |collect).join('')
     return a
 
   @Match 'limit iterator -5,2', '56', task
     set a from @Counter 0,9; limit -5,2
-    set a to (self collect).join('')
+    set a to (self |collect).join('')
     return a
     
   @Test 'iterate iterator', task
-    set a: 1, 2, 3; iterate
-    set a self iterate
-    set a self collect 
+    set a: 1, 2, 3; |iterate
+    set a self |iterate
+    set a self |collect 
     return a.length is 3 and a.0 is 1 and a.2 is 3
 
   @Match 'iterate undefined', undefined, task
-    return undefined iterate
+    return undefined |iterate
 
   @Match 'iterate value', 3, task
-    set i to 3 iterate
+    set i to 3 |iterate
     return i.next().value
 
   @Match 'iterate string', 'p', task
-    set i to 'pigs' iterate
+    set i to 'pigs' |iterate
     return i.next().value
 
   @Match 'iterate list', 'pigs', task
-    set i to list cows,pigs; iterate
+    set i to list cows,pigs; |iterate
     i.next
     return i.next().value
     
   @Match 'iterate traits', 'pigs', task
-    set i to traits pasture cows, pens pigs; iterate
+    set i to traits pasture cows, pens pigs; |iterate
     i.next
     return i.next().value[1]
     
@@ -117,14 +117,14 @@ Execute task
     
   @Test 'chain draining iterator', task
     set b to false
-    chain: 1; iterate
-      audit
+    chain: 1; |iterate
+      |audit
         set b true
     return b
     
   @Match 'iterate with keys', 3, task
     set b to 0
-    iterate: 1, 2, 3; iterate
+    iterate: 1, 2, 3; |iterate
       set b + key
     return b
   
@@ -132,7 +132,7 @@ Execute task
     set b to 0
     set countb to task given v, k
       set b + k
-    iterate: 1, 2, 3; iterate using countb
+    iterate: 1, 2, 3; |iterate using countb
     return b
   
 Fudge task

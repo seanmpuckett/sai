@@ -294,13 +294,13 @@ Execute task
     return true
     
   @Test 'iterate break', task
-    iterate (:1,2,3,4) iterate
+    iterate (:1,2,3,4) |iterate
       break
       return false
     return true
     
   @Test 'iterate continue', task
-    iterate (:1,2,3,4) iterate
+    iterate (:1,2,3,4) |iterate
       continue
       return false
     return true
@@ -406,7 +406,7 @@ Execute task
     return b is true
       
   @Test 'every iterator', task
-    set a to: 1, 2, 3; iterate
+    set a to: 1, 2, 3; |iterate
     set b to empty
     every a
       b.push: key, it
@@ -415,7 +415,7 @@ Execute task
     return b.length=3 and b.0.0=0 and b.0.1=1 and b.2.0=2 and b.2.1=3
       
   @Test 'every empty iterator', task
-    set a to empty iterate
+    set a to empty |iterate
     set b to false
     every a
       b.push: key, it

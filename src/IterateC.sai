@@ -7,84 +7,85 @@ inherit: Construct
 
 manifest get 
   return:
+    'constructs':
   
-    'every':
-      repeats false
-      clauses:
-        'every': #exprusing, #exproutblock
-        'else': #block
-      handler bind EveryConstruct
+      'every':
+        repeats false
+        clauses:
+          'every': #exprusing, #exproutblock
+          'else': #block
+        handler bind EveryConstruct
       
-    'iterate':
-      repeats false
-      clauses:
-        'iterate': #exprusing, #exproutblock
-        'else': #block
-      handler bind IterateConstruct
+      'iterate':
+        repeats false
+        clauses:
+          'iterate': #exprusing, #exproutblock
+          'else': #block
+        handler bind IterateConstruct
 
-    'each':
-      repeats false
-      clauses:
-        'each': #exprusing, #exproutblock
-        'else': #block
-      handler bind EachConstruct
+      'each':
+        repeats false
+        clauses:
+          'each': #exprusing, #exproutblock
+          'else': #block
+        handler bind EachConstruct
 
-    'ply':
-      repeats false
-      clauses:
-        'ply': #exprusing, #exproutblock
-        'else': #block
-      handler bind PlyConstruct
+      'ply':
+        repeats false
+        clauses:
+          'ply': #exprusing, #exproutblock
+          'else': #block
+        handler bind PlyConstruct
 
-    'while':
-      repeats false
-      clauses:
-        'while': #exproutblock
-      handler bind WhileConstruct
+      'while':
+        repeats false
+        clauses:
+          'while': #exproutblock
+        handler bind WhileConstruct
       
-    'until':
-      repeats false
-      clauses:
-        'until': #exproutblock
-      handler bind WhileConstruct
+      'until':
+        repeats false
+        clauses:
+          'until': #exproutblock
+        handler bind WhileConstruct
       
-    'dowhile':
-      repeats false
-      clauses:
-        'dowhile': #exproutblock
-      handler bind WhileConstruct
+      'dowhile':
+        repeats false
+        clauses:
+          'dowhile': #exproutblock
+        handler bind WhileConstruct
       
-    'dountil':
-      repeats false
-      clauses:
-        'dountil': #exproutblock
-      handler bind WhileConstruct
+      'dountil':
+        repeats false
+        clauses:
+          'dountil': #exproutblock
+        handler bind WhileConstruct
 
-    'break':
-      repeats false
-      clauses:
-        'break': #none
-      handler bind FlowControlConstruct
+      'break':
+        repeats false
+        clauses:
+          'break': #none
+        handler bind FlowControlConstruct
   
-    'continue':
-      repeats false
-      clauses:
-        'continue': #none
-      handler bind FlowControlConstruct
+      'continue':
+        repeats false
+        clauses:
+          'continue': #none
+        handler bind FlowControlConstruct
   
-    'count':
-      repeats false
-      clauses:
-        'count': #exprsoutblock
-        'else': #block
-      handler bind CountConstruct
+      'count':
+        repeats false
+        clauses:
+          'count': #exprsoutblock
+          'else': #block
+        handler bind CountConstruct
 
-    'countdown':
-      repeats false
-      clauses:
-        'countdown': #exprsoutblock
-        'else': #block
-      handler bind CountConstruct
+      'countdown':
+        repeats false
+        clauses:
+          'countdown': #exprsoutblock
+          'else': #block
+        handler bind CountConstruct
 
 
 //////////////  FLOW CONTROL
@@ -575,6 +576,8 @@ CountConstruct task expects $clauses, $tools
 
    case 'count.exprsoutblock'
 
+   
+
      unless main.args.exprs.2.0 
        return: error 'SAI Compiler: Missing end value in COUNT'
 
@@ -622,7 +625,7 @@ CountConstruct task expects $clauses, $tools
        return: error 'SAI Compiler: Missing start value in COUNTDOWN'
 
      set
-       iStart main.args.exprs.2.0 
+       iStart main.args.exprs.2.0        
        iStop main.args.exprs.2.1 default 0
        iStep main.args.exprs.2.2 default -1
        

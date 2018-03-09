@@ -7,14 +7,14 @@ inherit: Construct
 
 manifest get 
   return:
-  
-    'switch':
-      repeats false
-      clauses:
-        'switch': #exprout
-        'case': #exprsblock
-        'else': #block
-      handler bind SwitchConstruct
+    'constructs':
+      'switch':
+        repeats false
+        clauses:
+          'switch': #exprout
+          'case': #exprsblock
+          'else': #block
+        handler bind SwitchConstruct
       
 
 ///////////////   SWITCH
@@ -50,7 +50,7 @@ SwitchConstruct task expects $clauses, $tools
       
     case 'case.exprsblock'
       set
-        cases to .args.exprs.2 into '' sum + 'case ${.}:\n'
+        cases to .args.exprs.2 | total 'case ${.}:\n'
           
         vars trialvar update:
           'cases' cases

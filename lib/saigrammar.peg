@@ -13,6 +13,21 @@
   var usedMemberVar=false;
   var DynamicTaskClauseFormatter=undefined;
 
+  var failures=[];
+  function fail(msg,loc) { failures.push(msg+" at:"+(loc?loc:location().start.offset)); }
+
+  var filetools={};
+  function AddTool(text) {
+    filetools[text]=true;
+  }
+  function GetTools() {
+    var tools='';
+    for (var tool in filetools) {
+      tools=tools+tool;
+    }
+    return tools;
+  }
+
   var ResWords={},ResWordsA=(
     "andb,and,array,as,asc,audit,"+
     "bind,blank,by,"+
@@ -58,13 +73,13 @@
         addInstanceVar(i);
       }
     } catch (e) {
-      error(e.message+"\n\nSAI compiler: Instance/Given variables can only be initialized with simple literal values. For more complex initialization, use Instantiate (but still declare them with instance).\n\nYour vars: "+v[1]);
+      fail(e.message+"\n\nSAI compiler: Instance/Given variables can only be initialized with simple literal values. For more complex initialization, use Instantiate (but still declare them with instance).\n\nYour vars: "+v[1]);
     }
   }
   
   function checkUsedMemberVar(v) {
     if (usedMemberVar) {
-      error("SAI compiler: object task "+v+" is declared as unbound but uses a bareword access to "+usedMemberVar);
+      fail("SAI compiler: object task "+v+" is declared as unbound but uses a bareword access to "+usedMemberVar);
     }
     usedMemberVar=false;
   }
@@ -74,12 +89,12 @@
     if (References[v]) {
       var message="SAI compiler: variable "+v+" is a Reference variable and cannot be used as a "+context+".";
       //console.log(message);
-      error(message);
+      fail(message);
     }
     if (InstanceVars[v]) {
       var message="SAI compiler: variable "+v+" is an Instance variable and cannot be used as a "+context+".";
       //console.log(message);
-      error(message);
+      fail(message);
     }
   }
   
@@ -122,7 +137,7 @@
       if (final) {
         //console.log(JSON.stringify(InstanceVars));
         //console.log('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
-        error('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
+        fail('SAI Compiler: local variable "'+name+'" used without initialization',loc);
       } 
       return x; // unchanged
     });
@@ -177,7 +192,7 @@
  
   function RV(code,varnames) {
     if (!varnames) varnames={};
-    if (!code) error("SAI compiler: RV has undefined code; likely a syntax error; perhaps you need to use 'self'");
+    if (!code) fail("SAI compiler: RV has undefined code; likely a syntax error; perhaps you need to use 'self'");
     if (!code.replace) {
       code=code.toString();
     }
@@ -405,7 +420,7 @@
       params.push('p');
     }
     var expects='',locals=[];//$unused=this';
-    if (o.expects && o.as) error("SAI compile: cannot have both EXPECTS and AS in a function declaration");
+    if (o.expects && o.as) fail("SAI compile: cannot have both EXPECTS and AS in a function declaration");
     if (o.expects && o.expects.length) {
       expects=GetExpectsTester(o.expects,'in-line');
     } else if (o.as) {
@@ -485,7 +500,7 @@
     fun+='}';
   
     if (o.name) {
-      if (fun.indexOf('^{this}')>-1) error("SAI Compiler: Cannot use unrooted . accessor without a context\n\n"+fun);
+      if (fun.indexOf('^{this}')>-1) fail("SAI Compiler: Cannot use unrooted . accessor without a context\n\n"+fun);
     }
     var r=RV(head+fun+tail,{this:false,super:sup});
 
@@ -556,7 +571,7 @@
 
   function MagicCheck(code) {
     var lm=LeakedMagic.exec(code);
-    if (lm) error("SAI Compiler: Pronoun '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)");
+    if (lm) fail("SAI Compiler: Pronoun '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)");
   }
 }
 
@@ -569,6 +584,8 @@ startFile
     MagicCheck(code);
     //console.log(code);
     code=Linker(code,true);
+    if (failures.length) options.failures=failures.join('\n');
+    code=GetTools()+code;
     return code;
   }
   
@@ -576,18 +593,19 @@ startExpression
  = code:Expression EOLs {
    MagicCheck(code); 
    code=Linker(code);
+   if (failures.length) options.failures=failures.join('\n');
    return code;
  }
   
 Reference 
 = REFERENCE _ v:ParameterList EOLs {
-  if (v[0]!='fields') error("SAI Compiler: REFERENCE requires a trait list.");
+  if (v[0]!='fields') fail("SAI Compiler: REFERENCE requires a trait list.");
   var code='';
   for (var i in v[2]) {
     var r=v[2][i];
     References[lp+r[0]]=true; 
     if (r[1].indexOf('function')==0) {
-      error("SAI Compiler: Cannot define functions in a reference block. Sorry, maybe someday.");
+      fail("SAI Compiler: Cannot define functions in a reference block. Sorry, maybe someday.");
     }
     code+='var '+lp+r[0]+'='+r[1]+';\n'; 
   }
@@ -779,6 +797,114 @@ Line
  / VerbStatement
  
 
+Piper 
+ = '|' _ i:JSIdentifier &{ return options.pipers[i];} _ a:(
+     &{ return options.pipers[i].clauses[i].expr        }  o:PiperExpr       { return o }
+   / &{ return options.pipers[i].clauses[i].exprs       }  o:PiperExprs       { return o }
+   / &{ return options.pipers[i].clauses[i].outblock    }  o:PiperOutblock       { return o }
+   / &{ return options.pipers[i].clauses[i].valexpr     }  o:PiperValexpr       { return o }
+   / &{ return options.pipers[i].clauses[i].valoutblock }  o:PiperValoutblock       { return o }
+   / &{ return options.pipers[i].clauses[i].valuse      }  o:PiperValuse       { return o }
+   / &{ return options.pipers[i].clauses[i].use         }  o:PiperUse       { return o }
+   / &{ return options.pipers[i].clauses[i].none        }  o:PiperNone       { return o }
+ )
+ 
+ {
+   var opi=options.pipers[i];
+    var work={
+      clause: i,
+      syntax: a.syntax,
+      type: i+"."+a.syntax,
+      args: a
+    };
+    var tools={
+        addlocal:function(v){ if (!v) v=tempvar(); addLocal(v); return v; },
+        replacer:RV,
+        tasker:TaskClauseFormatter
+    };
+    var result=opi.handler({work:work,tools:tools});
+    if (result.error) fail(result.error);
+
+    if (opi.tools.length) for (var tc=0; tc<opi.tools.length; tc++) AddTool(opi.tools[tc]);
+    if (result.tools && result.tools.length) for (var tc=0; tc<result.tools.length; tc++) AddTool(result.tools[tc]);
+
+    return result.leftright || ['',''];
+ }
+
+PiperValoutblock
+ = v:Value _ o:MultiOutput? _ b:Block {
+   return {
+     syntax: 'valoutblock',
+     val: v,
+     out: o,
+     block: b
+   };
+ }
+
+PiperOutblock
+ = o:MultiOutput? b:Block {
+   return {
+     syntax: 'outblock',
+     out: o,
+     block: b
+   };
+ }
+
+PiperValuse
+ = v:Value _ USING Sep u:Value {
+   return {
+     syntax: 'valuse',
+     val: v,
+     use: u
+   };
+ }
+
+PiperUse
+ = USING Sep u:Value {
+   return {
+     syntax: 'use',
+     use: u
+   };
+ }
+
+PiperValexpr
+ = v:Value _ x:ExprParen {
+   return {
+     syntax: 'valexpr',
+     val: v,
+     expr: x
+   };
+ }
+
+PiperExprs
+ = x:ParameterList {
+   return {
+     syntax: 'exprs',
+     exprs: x
+   };
+ }
+
+PiperExpr
+ = x:ExprParen {
+   return {
+     syntax: 'expr',
+     expr: x
+   };
+ }
+
+PiperNone
+ = _ {
+   return {
+     syntax: 'none'
+   };
+ }
+
+ExprParen
+ = x:Expression { return x; }
+ / LPAREN _ x:Expression _ RPAREN _ { return x; }
+
+
+
 ConstructStatement
   = i:JSIdentifier &{ return options.constructs[i]; } _ 
     a:(
@@ -792,6 +918,7 @@ ConstructStatement
        / &{return options.constructs[i].clauses[i].exprs}          ca:CAExprs      {return ca}
        / &{return options.constructs[i].clauses[i].verb}           ca:CAVerb       {return ca}
        / &{return options.constructs[i].clauses[i].none}           ca:CANone       {return ca}
+       // CAError
       )
     cl:(EOLs cli:Identifier &{
       if (cli===i && !options.constructs[i].repeats) return false;
@@ -808,6 +935,7 @@ ConstructStatement
        / &{return options.constructs[i].clauses[cli].exprs}         claa:CAExprs {return claa}
        / &{return options.constructs[i].clauses[cli].verb}          claa:CAVerb {return claa}
        / &{return options.constructs[i].clauses[cli].none}          claa:CANone{return claa}
+       // CAError
       )
  {return [cli,cla];})* {
    
@@ -815,7 +943,9 @@ ConstructStatement
      var work2=[];
      for (var i1=0; i1<work.length; i1++) {
        var j=work[i1];
-       //console.log(j);
+       if (j[1].syntax === 'error') {
+         fail("SAI Compiler: Error in "+j[0]+" / "+i+" (this is a propogated error, look within the clause for syntax faults).",j[1].location);
+       }
        work2.push({
          clause: j[0],
          syntax: j[1].syntax,
@@ -831,9 +961,11 @@ ConstructStatement
         tasker:TaskClauseFormatter
       }
     });
-    if (result.error) error(result.error);
+    if (result.error) fail(result.error);
     return result.body;
  }
+ 
+CAError = .* { return { syntax: 'error', location: location().start.offset }; }
  
 CAExprsoutblock = pl:ParameterList _ mo:MultiOutput? _ b:Block { return {
   syntax: 'exprsoutblock',
@@ -932,10 +1064,10 @@ SetBlock
 
 SetTerm
  = l:RValues _ '-' _ e:Expression {
-     error('SAI Compiler: the "set val - expr" construct is unclear. Please use "set val to -expr" or "set val self - expr" as appropriate.');
+     fail('SAI Compiler: the "set val - expr" construct is unclear. Please use "set val to -expr" or "set val self - expr" as appropriate.');
    }
  / l:RValues _ o:Itselfop _ e:Expression {
-   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
      code+=RV(itselfops[o], {'1':l[i], '2':RV(e,{self:l[i]}) } )+';\n';
@@ -943,7 +1075,7 @@ SetTerm
    return code;
  }
  / l:LValues _ (TO?/&FROM/&BANG/&CHAIN) _ e:Expression {
-   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    if (l.length==1) return l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
    for (var i in l) {
@@ -952,10 +1084,18 @@ SetTerm
    return code;
  }
  / l:RValues _ o:UnOp {
-   if (readOnlyReference) for (var i in l) if (References[l[i]]) error("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
      code+=RV(unops[o],{'1':l[i]})+';\n';
+   }
+   return code;
+ }
+ / l:RValues _ o:Piper {
+   if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
+   var code='';
+   for (var i in l) {
+     code+= l[i]+'='+o[0]+l[i]+o[1]+';\n';
    }
    return code;
  }
@@ -972,7 +1112,7 @@ LocalBlock
 
 LocalTerm
  = l:RValues _ o:Itselfop _ e:Expression {
-   error("SAI compiler: 'local' should only be used when declaring variables, not when modifying them.");
+   fail("SAI compiler: 'local' should only be used when declaring variables, not when modifying them.");
  }
  / l:LValues _ (TO?/&FROM/&BANG/&CHAIN) _ e:Expression {
    for (var i in l) {
@@ -988,7 +1128,7 @@ LocalTerm
    return code;
  }
  / l:RValues _ o:UnOp {
-   error("SAI compiler: 'local' should only be used when declaring variables, not when modifying them.");
+   fail("SAI compiler: 'local' should only be used when declaring variables, not when modifying them.");
  }
 
 
@@ -1027,10 +1167,10 @@ LValue
  = v:LStem
   {
     var j=v.length;
-    if (!j) error("SAI Compiler: Expected something to assign into");
+    if (!j) fail("SAI Compiler: Expected something to assign into");
     if (j==1) {
       var pattern=accessors.firststore[v[0][0]];
-      if (!pattern) error("SAI Compiler: Couldn't construct recipient from "+v);
+      if (!pattern) fail("SAI Compiler: Couldn't construct recipient from "+v);
       return pattern[0] + v[0][1] + pattern[1];
     }
     j--;
@@ -1038,12 +1178,12 @@ LValue
     var patternbase=accessors.firstfetch;
     var i=0; while (i<j) {
       var pattern=patternbase[v[i][0]]; patternbase=accessors.nextfetch;
-      if (!pattern) error("SAI Compiler: Couldn't construct recipient from "+v);
+      if (!pattern) fail("SAI Compiler: Couldn't construct recipient from "+v);
       code+=pattern[0] + v[i][1] + pattern[1];
       i++;
     }
     var pattern=accessors.laststore[v[j][0]];
-    if (!pattern) error("SAI Compiler: Couldn't construct recipient from "+v);
+    if (!pattern) fail("SAI Compiler: Couldn't construct recipient from "+v);
     code= code+pattern[0]+v[j][1]+pattern[1];
     return code;
   }
@@ -1083,7 +1223,7 @@ VerbValue
     var i=0; while (i<v.length) {
       var pattern=patternbase[v[i][0]]; 
       patternbase=accessors.nextfetch;
-      if (!pattern) error("SAI Compiler: VV Couldn't construct dereference from "+v[i]+' because '+pattern+' is false');
+      if (!pattern) fail("SAI Compiler: VV Couldn't construct dereference from "+v[i]+' because '+pattern+' is false');
       stem+=verb;
       verb=pattern[0] + v[i][1] + pattern[1];
 //      console.log("VV"+i+": stem:"+stem+" verb:"+verb);
@@ -1242,7 +1382,7 @@ Property
  / '@@' v:IdentifierProto { return [['currentthis',''],[ 'attribute',v ]] }
  / '@@' { return [['currentthis','']] }
  / '@' { return [['this','']] }
- / ME _ { return [['this','']] }
+ / ME ![a-zA-Z_0-9] { return [['this','']] }
 
 SimpleTerm
  = It/RLocal/Parameter/Property/Root
@@ -1429,7 +1569,7 @@ ParameterCandidate
    return [[ 'local',lp+v ]];
 }
 
- 
+
 
 
 Expression
@@ -1446,19 +1586,20 @@ ListQualify
 
 
 Comprehension
- = MapComprehension 
- / AuditComprehension
- / ReduceComprehension 
- / KeysComprehension 
- / ValuesComprehension
- / IterateComprehension
- / CollectComprehension
- / SetComprehension
- / ObserveComprehension
+ = Piper
+ // MapComprehension 
+ // AuditComprehension
+ // ReduceComprehension 
+ // KeysComprehension 
+ // ValuesComprehension
+ // IterateComprehension
+ // CollectComprehension
+ // SetComprehension
+ // ObserveComprehension
  / OtherComprehension
  / FilterComprehension 
  / SortComprehension 
- / ConcatComprehension
+ // ConcatComprehension
 
 
 IterateComprehension

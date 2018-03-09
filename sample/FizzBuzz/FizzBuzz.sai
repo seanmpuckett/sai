@@ -8,7 +8,7 @@ Instantiate task
     fields word 'Fizz', divisor 3
     fields word 'Buzz', divisor 5
     
-  count 1 to 101 as num
+  count 1, 101 as num
     set out to ''
     every words
       unless num % .divisor
@@ -19,11 +19,11 @@ Instantiate task
   
   // array variation
   set out to empty
-  count 3 to 101 step 3
+  count 3, 101, 3
     set out\counter to 'Fizz'
-  count 5 to 101 step 5
+  count 5, 101, 5
     set out\counter to self ? '' + 'Buzz'
-  count 1 to 101
+  count 1, 101
     debug out\counter default counter
   return
 
@@ -31,7 +31,7 @@ Instantiate task
   set words to new ~Map
   words.set 'Fizz', 3
   words.set 'Buzz', 5
-  count 1 to 101 as num
+  count 1, 101 as num
     set out to ''
     iterate words
       unless num % .1

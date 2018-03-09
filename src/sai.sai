@@ -46,6 +46,7 @@ reference:
       'Error' 'Error'
       'Math' 'Math'
     constructs blank // initialized later
+    pipers blank // initialized later
     paths:
       DIRNAME + '/'
     options:
@@ -64,6 +65,7 @@ reference:
     TryCatchC
     IfElseC
     SwitchC
+    PipersC
 
 
 
@@ -131,24 +133,38 @@ Clean task
   // integrate the external constructs
   
   set validSyntax to: 
-    #block
-    #exprout
-    #exproutblock
-    #exprs
-    #exprsblock
-    #exprsoutblock
-    #exprusing
-    #none
-    #outblock
-    #verb
+    constructs:
+      #block
+      #exprout
+      #exproutblock
+      #exprs
+      #exprsblock
+      #exprsoutblock
+      #exprusing
+      #none
+      #outblock
+      #verb
+    pipers:
+      #expr
+      #none
+      #outblock
+      #use
+      #valexpr
+      #valuse
+      #valoutblock
 
   set requiredElements to:
-    'clauses' 'clauses list'
-    'repeats' 'repeats flag'
-    'handler' 'handler function'
+    constructs:
+      'clauses' 'clauses list'
+      'repeats' 'repeats flag'
+      'handler' 'handler function'
+    pipers:
+      'clauses' 'clauses list'
+      'handler' 'handler function'
+      'tools' 'tools to include in object definition (set to false if none)'
   
   set fail to task given msg
-    throw new Error 'SAI Construct Manager: manifest for ${file}/${constructName}${msg}'
+    throw new Error 'SAI Construct Manager: manifest for ${file}/${category}/${constructName}${msg}'
     
   ply CONSTRUCTS as file
     try
@@ -157,18 +173,22 @@ Clean task
       set manifest to implementation's manifest
       
       // a little validation
-      each manifest as construct, constructName
-        each requiredElements as description, element
-          unless exists construct\element
-            fail ' is missing ${description}.'
-        unless construct.clauses count
-          fail ' has no clauses defined'
-        each construct.clauses as requestedSyntax, clauseName
-          each requestedSyntax as x, type
-            unless validSyntax\type
-              fail '/${clauseName} asks for illegal syntax "${type}"'
-      
-      set config's constructs update manifest
+      each manifest as library, category
+        unless validSyntax\category
+          fail ' unsupported category type'
+        each library as construct, constructName
+          each requiredElements\category as description, element
+            unless exists construct\element
+              fail ' is missing ${description}.'
+          if requiredElements\category.clauses
+            each construct.clauses as requestedSyntax, clauseName
+              each requestedSyntax as x, type
+                unless validSyntax\category\type
+                  fail '/${clauseName} asks for illegal syntax "${type}"'
+            else
+              fail ' has no clauses defined'
+        set config\category update library
+          
     catch
       debug error
       
@@ -354,24 +374,33 @@ GetParser task
       source from Dedenter rawsource
   
     try
-      set js from mainParser.parse source, fields
+      set opts fields
         startrule fn ?? 'startFile' :: 'startExpression'
         bound bound
         globals config.verbs
         constructs config.constructs
+        pipers config.pipers
         persist persist
         filename fn
+        failures undefined
+        
+      set js from mainParser.parse source, opts
+
+      if opts.failures
+        throw new Error opts.failures
     
     catch
+      set meta to fn | total '  ${toUpperCase'd key}: ${it}\n'
+      
       set location to undefined
       if error.location
         set location to trial.start.offset
       if  match'd error.message /at:([0-9]+)/ 
         set location to number trial.1 
 
-      if location
+      exists location
         throw new Error '''
-          SAI: Syntax error <HERE> in ${~JSON.stringify(fn)}
+          SAI: Syntax error <HERE> in\n${meta}
           
           ${Contextualize(source, location)}
           
@@ -380,7 +409,7 @@ GetParser task
       else
         debug error
         throw new Error '''
-          SAI: Error creating prototype:
+          SAI: Error creating prototype in\n${meta}
           
           ${error}
           
