@@ -119,7 +119,7 @@ Execute task
 
   @Test 'is null an object (narrator: it isnt)', task
     set a null
-    set a self by asc
+    set a self | by it asc
     return a is null
 
 Iterator process

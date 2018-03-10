@@ -99,6 +99,7 @@ Instantiate task
 
     | collect
     
+    
     // observe receives the current object without
     // any iteration. It allows you to inspect the object without changing it. 
     // Because this is the first link in the chain, we get the value declared at
@@ -114,11 +115,11 @@ Instantiate task
     // audit is similar to observe, but is triggered for every item in a container
     // In this case we're counting solutions by product (.p) in the pgood array.
     //
-    // the default operator is used to ensure that uninitialized array elements
-    // get a starting value of 0.
+    // the inc (increment) verb has a special behaviour where if the value to be 
+    // incremented is undefined, it is set to 1.
 
     | audit 
-      set pgood\.product to self?0 + 1
+      inc pgood\.product 
     
 
     // Phase 2 -- if P could have known, S knows it isn't the answer.
@@ -127,14 +128,13 @@ Instantiate task
     // if pgood indicates a trivial solution for P, then flag S's solution as bad  
     
     | audit 
-      if pgood\.product = 1
+      if pgood\.product is 1
         set sbad\.sum to true
 
     // Has is a filtration operator: if the expression is true, the row is kept.
     // We keep all solutions that are not marked bad.
     
-    has not sbad\.sum 
-
+    | has not sbad\.sum 
     | observe from Countem it, 'Phase 2'
 
 
@@ -143,23 +143,19 @@ Instantiate task
     //
     // The remaining patterns should be familiar.
 
-    |audit 
-      set pgood2\.product to self?0 + 1
-
-    has pgood2\.product=1
-    
-    |observe from Countem it, 'Phase 3'
+    | audit 
+      inc pgood2\.product 
+    | has pgood2\.product=1
+    | observe from Countem it, 'Phase 3'
 
 
     // phase 4 -- Since P now knows, S can eliminate non-trivial solutions 
     // Filter for a new list of solutions where there is only one answer for .sum
 
-    |audit 
-      set sgood\.sum to self?0 + 1
-
-    has sgood\.sum = 1
-    
-    |observe from Countem it, 'Results'
+    | audit 
+      inc sgood\.sum
+    | has sgood\.sum = 1
+    | observe from Countem it, 'Results'
 
 
     // phase 5 -- Nicely format remaining solution(s)
@@ -169,7 +165,7 @@ Instantiate task
     // an expression to be evaluated; in this case a string literal 
     // that uses the ${} string composition tool.
      
-    |thru `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
+    | thru `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
     
     
     // JOIN is not a keyword, it's a member method of Array. CHAIN knows how to

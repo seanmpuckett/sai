@@ -29,25 +29,25 @@
   }
 
   var ResWords={},ResWordsA=(
-    "andb,and,array,as,asc,audit,"+
-    "bind,blank,by,"+
-    "chain,create,collect,concat,copy,count,"+
-    "default,delete,desc,"+
-    "empty,enlist,entrait,enum,exists,expects,"+
-    "false,fields,first,from,"+
+    "andb,and,array,as,"+
+    "bind,blank,"+
+    "chain,create,concat,copy,count,"+
+    "default,delete,"+
+    "empty,enum,exists,expects,"+
+    "false,fields,from,"+
     "get,"+
-    "has,highest,"+
-    "into,is,isnt,isNaN,iterate,"+
-    "keys,"+
-    "last,limit,list,lowest,"+
+    ""+
+    "into,is,isnt,isNaN,"+
+    ""+
+    "list,"+
     "me,my,"+
     "NaN,nand,new,nor,notb,not,number,null,"+
-    "observe,orb,or,"+
+    "orb,or,"+
     "promise,process,"+
     "self,set,singleton,swap,"+
-    "task,trial,throw,thru,to,traits,true,typeof,"+
+    "task,trial,throw,to,traits,true,typeof,"+
     "undefined,update,using,"+
-    "values,via,"+
+    "via,"+
     "xorb,xor").split(/,/);
   for (var i=0; i<ResWordsA.length; i++) ResWords[ResWordsA[i]]=1;
   
@@ -796,6 +796,16 @@ Line
  / MiscStatement
  / VerbStatement
  
+ 
+Pipers
+ = p:(Piper)+ {
+   var left='',right='';
+   for (var i=0; i<p.length; i++) {
+     left=p[i][0]+left;
+     right=right+p[i][1];
+   }
+   return [left,right];
+ }
 
 Piper 
  = '|' _ i:JSIdentifier &{ return options.pipers[i];} _ a:(
@@ -807,22 +817,40 @@ Piper
    / &{ return options.pipers[i].clauses[i].valuse      }  o:PiperValuse       { return o }
    / &{ return options.pipers[i].clauses[i].use         }  o:PiperUse       { return o }
    / &{ return options.pipers[i].clauses[i].none        }  o:PiperNone       { return o }
- )
- 
- {
+   
+ ) _ cl:(cli:JSIdentifier &{ return options.pipers[i].clauses[cli]; } _ cla:
+      ( 
+     &{ return options.pipers[i].clauses[cli].expr        }  o:PiperExpr       { return o }
+   / &{ return options.pipers[i].clauses[cli].exprs       }  o:PiperExprs       { return o }
+   / &{ return options.pipers[i].clauses[cli].outblock    }  o:PiperOutblock       { return o }
+   / &{ return options.pipers[i].clauses[cli].valexpr     }  o:PiperValexpr       { return o }
+   / &{ return options.pipers[i].clauses[cli].valoutblock }  o:PiperValoutblock       { return o }
+   / &{ return options.pipers[i].clauses[cli].valuse      }  o:PiperValuse       { return o }
+   / &{ return options.pipers[i].clauses[cli].use         }  o:PiperUse       { return o }
+   / &{ return options.pipers[i].clauses[cli].none        }  o:PiperNone       { return o }
+      )
+
+   {return [cli,cla];})* {
+
    var opi=options.pipers[i];
-    var work={
-      clause: i,
-      syntax: a.syntax,
-      type: i+"."+a.syntax,
-      args: a
-    };
+   var clauses=[[i,a]].concat(cl);
+   var work=[];
+   for (var i=0; i<clauses.length; i++) {
+      var cl=clauses[i];
+      var w={
+        clause: cl[0],
+        syntax: cl[1].syntax,
+        type: cl[0]+"."+cl[1].syntax,
+        args: cl[1]
+      };
+      work[i]=w;
+    }
     var tools={
         addlocal:function(v){ if (!v) v=tempvar(); addLocal(v); return v; },
         replacer:RV,
         tasker:TaskClauseFormatter
     };
-    var result=opi.handler({work:work,tools:tools});
+    var result=opi.handler({work:work[0],clauses:work,tools:tools});
     if (result.error) fail(result.error);
 
     if (opi.tools.length) for (var tc=0; tc<opi.tools.length; tc++) AddTool(opi.tools[tc]);
@@ -868,7 +896,7 @@ PiperUse
  }
 
 PiperValexpr
- = v:Value _ x:ExprParen {
+ = v:Value _ x:Logical {
    return {
      syntax: 'valexpr',
      val: v,
@@ -877,7 +905,7 @@ PiperValexpr
  }
 
 PiperExprs
- = x:ParameterList {
+ = x:LogicalList {
    return {
      syntax: 'exprs',
      exprs: x
@@ -885,7 +913,7 @@ PiperExprs
  }
 
 PiperExpr
- = x:ExprParen {
+ = x:Logical {
    return {
      syntax: 'expr',
      expr: x
@@ -898,10 +926,6 @@ PiperNone
      syntax: 'none'
    };
  }
-
-ExprParen
- = x:Expression { return x; }
- / LPAREN _ x:Expression _ RPAREN _ { return x; }
 
 
 
@@ -918,7 +942,7 @@ ConstructStatement
        / &{return options.constructs[i].clauses[i].exprs}          ca:CAExprs      {return ca}
        / &{return options.constructs[i].clauses[i].verb}           ca:CAVerb       {return ca}
        / &{return options.constructs[i].clauses[i].none}           ca:CANone       {return ca}
-       // CAError
+
       )
     cl:(EOLs cli:Identifier &{
       if (cli===i && !options.constructs[i].repeats) return false;
@@ -935,7 +959,7 @@ ConstructStatement
        / &{return options.constructs[i].clauses[cli].exprs}         claa:CAExprs {return claa}
        / &{return options.constructs[i].clauses[cli].verb}          claa:CAVerb {return claa}
        / &{return options.constructs[i].clauses[cli].none}          claa:CANone{return claa}
-       // CAError
+
       )
  {return [cli,cla];})* {
    
@@ -1505,6 +1529,10 @@ ItemLine
 ItemBlock
  = v:(ItemLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
+
+
+ 
+
  
 
 Trait
@@ -1586,264 +1614,18 @@ ListQualify
 
 
 Comprehension
- = Piper
- // MapComprehension 
- // AuditComprehension
- // ReduceComprehension 
- // KeysComprehension 
- // ValuesComprehension
- // IterateComprehension
- // CollectComprehension
- // SetComprehension
- // ObserveComprehension
- / OtherComprehension
- / FilterComprehension 
- / SortComprehension 
- // ConcatComprehension
-
-
-IterateComprehension
- = ITERATE { // test 'sow *'
-     return ['$AI.iterate_op(',')'];
-   }
-
-KeysComprehension
- = KEYS { // test 'keys comp*'
-     return ['$AI.keys_op(',')'];
-   }
-
-ValuesComprehension
- = VALUES { // test 'values comp*'
-     return ['$AI.values_op(',')'];
-   }
-
-ConcatComprehension
- = CONCAT Sep x:Expression {
-   return ['$AI.concat_op(' , ','+x+')' ];
- }
-
-CollectComprehension
- = COLLECT { return ['$AI.collect_op(',')']; }
- / ENLIST { return ['$AI.enlist_op(',')']; }
- / ENTRAIT { return ['$AI.entrait_op(',')']; }
-
-SortComprehension
- = BY Sep x:SortComprehension2 { return x }
-SortComprehension2
- = o:IterateOutput? b:Block {
-    if (!o) o=[lp+'a',lp+'b'];
-    var block=RV('function('+o[0]+','+o[1]+'){'+b+'}');
-    return ['$AI.sort_op(' , ','+block+')']; 
-  }
- / USING Sep x:Value {
-   return ['$AI.sort_op(' , ','+x+')' ];
-  }
-
-MapComprehension
- = THRU Sep x:MapComprehension2 { return x }
-MapComprehension2
- = x:Expression  { // test 'thru inline *'
-     var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
-     return ['$AI.map_op(' , ','+block+' )']; 
-  }
- / LPAREN _ x:Expression _ RPAREN _ { // test 'thru inline *'
-     var block=RV('function(^{this},^{key}){ return '+x+'}',{this:'$_v',key:'$_k'});
-     return ['$AI.map_op(' , ','+block+' )']; 
-  }
- / o:IterateOutput? b:Block { // test 'thru block'
-     var block=RV('function(^{this},^{key}){'+b+'; return ^{this};}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['$AI.map_op(' , ','+block+' )']; 
-  }
- / USING Sep x:Value { // test 'thru using'
-   return ['$AI.map_op(' , ','+x+')' ];
-  }
-
-AuditComprehension
- = AUDIT Sep x:AuditComprehension2 { return x }
-AuditComprehension2
- = LPAREN _ x:Expression _ RPAREN _ { // test 'audit inline *'
-     var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
-     return ['$AI.audit_op(' , ','+block+' )']; 
-  }
- / x:Expression { // test 'audit inline *'
-     var block=RV('function(^{this},^{key}){ '+x+'; }',{this:'$_v',key:'$_k'});
-     return ['$AI.audit_op(' , ','+block+' )']; 
-  }
- / o:IterateOutput? b:Block { // test 'audit block*'
-     var block=RV('function(^{this},^{key}){'+b+' }',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['$AI.audit_op(' , ','+block+' )']; 
-  }
- / USING Sep x:Value { // test 'audit using*'
-   return ['$AI.audit_op(' , ','+x+')' ];
-  }
-
-ReduceComprehension
- = INTO Sep x:ReduceComprehension2 { return x }
-ReduceComprehension2
- = into:IntoClause o:IterateOutput? b:Block {
-    if (!o) o=[];
-    if (!o[0]) o[0]=lp+'sum'; 
-    if (!o[1]) o[1]='$_v';
-    if (!o[2]) o[2]='$_k';
-    b+='return ^{sum};\n';
-    var block=RV('function(^{sum},^{this},^{key}){'+b+'}',{sum:o[0],this:o[1],key:o[2]});
-    if (into=='it') {
-      return ['$AI.reduce_op(' , ','+block+')' ];
-    } else {
-      return ['$AI.reduce_op(' , ','+block+','+into+')' ];
-    }
-  }
- / into:IntoClause b:Expression {
-    var block=RV('function(^{sum},^{this},^{key}){ return '+b+';}',{sum:lp+'sum',this:'$_v',key:'$_k'});
-    if (into=='it') {
-      return ['$AI.reduce_op(' , ','+block+')' ];
-    } else {
-      return ['$AI.reduce_op(' , ','+block+','+into+')' ];
-    }
-  }
-  / into:IntoClause USING Sep x:Value  {
-    if (into=='it') {
-      return ['$AI.reduce_op(' , ','+x+')' ];
-    } else {
-      return ['$AI.reduce_op(' , ','+x+','+into+')' ];
-    }
-  }
-
-FilterComprehension
- = HAS Sep x:FilterComprehension2 { return x }
-FilterComprehension2
- = x:Expression { // test 'filter inline *'
-     var block=RV('function(^{this},^{key}){ return '+x+'; }',{this:'$_v',key:'$_k'});
-     //console.log("filter comp exp");
-     return ['$AI.filter_op(' , ','+block+' )']; 
-  }
- / o:IterateOutput? b:Block {
-     var block=RV('function(^{this},^{key}){'+b+'}',{this:o?o[0]:'$_v',key:o?o[1]:'$_k'});
-     return ['$AI.filter_op(' , ','+block+')']; 
-  }
-  / USING Sep x:Value {
-    return ['$AI.filter_op(' , ','+x+')' ];
-  }
-
-
-SetComprehension
- = SET Sep x:AlterComprehension2 { return x }
-AlterComprehension2
- = x:Expression { // test 'alter inline*'
-     var block=RV('function(^{this}){ return '+x+'; }',{this:'$_v'});
-     return [ '$AI.alter_op(' , ','+block+')']; 
-  }
- / o:IterateOutput? b:Block { // test 'alter block*'
-     var block=RV('function(^{this}){'+b+'; return ^{this}; }',{this:o?o[0]:'$_v'});
-     return [ '$AI.alter_op(' , ','+block+')']; 
-  }
- / USING Sep x:Value { // test 'alter using'
-     return [ '$AI.alter_op(' , ','+x+')']; 
-  }
-  
-ObserveComprehension
- = OBSERVE Sep x:ObserveComprehension2 { return x }
-ObserveComprehension2
- = x:Expression { // test 'observe inline'
-     var block=RV('function(^{this}){ '+x+'; }',{this:'$_v'});
-     return [ '$AI.observe_op(' , ','+block+')']; 
-  }
- / o:IterateOutput? b:Block { // test 'observe block'
-     var block=RV('function(^{this}){'+b+'; }',{this:o?o[0]:'$_v'});
-     return [ '$AI.observe_op(' , ','+block+')']; 
-  }
- / USING Sep x:Value { // test 'observe using'
-     return [ '$AI.observe_op(' , ','+x+')']; 
-  }
+ = Pipers
 
 
 
-OtherComprehension
- = _ q:(Quality / Criteria / Sequence / Limit)+ _ 
- {
-   var code='({<>})';
-   q=[].concat(q);
-   var expr={quality:[],having:[],by:[],map:[],limit:[]};
-   for (var i in q) { 
-     for (var j=0; j<q[i].length; j+=2) {
-       expr[q[i][j]].push(q[i][j+1]); 
-     }
-   }
-   var conds=[];
-   if (expr.quality.length) {
-     for (var i in expr.quality) { 
-       conds.push(expr.quality[i]); 
-      }
-   }
-   if (expr.having.length) {
-     var conds=conds.concat(expr.having.map(function(c){ return '('+c+')';}));
-   }
-   if (conds.length) {
-     code=RV('$AI.filter_op(^{source},function($_v,$_k){ return ^{block}; })',{source:code,block:conds.join(' && '),this:'$_v',key:'$_k'});
-   }
-   if (expr.limit.length && expr.limit[0].extract && expr.by.length) { // first/last singleton with a sort
-     code='$AI.reduce_op('+code+',function(a,b) { if (undefined===a) return b; var r; ';
-     expr.by[0][1]*=expr.limit[0].sort; // flip sort if looking for "last"
-     var conds=expr.by.map(function(c){
-       c[0]=c[0]||'^{this}';
-       var x1=RV(c[0],{this:'a'});
-       var x2=RV(c[0],{this:'b'});
-       return RV('r=$AI.compare_op(^{x1},^{x2}); if (r<0) return ^{lt}; if (r>0) return ^{gt};\n',{x1:x1,x2:x2,lt:(c[1]>0?'a':'b'),gt:(c[1]>0?'b':'a')});
-     });
-     code+=conds.join(' ')+'return a; },undefined)';     
-   } else {
-     if (expr.by.length) {
-       code='$AI.sort_op('+code+',function(a,b) { var aa,bb; ';
-       var conds=expr.by.map(function(c){
-         c[0]=c[0]||'^{this}';
-         var x1=RV('aa='+c[0]+'; ',{this:'a'});
-         var x2=RV('bb='+c[0]+'; ',{this:'b'});
-         return x1+x2+RV('if (aa<bb) return ^{lt}; if (aa>bb) return ^{gt}; ',{c:c[0],lt:-c[1],gt:c[1]});
-       });
-       code+=conds.join(' ')+'return 0; })';
-     }
-     if (expr.limit.length) {
-       var l=expr.limit[0];
-       if (l.slice) {
-         code='$AI.slice_op('+code+','+l.start+','+l.len+')';
-       }
-       if (l.extract) { 
-         code='$AI.element_op('+code+',0)';
-       }
-       if (l.count) {
-         code='$AI.count_op('+code+')';
-       }
-     }
-   } 
-   return code.split('{<>}');
- }
+LogicalItem
+ = Logical
 
-
+LogicalItemSep
+ = v:Logical _ COMMA _  { return v }
  
-Limit 
- = FIRST _ { return ['limit',{extract:true,sort:1}]; } 
- / LAST _ { return ['limit',{extract:true,slice:true,start:-1}]; } 
- / LIMIT _ s:Logical _ COMMA _ c:Logical _ { return ['limit',{slice:true,start:s,len:c}]; } 
- / LIMIT _ s:Logical _ { return ['limit',{slice:true,start:undefined,len:s}]; } 
- / COUNT _ { return ['limit',{count:true}]; }
- 
-Quality
- = HASH v:Keyword _ { return ['quality', '^{this}["'+v+'"]'] }
- / BANG HASH v:Keyword _ { return ['quality', '(!^{this}["'+v+'"])'] }
-
-Criteria
- = HAS _ v:Logical _ { return ['having',v] }
-
-Sequence
- = BY _ d:SortDirection _ { return ['by',[null,d?d:1]] }
- / BY _ v:Logical d:SortDirection? _ { return ['by',[v,d?d:1]] }
- / HIGHEST _ v:Logical _ { return ['by',[v,-1],'limit',{extract:true,sort:1}]}
- / LOWEST _ v:Logical _ { return ['by',[v,1],'limit',{extract:true,sort:1}]}
-
-SortDirection
- = (ASC) _ { return 1 }
- / (DESC) _ { return -1 }
-
+LogicalList
+ = v:(LogicalItemSep)* t:(LogicalItem) _ ';'? _ { return v.concat(t) }
 
 
 Logical
@@ -2253,14 +2035,10 @@ ANY = 'any'
 ARGUMENTS = 'arguments'
 ARRAY = 'array'
 AS = 'as'
-ASC = 'asc'
-AUDIT = 'audit'
 BIND = 'bind'
 BLANK = 'blank'
-BY = 'by'
 CATCH = 'catch'
 CHAIN = 'chain'
-COLLECT = 'collect'
 COPY = 'copy'
 CONCAT = 'concat'
 CONTRACT = 'contract'
@@ -2270,23 +2048,17 @@ CREATE = 'create'
 DEC = 'dec'
 DEFAULT = 'default'
 DELETE = 'delete'
-DESC = 'desc'
 DO = 'do'
 ELSE = 'else'
 EMPTY = 'empty'
 ENUM = 'enum'
-ENLIST = 'enlist'
-ENTRAIT = 'entrait'
 ERROR = 'error'
 EXISTS = 'exists'
 EXPECTS = 'expects'
 FIELDS = 'fields'
-FIRST = 'first'
 FROM = 'from'
 GET = 'get'
 GIVEN = 'given'
-HAS = 'has'
-HIGHEST = 'highest'
 INFINITY = 'Infinity'
 INSTANCE = 'instance'
 INTO = 'into'
@@ -2296,16 +2068,11 @@ ISNT = 'isnt'
 ISNAN = 'isNaN'
 IS = 'is'
 ISOF = 'isof'
-ITERATE = 'iterate'
 ITERATOR = 'Iterator'
 IT = 'it'
-KEYS = 'keys'
 KEY = 'key'
-LAST = 'last'
-LIMIT = 'limit'
 LIST = 'list'
 LOCAL = 'local'
-LOWEST = 'lowest'
 ME = 'me'
 MY = 'my'
 MAIN = 'main'
@@ -2319,7 +2086,6 @@ NOTB = 'notb'
 NUMBER = 'number'
 NULL = 'null'
 OBJECT = 'object'
-OBSERVE = 'observe'
 ORPHAN = 'orphan'
 OR = 'or'
 ORB = 'orb'
@@ -2337,7 +2103,6 @@ SWAP = 'swap'
 SUPER = 'super'
 TASK = 'task'
 THEN = 'then'
-THRU = 'thru'
 TRAITS = 'traits'
 TRIAL = 'trial'
 TRY = 'try'
@@ -2347,7 +2112,6 @@ UNBOUND = 'unbound'
 UNDEFINED = 'undefined'
 UPDATE = 'update'
 USING = 'using'
-VALUES = 'values'
 VIA = 'via'
 WITH = 'with'
 XOR  = 'xor'

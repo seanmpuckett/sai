@@ -107,7 +107,7 @@ Instantiate task given SAI
   // main loop
   //
   
-  set argv ~process.argv limit 2, undefined // chop off first two arguments
+  set argv ~process.argv | limit 2, undefined // chop off first two arguments
 
   unless argv.length
     Banner

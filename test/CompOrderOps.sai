@@ -24,7 +24,7 @@ Execute task
 
   @Test 'comp order 1', task
     set a chain friends
-      has .province is 'ON'
+      | has .province is 'ON'
     return true
   
 

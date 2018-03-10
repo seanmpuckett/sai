@@ -1,0 +1,315 @@
+
+object QueryP
+
+inherit: Construct
+
+given:
+  SPLIT '^&*SP.L.I.' + ~Math.random() + 'T.H.E.RE*&^'
+
+// MANIFEST
+
+manifest get 
+  return:
+  
+    'pipers':
+
+      'limit':
+        clauses:
+          'limit': #exprs
+        handler bind LimitPiper
+        tools empty
+
+      'first':
+        clauses:
+          'first': #none
+        handler bind LimitPiper
+        tools empty
+
+      'last':
+        clauses:
+          'last': #none
+        handler bind LimitPiper
+        tools empty
+
+      'count':
+        clauses:
+          'count': #none
+        handler bind LimitPiper
+        tools empty
+
+      'by':
+        clauses:
+          'by': #expr, #outblock, #use, #none
+          'asc': #none
+          'desc': #none
+        handler bind SortPiper
+        tools empty
+
+      'has':
+        clauses:
+          'has': #expr, #outblock, #use
+        handler bind FilterPiper
+        tools empty
+        
+      'lowest':
+        clauses:
+          'lowest': #expr, #use, #none, #outblock
+        handler bind LowestPiper
+        tools empty
+        
+      'highest':
+        clauses:
+          'highest': #expr, #use, #none, #outblock
+        handler bind LowestPiper
+        tools empty
+        
+
+
+//// FILTER PIPER 
+
+FilterPiper task expects $clauses, $tools
+
+  set
+    pattern '(${SPLIT})'
+    tools empty
+    work $clauses.0
+    
+  if $clauses's length > 1
+     return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
+
+  switch work.type
+  case 'has.expr'
+    set 
+      vars:
+        'this' false
+        'key' false
+        'block' work.args.expr
+      fn '''
+        function(^{this},^{key}){ 
+          return ^{block}; 
+        }
+      fn from $tools.replacer fn, vars
+      pattern '$AI.filter_op(${SPLIT},${fn})'
+
+  case 'has.outblock'
+    set
+      outs from my OutVarHelper work.args.out      
+      vars:
+        'this' outs.0
+        'key' outs.1
+        'block' work.args.block
+      fn '''
+        function(^{this},^{key}){ 
+          ^{block}; 
+          return ^{this}; 
+        }
+      fn from $tools.replacer fn, vars  
+      pattern '$AI.filter_op(${SPLIT},${fn})'
+
+  case 'has.use'
+    set pattern '$AI.filter_op(${SPLIT},${work.args.use})'
+
+  else
+    return: error "Unhandled piper type ${trial} in FilterPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+
+
+//// LOWEST/HIGHEST PIPER 
+
+LowestPiper task expects $clauses, $tools
+
+
+  set
+    pattern '(${SPLIT})'
+    tools empty
+    Repl $tools.replacer
+    ascending 1
+    work $clauses.0
+    
+  if $clauses's length > 1
+     return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
+
+  if work.clause is 'highest'
+    set ascending to -1
+
+  switch work.type
+
+  case 'lowest.expr', 'highest.expr'
+    set 
+      afetch from Repl work.args.expr, fields 'this' 'a'
+      bfetch from Repl work.args.expr, fields 'this' 'b'
+      whichway to ascending>0 ?? 'aa>bb' :: 'aa<bb'
+
+      fn '''
+        function(a,b){ 
+          if (undefined===a) return b;
+          var aa=${afetch};
+          var bb=${bfetch};
+          return (${whichway}) ? b : a;
+        }
+
+      pattern '$AI.reduce_op(${SPLIT},${fn})'
+
+  case 'lowest.outblock', 'highest.outblock'
+    set
+      outs from my OutVarHelper work.args.out      
+      whichway to ascending>0 ?? '>0' :: '<=0'
+      vars:
+        'a' outs.0 ? '_a'
+        'b' outs.1 ? '_b'
+        'block' work.args.block
+      fn '''
+        function(^{a},^{b}){ 
+          ^{block}; 
+        }
+      fn from $tools.replacer fn, vars  
+      pattern '''
+        $AI.reduce_op(${SPLIT},function(a,b){
+          if (undefined===a) return b;
+          return (${fn}(a,b)${whichway}) ? b : a;
+        })
+
+  case 'lowest.use', 'highest.use'
+    set
+      whichway to ascending>0 ?? '>0' :: '<=0'
+      pattern '''
+        $AI.reduce_op(${SPLIT},function(a,b){
+          if (undefined===a) return b;
+          return (${work.args.use}(a,b)${whichway}) ? b : a;
+        })
+
+  case 'lowest.none', 'higest.none'
+    set
+      whichway to ascending>0 ?? 'a>b' :: 'a<b'
+      pattern '''
+        $AI.reduce_op(${SPLIT},function(a,b){
+          if (undefined===a) return b;
+          return (${whichway}) ? b : a;
+        })
+
+  else
+    return: error "Unhandled piper type ${trial} in LowestPiper"
+
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+
+//// SORT PIPER 
+
+SortPiper task expects $clauses, $tools
+
+
+  set
+    pattern '(${SPLIT})'
+    tools empty
+    Repl $tools.replacer
+    ascending 1
+    grammar $clauses | total (.clause)
+    work $clauses.0
+    
+  unless grammar is 'by' or grammar is 'byasc' or grammar is 'bydesc'
+     return: error "SAI Compiler: bad grammar in BY; expecting BY or BY...ASC or BY...DESC "
+
+  if grammar is 'bydesc'
+    set ascending to -1
+
+  switch work.type
+
+  case 'by.expr'
+    set
+      source to work.args.expr ? '^\{this}'
+      afetch from Repl 'aa=${source}; ', fields 'this' 'a'
+      bfetch from Repl 'bb=${source}; ', fields 'this' 'b'
+
+      tester from Repl:
+        afetch+bfetch+'if (aa<bb) return ^\{lt}; if (aa>bb) return ^\{gt}; '
+        fields 
+          lt -ascending
+          gt ascending
+
+      fn '''
+        function(a,b){
+          var aa,bb;
+          ${tester};
+          return 0;
+        }
+
+      pattern '$AI.sort_op(${SPLIT},${fn})'
+
+  case 'by.outblock'
+    set
+      outs from my OutVarHelper work.args.out      
+      vars:
+        'a' outs.0 ? '_a'
+        'b' outs.1 ? '_b'
+        'block' work.args.block
+      fn '''
+        function(^{a},^{b}){ 
+          ^{block}; 
+        }
+      fn from $tools.replacer fn, vars  
+      pattern '$AI.sort_op(${SPLIT},${fn})'
+
+  case 'by.use'
+    set pattern '$AI.sort_op(${SPLIT},${work.args.use})'
+
+  case 'by.none'
+    set 
+      whichway ascending>0 ?? 'a>b' :: 'b>a'
+      pattern '''
+        $AI.sort_op(${SPLIT},function(a,b){
+          return (${whichway}) ? 1 : 0;
+        })
+
+  else
+    return: error "Unhandled piper type ${trial} in SortPiper"
+
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+
+        
+
+//// LIMIT PIPER 
+
+LimitPiper task expects $clauses, $tools
+
+  set 
+    pattern '(${SPLIT})'
+    tools empty
+    work $clauses.0
+    
+  if $clauses's length > 1
+     return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
+    
+  switch work.type
+  case 'limit.exprs'
+    if work.args.exprs's length is 1
+      set
+        st undefined
+        ct work.args.exprs.0
+    else
+      set
+        st work.args.exprs.0
+        ct work.args.exprs.1
+      
+    set pattern '$AI.slice_op(${SPLIT},${st},${ct})'
+
+  case 'first.none'
+    set pattern '($AI.element_op($AI.slice_op(${SPLIT},0,1),0))'
+
+  case 'last.none'
+    set pattern '($AI.element_op($AI.slice_op(${SPLIT},undefined,-1),0))'
+
+  case 'count.none'
+    set pattern '$AI.count_op(${SPLIT})'
+
+  else
+    return: error "Unhandled piper type ${trial} in LimitPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+

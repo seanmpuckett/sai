@@ -8,6 +8,116 @@ inherit list
 
 Execute task
 
+
+
+
+
+  set friends to:
+    :name 'Sara', age 23, #cat, province 'ON'
+    :name 'John', age 19, #cat, #dog, province 'ON'
+    :name 'Ellie', age 22, province 'QC'
+    :name 'Marshal', age 21, #dog, province 'ON'
+    :name 'Doug', age 18, province 'ON'
+    :name 'Ann', age 23, #cat, province 'QC'
+    :name 'Harry', age 31, province 'QC'
+    :name 'Jenna', age 28, #dog, province 'ON'  
+
+  @Test 'by using task', task
+    set a friends | by using task given a,b
+      return a.age <=> b.age
+    ... | limit 1 | thru .name
+    return a.length is 1 and a.0 is 'Doug'
+
+  @Test 'by oldest in Quebec', task
+    set a ( friends | has .province is 'QC' | by .age | thru .name | last )
+    return a is 'Harry'
+
+  @Test 'by youngest in Quebec', task
+    set a ( friends | has .province is 'QC' | lowest .age | set .name )
+    return a is 'Ellie'
+
+  @Test 'by oldest in Ontario', task
+    set a ( friends | has .province is 'ON' | highest .age | set .name )
+    return a is 'Jenna'
+
+  @Test 'by oldest in Ontario using func', task
+    set a friends | has .province is 'ON' | highest using task given left, right
+      return left.age <=> right.age
+    return a.name is 'Jenna'
+
+  @Test 'by youngest in Ontario block', task
+    set a friends | has .province is 'ON' | lowest as one, two
+      return one.age <=> two.age
+    return a.name is 'Doug'
+
+  @Test 'by youngest in Ontario', task
+    set a ( friends | has .province is 'ON' | by .age desc | thru .name | last )
+    return a is 'Doug'
+
+  @Test 'by oldest in Ontario', task
+    set a ( friends | has .province is 'ON' | by .age asc | thru .name | last )
+    return a is 'Jenna'
+
+  @Test 'filter list some', task
+    set b to: 1, 2, 3; | has it>1
+    return b[0]=2 and b[1]=3 and b.length = 2
+    
+  @Test 'has task', task
+    set a friends | has using task
+      return $name is 'Sara'
+    ... | thru .name
+    return a.length is 1 and a.0 is 'Sara'
+
+  @Match 'row count on |iterated filter', 3, task
+    set a to: 1, 2, 3; | iterate
+    set b to 0
+    chain a
+      | has
+        set b + key
+    return b 
+
+  @Test 'by task', task
+    set a friends | by 
+      return a.age <=> b.age
+    ... | limit 1 | thru .name
+    return a.length is 1 and a.0 is 'Doug'
+
+  @Test 'sort list', task
+    set b to list aaaa,bbb,cc | by .length
+    return b[0]='cc' and b[1]='bbb' and b[2]='aaaa' and b.length=3
+    
+  @Test 'sort list up', task
+    set b to list aaaa,bbb,cc | by 
+    return b[0]='aaaa' and b[1]='bbb' and b[2]='cc' and b.length=3
+    
+  @Test 'sort list down', task
+    set b to list aaaa,bbb,cc | by it desc
+    return b[0]='cc' and b[1]='bbb' and b[2]='aaaa' and b.length=3
+    
+
+
+
+  @Test 'limit 1', task
+    set a list 1,2,3
+    set b a | limit 1
+    return b.length is 1 and b.0 is 1
+
+  @Test 'limit 1,1', task
+    set a list 1,2,3
+    set b a | limit 1, 1
+    return b.length is 1 and b.0 is 2
+
+  @Test 'first', task
+    set a list 1,2,3
+    set b a | first
+    return b is 1
+
+  @Test 'last', task
+    set a list 1,2,3
+    set b a | last
+    return b is 3
+
+
   @Test 'replicate 3', task
     set b 'a' | replicate 3
     return b's length is 3 and b.0 is 'a' and b.1 is 'a' and b.2 is 'a'
@@ -352,26 +462,26 @@ Execute task
     return b.next().value
 
   @Match 'into 3 iterable inline it', 'abc', task
-    set b to list a,b,c; |iterate | into '' sum+it
+    set b to list a,b,c; | iterate | into '' sum+it
     return b.next().value
 
   @Match 'total 3 iterable inline none', 'abc', task
-    set b to list a,b,c; |iterate | total it
+    set b to list a,b,c; | iterate | total it
     return b.next().value
 
   @Match 'total 3 iterable inline expr', 'a.b.c.', task
-    set b to list a,b,c; |iterate | total it+'.'
+    set b to list a,b,c; | iterate | total it+'.'
     return b.next().value
 
   @Match 'into 3 iterable inline ', 'abc', task
-    set b to list a,b,c; |iterate | into '' sum+it
+    set b to list a,b,c; | iterate | into '' sum+it
     return b.next().value
     
   @Match 'into nested', 4, task
     set a to:
       :1, 2
       :3, 4
-    set a to self |thru . |thru . * 2
+    set a to self | thru (. |thru . * 2)
     return a.0.1
     
   @Match 'row count on|iterated audit', 3, task

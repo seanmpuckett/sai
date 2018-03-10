@@ -45,7 +45,7 @@ manifest get
 
 IfElseConstruct task expects $clauses, $tools
 
-  ply $clauses limit 0, -1
+  ply $clauses | limit 0, -1
     if .clause is 'else'
        return: error 'SAI Compiler: ELSE, if present, must be the last clause in an IF/UNLESS/EXISTS construct.'
 

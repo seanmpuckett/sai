@@ -8,65 +8,65 @@ inherit list
 
 Execute task
 
-  // first section tests low level functionality, not the parser
+  // |first section tests low level functionality, not the parser
 
   @Test 'filter undef', task
-    set b to undefined has true
+    set b to undefined |has true
     return b is undefined
     
   @Test 'filter value true', task
-    set b to 'a' has it='a'
+    set b to 'a' |has it='a'
     return b is 'a'
     
   @Test 'filter value false', task
-    set b to 'a' has it='b'
+    set b to 'a' |has it='b'
     return b is undefined
     
   @Test 'has list all', task
-    set b to: 1, 2, 3; has it
+    set b to: 1, 2, 3; |has it
     return b[0]=1 and b[1]=2 and b[2]=3 and b.length = 3
     
   @Test 'filter list some', task
-    set b to: 1, 2, 3; has it>1
+    set b to: 1, 2, 3; |has it>1
     return b[0]=2 and b[1]=3 and b.length = 2
     
   @Test 'filter list none', task
-    set b to: 1, 2, 3; has it>4
+    set b to: 1, 2, 3; |has it>4
     return b.length = 0
     
   @Test 'filter traits all', task
-    set b to: a 1, b 2, c 3; has it>0
+    set b to: a 1, b 2, c 3; |has it>0
     return b.a=1 and b.b=2 and b.c=3
     
   @Test 'filter traits some', task
-    set b to: a 1, b 2, c 3; has it>1
+    set b to: a 1, b 2, c 3; |has it>1
     return b.a is undefined and b.b=2 and b.c=3
     
   @Test 'filter traits none', task
-    set b to: a 1, b 2, c 3; has it>4
+    set b to: a 1, b 2, c 3; |has it>4
     return b.a is undefined and b.b is undefined and b.c is undefined
     
   @Test 'filter iterator odds', task
-    set b to: 1,2,3,4,5; |iterate has it%2
+    set b to: 1,2,3,4,5; |iterate |has it%2
     count 3
       unless b.next().value = counter*2+1
         return false
     return true
   
   @Test 'sort undef', task
-    set b to undefined by it
+    set b to undefined |by it
     return b is undefined
   
   @Test 'sort value', task
-    set b to 'fred' by it
+    set b to 'fred' |by it
     return b='fred'
     
   @Test 'sort list', task
-    set b to: 3,2,1; by it
+    set b to: 3,2,1; |by it
     return b[0]=1 and b[1]=2 and b[2]=3 and b.length=3
     
   @Test 'sort traits', task
-    set b to: a 3,b 2,c 1; by it
+    set b to: a 3,b 2,c 1; |by it
     return b[0]=1 and b[1]=2 and b[2]=3 and b.length=3
   
     
@@ -265,25 +265,25 @@ Execute task
     set a to:
       :1, 2
       :3, 4
-    set a to self |thru . |thru . * 2
+    set a to self | thru (. | thru . * 2)
     return a.0.1
     
   @Match 'count undefined', 0, task
-    return undefined count
+    return undefined | count
     
   @Match 'count scalar', 1, task
-    return 99 count
+    return 99 | count
     
   @Match 'count array', 2, task
-    return list a, b; count
+    return list a, b; | count
     
   @Match 'count traits', 3, task
     set b to: a 1, b 2, c 3
-    return b count
+    return b | count
     
   @Match 'count iterable', 4, task
     set b array 1,2,3,4; |iterate
-    return b count
+    return b | count
     
   // |concat  
     
@@ -413,21 +413,21 @@ Execute task
 
   
   @Test 'has task', task
-    set a friends has using task
+    set a friends |has using task
       return $name is 'Sara'
     ... |thru .name
     return a.length is 1 and a.0 is 'Sara'
 
   @Test 'by task', task
-    set a friends by using task given a,b
+    set a friends |by using task given a,b
       return a.age <=> b.age
-    ... limit 1 |thru .name
+    ... | limit 1; | thru .name
     return a.length is 1 and a.0 is 'Doug'
 
   @Match 'thru task', 'SARA', task
     return friends |thru using task
       return from $name.toUpperCase
-    ... first
+    ... |first
     
   @Match 'into task', 185, task
     return friends |into 0 using task given acc,val
@@ -444,44 +444,44 @@ Execute task
     return friends |into 0
       set sum + .age
   
-  @Match '#cat count', 3, task
-    return (friends #cat).length
+//  @Match '#cat count', 3, task
+//    return (friends #cat).length
   
-  @Match '!#cat count', 5, task
-    return (friends !#cat).length
+//  @Match '!#cat count', 5, task
+//    return (friends !#cat).length
   
-  @Match '#cat #dog count', 1, task
-    return (friends #cat #dog).length
+//  @Match '#cat #dog count', 1, task
+//    return (friends #cat #dog).length
 
-  @Match '#cat !#dog count', 2, task
-    return (friends #cat !#dog).length
+//  @Match '#cat !#dog count', 2, task
+//    return (friends #cat !#dog).length
   
-  @Match '#ferret count', 0, task
-    return (friends #ferret).length
+//  @Match '#ferret count', 0, task
+//    return (friends #ferret).length
         
   @Match 'first', 'Sara', task
-    return (friends first).name
+    return (friends |first).name
       
-  @Match 'youngest dog', 'John', task
-    return (friends #dog lowest .age).name
+//  @Match 'youngest dog', 'John', task
+//    return (friends #dog |lowest .age).name
 
   @Match 'youngest quebec', 'Ellie', task
-    return (friends has .province='QC' lowest .age).name
+    return (friends |has .province='QC' |lowest .age).name
 
   @Match 'longest name', 'Marshal', task
-    return (friends highest .name.length).name
+    return (friends |highest .name.length).name
 
   @Match 'youngest', 'Doug', task
-    return (friends by .age first).name
+    return (friends |by .age |first).name
 
   @Match 'lowest name', 'Ann', task
-    return (friends by .name limit 1)[0].name
+    return (friends |by .name |limit 1)[0].name
   
   @Match 'eldest', 'Harry', task
-    return (friends highest .age).name
+    return (friends |highest .age).name
 
   @Match 'last', 'Jenna', task
-    return (friends last).name
+    return (friends |last).name
     
   
   @Test 'enlist undefined', task
@@ -536,15 +536,15 @@ Execute task
     return a.fred=1 and a.bill=2 and a.cal=3
   
   @Test 'limit undef', task
-    set a to undefined limit 1
+    set a to undefined |limit 1
     return a is undefined
     
   @Test 'limit no rows', task
-    set a to: 1, 2, 3; limit 0
+    set a to: 1, 2, 3; |limit 0
     return a.length is 0
   
   @Test 'limit no gen', task
-    set a to: 1, 2, 3; |iterate limit 0
+    set a to: 1, 2, 3; |iterate |limit 0
     if typeof a is 'function'
       set a self |collect
       return a.length is 0
@@ -562,245 +562,245 @@ Execute task
     return true
   
   @Match 'limitstring u, -y', 'defg', task
-    return 'abcdefg' limit -4
+    return 'abcdefg' |limit -4
   
   @Match 'limitstring u, 0', '', task
-    return 'abcdefg' limit 0
+    return 'abcdefg' |limit 0
   
   @Match 'limitstring u, u', 'abcdefg', task
-    return 'abcdefg' limit undefined
+    return 'abcdefg' |limit undefined
   
   @Match 'limitstring u, y', 'abcdef', task
-    return 'abcdefg' limit 6
+    return 'abcdefg' |limit 6
   
   @Match 'limitstring -, -y', 'ef', task
-    return 'abcdefg' limit -3, -1
+    return 'abcdefg' |limit -3, -1
   
   @Match 'limitstring -, 0', '', task
-    return 'abcdefg' limit -4, 0
+    return 'abcdefg' |limit -4, 0
   
   @Match 'limitstring -, u', 'bcdefg', task
-    return 'abcdefg' limit -6, undefined
+    return 'abcdefg' |limit -6, undefined
   
   @Match 'limitstring -, y', 'cd', task
-    return 'abcdefg' limit -5, 2
+    return 'abcdefg' |limit -5, 2
   
   @Match 'limitstring 0, -y', 'abc', task
-    return 'abcdefg' limit 0, -4
+    return 'abcdefg' |limit 0, -4
   
   @Match 'limitstring 0, 0', '', task
-    return 'abcdefg' limit 0, 0
+    return 'abcdefg' |limit 0, 0
   
   @Match 'limitstring 0, u', 'abcdefg', task
-    return 'abcdefg' limit 0, undefined
+    return 'abcdefg' |limit 0, undefined
   
   @Match 'limitstring 0, y', 'de', task
-    return 'abcdefg' limit 3, 2
+    return 'abcdefg' |limit 3, 2
   
   @Match 'limitstring +, -y', 'cdef', task
-    return 'abcdefg' limit 2, -1
+    return 'abcdefg' |limit 2, -1
   
   @Match 'limitstring +, 0', '', task
-    return 'abcdefg' limit 5, 0
+    return 'abcdefg' |limit 5, 0
   
   @Match 'limitstring +, u', 'fg', task
-    return 'abcdefg' limit 5, undefined
+    return 'abcdefg' |limit 5, undefined
   
   @Match 'limitstring +, y', 'bcdef', task
-    return 'abcdefg' limit 1, 5
+    return 'abcdefg' |limit 1, 5
   
   set l to: 1,2,3,4,5
 
   @Test 'limit -x', task
-    set a to l limit -2
+    set a to l |limit -2
     return from ListVerify a, :4,5
     
   @Test 'limit 0', task
-    set a to l limit 0
+    set a to l |limit 0
     return from ListVerify a, empty
     
   @Test 'limit +x', task
-    set a to l limit 2
+    set a to l |limit 2
     return from ListVerify a, :1,2
     
-  @Test 'limit -x, -y', task//              everything except last y rows starting x from end of list
-    set a to l limit -3,-1
+  @Test 'limit -x, -y', task//              everything except |last y rows starting x from end of list
+    set a to l |limit -3,-1
     return from ListVerify a, :3,4
     
   @Test 'limit -x, 0', task//              nothing
-    set a to l limit -3,0
+    set a to l |limit -3,0
     return from ListVerify a, empty
     
-  @Test 'limit -x, undef', task//           last x rows
-    set a to l limit -2, undefined
+  @Test 'limit -x, undef', task//           |last x rows
+    set a to l |limit -2, undefined
     return from ListVerify a, :4, 5
     
   @Test 'limit -x, +y', task//                    y rows starting x from end of list
-    set a to l limit -4,2
+    set a to l |limit -4,2
     return from ListVerify a, :2,3
     
-  @Test 'limit 0, -y', task//everything except last y rows
-    set a to l limit 0,-1
+  @Test 'limit 0, -y', task//everything except |last y rows
+    set a to l |limit 0,-1
     return from ListVerify a, :1,2,3,4
     
   @Test 'limit 0, 0', task //nothing
-    set a to l limit 0,0
+    set a to l |limit 0,0
     return from ListVerify a, empty
     
   @Test 'limit 0, undef', task //everything 
-    set a to l limit 0, undefined
+    set a to l |limit 0, undefined
     return from ListVerify a, :1,2,3,4,5
     
   @Test 'limit 0, +y', task //first y rows
-    set a to l limit 0,2
+    set a to l |limit 0,2
     return from ListVerify a, :1,2
     
-  @Test 'limit +x, -y', task//everything except last y rows starting at x
-    set a to l limit 1,-2
+  @Test 'limit +x, -y', task//everything except |last y rows starting at x
+    set a to l |limit 1,-2
     return from ListVerify a, :2,3
     
   @Test 'limit +x, 0', task //nothing
-    set a to l limit 1,0
+    set a to l |limit 1,0
     return from ListVerify a, empty
     
   @Test 'limit +x, undef', task //everything starting at x
-    set a to l limit 2, undefined
+    set a to l |limit 2, undefined
     return from ListVerify a, :3,4,5
     
   @Test 'limit +x, +y', task //y rows starting at x
-    set a to l limit 2,2
+    set a to l | limit 2,2
     return from ListVerify a, :3,4
       
       
   @Test 'limit gen -x', task
-    set a to l |iterate limit -2 |collect
+    set a to l | iterate | limit -2 | collect
     return from ListVerify a, :4,5
     
   @Test 'limit gen 0', task
-    set a to l |iterate limit 0 |collect
+    set a to l | iterate | limit 0 | collect
     return from ListVerify a, empty
     
   @Test 'limit gen +x', task
-    set a to l |iterate limit 2 |collect
+    set a to l | iterate | limit 2 | collect
     return from ListVerify a, :1,2
     
-  @Test 'limit gen -x, -y', task//              everything except last y rows starting x from end of list
-    set a to l |iterate limit -3,-1 |collect
+  @Test 'limit gen -x, -y', task//              everything except |last y rows starting x from end of list
+    set a to l |iterate | limit -3, -1 | collect
     return from ListVerify a, :3,4
     
   @Test 'limit gen -x, 0', task//              nothing
-    set a to l |iterate limit -3,0 |collect
+    set a to l | iterate | limit -3, 0 | collect
     return from ListVerify a, empty
     
-  @Test 'limit gen -x, undef', task//           last x rows
-    set a to l |iterate limit -2, undefined |collect
+  @Test 'limit gen -x, undef', task//           |last x rows
+    set a to l | iterate | limit -2, undefined | collect
     return from ListVerify a, :4, 5
     
   @Test 'limit gen -x, +y', task//                    y rows starting x from end of list
-    set a to l |iterate limit -4,2 |collect
+    set a to l |iterate |limit -4,2 | collect
     return from ListVerify a, :2,3
     
-  @Test 'limit gen 0, -y', task//everything except last y rows
-    set a to l |iterate limit 0,-1 |collect
+  @Test 'limit gen 0, -y', task//everything except |last y rows
+    set a to l |iterate |limit 0,-1 | collect
     return from ListVerify a, :1,2,3,4
     
   @Test 'limit gen 0, 0', task //nothing
-    set a to l |iterate limit 0,0 |collect
+    set a to l | iterate | limit 0, 0 |collect
     return from ListVerify a, empty
     
   @Test 'limit gen 0, undef', task //everything 
-    set a to l |iterate limit 0, undefined |collect
+    set a to l |iterate |limit 0, undefined; |collect
     return from ListVerify a, :1,2,3,4,5
     
   @Test 'limit gen 0, +y', task //first y rows
-    set a to l |iterate limit 0,2 |collect
+    set a to l |iterate |limit 0,2; |collect
     return from ListVerify a, :1,2
     
-  @Test 'limit gen +x, -y', task//everything except last y rows starting at x
-    set a to l |iterate limit 1,-2 |collect
+  @Test 'limit gen +x, -y', task//everything except |last y rows starting at x
+    set a to l |iterate |limit 1,-2; |collect
     return from ListVerify a, :2,3
     
   @Test 'limit gen +x, 0', task //nothing
-    set a to l |iterate limit 1,0 |collect
+    set a to l |iterate |limit 1,0; |collect
     return from ListVerify a, empty
     
   @Test 'limit gen +x, undef', task //everything starting at x
-    set a to l |iterate limit 2, undefined |collect
+    set a to l |iterate |limit 2, undefined; |collect
     return from ListVerify a, :3,4,5
     
   @Test 'limit gen +x, +y', task //y rows starting at x
-    set a to l |iterate limit 2,2 |collect
+    set a to l |iterate |limit 2,2; |collect
     return from ListVerify a, :3,4
       
   
   @Test 'limit entire generator', task
     set gen to: 1, 2, 3; |iterate
-    set a to gen limit 0, undefined
+    set a to gen |limit 0, undefined
     set a self |collect
     return a.length is 3 and a.1 is 2
     
   @Test 'limit chopped generator', task
     set gen to: 1, 2, 3; |iterate
-    set a to gen limit 0, 10
+    set a to gen |limit 0, 10
     set a self |collect
     return a.length is 3 and a.1 is 2
     
   @Test 'limit on object', task
-    set a to: a 1, b 2; limit 1
+    set a to: a 1, b 2; |limit 1
     return a.length=1 and a.0.a=1 
     
   @Test 'limit on value unlimited', task
-    set a to 1 limit 1
+    set a to 1 |limit 1
     return a.length is 1 and a.0 is 1
     
   @Test 'limit on value from the end', task
-    set a to 1 limit -1
+    set a to 1 |limit -1
     return a.length is 1 and a.0 is 1
     
   @Test 'limit on value from the end chopped', task
-    set a to 1 limit -1,0
+    set a to 1 |limit -1,0
     return a.length is 0
     
   @Test 'limit list offset unclosed', task
-    set a to: 1, 2, 3; limit 2, undefined
+    set a to: 1, 2, 3; |limit 2, undefined
     return a.length is 1 and a.0 is 3
     
   @Test 'limit list negative offset unclosed', task
-    set a to: 1, 2, 3; limit -2, undefined
+    set a to: 1, 2, 3; |limit -2, undefined
     return a.length is 2 and a.0 is 2 and a.1 is 3
     
-  @Test 'limit on value limited', task
-    set a to 1 limit 0
+  @Test 'limit on value |limited', task
+    set a to 1 |limit 0
     return a.length is 0 
     
   @Test 'limit on value out of range', task
-    set a to 1 limit -2,1
+    set a to 1 |limit -2,1
     return a.length is 0
     
   @Test 'first last on undefined', task
-    set a to undefined first
-    set b to undefined last
+    set a to undefined |first
+    set b to undefined |last
     return a is undefined and b is undefined
     
-  @Test 'first last on value', task
-    set a to 1 first
-    set b to 1 last
+  @Test 'first |last on value', task
+    set a to 1 |first
+    set b to 1 |last
     return a is 1 and b is 1
 
   @Test 'first on object', task
-    set a to: a 1, b 2; first
+    set a to: a 1, b 2; |first
     return a.a is 1
 
   @Test 'last on object', task
-    set a to: a 1, b 2; last
+    set a to: a 1, b 2; |last
     return a.a is 1
 
   @Test 'first on generator', task
-    set a to: 1, 2, 3; |iterate first
+    set a to: 1, 2, 3; |iterate |first
     return a is 1
 
   @Test 'last on generator', task
-    set a to: 1, 2, 3; |iterate last
+    set a to: 1, 2, 3; |iterate |last
     return a is 3
   
   @Match 'row count on |iterated |audit', 3, task
@@ -823,7 +823,7 @@ Execute task
     set a to: 1, 2, 3; |iterate
     set b to 0
     chain a
-      has
+      |has
         set b + key
     return b 
     

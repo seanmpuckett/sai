@@ -27,7 +27,7 @@ manifest get
 
 PromisingConstruct task as work
 
-  with (work's clauses last).clause
+  with ( work's clauses | last ).clause
     unless it is 'finally' or it is 'catch' or it is 'rejecting' or it is 'finalizing'
       return: error "SAI compiler: final clause in PROMISING must be CATCH, FINALLY, REJECTING or FINALIZING, not ${toUpperCase'd it}"
 
