@@ -42,7 +42,7 @@ Instantiate task
       suite.Execute
     catch
       debug error
-      set @fail concat "Could not execute tests in ${it}"
+      push'd fail "Could not execute tests in ${it}"
       
   set endTime new ~Date
   debug 'Test time ${endTime-startTime}ms.'

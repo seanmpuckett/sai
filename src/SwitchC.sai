@@ -40,7 +40,7 @@ SwitchConstruct task expects $clauses, $tools
     switch .type
     case 'switch.exprout'
       set
-        vars to trialvar update:
+        vars to trialvar | update:
           'condition' .args.expr
           
         text '''
@@ -52,7 +52,7 @@ SwitchConstruct task expects $clauses, $tools
       set
         cases to .args.exprs.2 | total 'case ${.}:\n'
           
-        vars trialvar update:
+        vars trialvar | update:
           'cases' cases
           'block' .args.block
 
@@ -65,7 +65,7 @@ SwitchConstruct task expects $clauses, $tools
         
     case 'else.block'
       set
-        vars trialvar update:
+        vars trialvar | update:
           'block' .args.block
 
         text '''

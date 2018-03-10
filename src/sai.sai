@@ -67,6 +67,7 @@ reference:
     SwitchC
     ListsP
     QueryP
+    CrudP
 
 
 
@@ -191,7 +192,7 @@ Clean task
                   fail '/${clauseName} asks for illegal syntax "${type}"'
             else
               fail ' has no clauses defined'
-        set config\category update library
+        set config\category | update library
           
     catch
       debug error
@@ -661,11 +662,11 @@ Configure task given c
   exists c.paths
     set config.paths it
   exists c.verbs
-    set config.verbs update it
+    set config.verbs | update it
   exists c.options
-    set config.options update it
+    set config.options | update it
   exists c.constructs
-    set config.constructs update it
+    set config.constructs | update it
   exists c.Loader
     set config.Loader it
   

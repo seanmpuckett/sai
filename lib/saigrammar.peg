@@ -31,7 +31,7 @@
   var ResWords={},ResWordsA=(
     "andb,and,array,as,"+
     "bind,blank,"+
-    "chain,create,concat,copy,count,"+
+    "chain,create,copy,"+
     "default,delete,"+
     "empty,enum,exists,expects,"+
     "false,fields,from,"+
@@ -46,7 +46,7 @@
     "promise,process,"+
     "self,set,singleton,swap,"+
     "task,trial,throw,to,traits,true,typeof,"+
-    "undefined,update,using,"+
+    "undefined,using,"+
     "via,"+
     "xorb,xor").split(/,/);
   for (var i=0; i<ResWordsA.length; i++) ResWords[ResWordsA[i]]=1;
@@ -358,7 +358,6 @@
     'inc': '^{1}=(^{1} || 0)+1;', // test 'self inc'
     'dec': '^{1}--', // test 'self dec'
     'delete': 'delete ^{1}', // test 'self delete'
-    'collect': '^{1} = $AI.collect_op(^{1})' // test 'self collect*'
   };  
 
   
@@ -1115,7 +1114,7 @@ SetTerm
    }
    return code;
  }
- / l:RValues _ o:Piper {
+ / l:RValues _ o:Pipers {
    if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
    for (var i in l) {
@@ -1170,9 +1169,7 @@ Itselfop // test 'self*'
  / ANDB / ORB / XORB
  / AND / OR / XOR / NAND / NOR
  / '?>' / '?<'
- / UPDATE / DELETE 
  / DEFAULT / '?' 
- / CONCAT 
 
 
 
@@ -1628,6 +1625,21 @@ LogicalList
  = v:(LogicalItemSep)* t:(LogicalItem) _ ';'? _ { return v.concat(t) }
 
 
+
+
+Logical
+ = l:Comparison _ result:(
+     o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
+   / XOR _ r:Logical  { return '($AI.xor_op('+l+','+r+'))' } // test 'xor' 
+   / NAND _ r:Logical { return '(!('+l+' && '+r+'))' } // test 'nand'
+   / NOR _ r:Logical { return '(!('+l+' || '+r+'))' } // test 'nor'
+   / '??' _ a:Logical _ '::' _ b:Logical { 
+     return RV('((^{l})?(^{a}):(^{b}))',{l:l,a:a,b:b}); 
+   } 
+   / _ { return l }
+  ) { return result; }
+
+/*
 Logical
  = l:Comparison _ o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
  / c:Comparison _ XOR _ l:Logical  { return '($AI.xor_op('+c+','+l+'))' } // test 'xor' 
@@ -1637,15 +1649,24 @@ Logical
      return RV('((^{c})?(^{l}):(^{r}))',{c:c,l:l,r:r}); 
    } 
  / v:Comparison _ { return v }
+*/
 
 LogicalOp
  = AND Sep { return '&&' } // test 'and'
  / OR Sep { return '||' } // test 'or'
  
 Comparison
+ = l:Addition _ result:(
+       o:MathOp _ r:Comparison { return o+'('+l+','+r+')' }
+     / o:ComparisonOp _ r:Comparison { return '('+l+o+r+')' }
+     / _ { return l }
+  ) { return result; }
+
+/*Comparison
  = l:Addition _ o:MathOp _ r:Comparison { return o+'('+l+','+r+')' }
  / l:Addition _ o:ComparisonOp _ r:Comparison { return '('+l+o+r+')' }
  / v:Addition _ { return v }
+ */
  
 ComparisonOp
   = '>=' { return '>=' } // test '>='
@@ -1664,10 +1685,16 @@ MathOp
  / '<=>' { return '$AI.compare_op' } // test '<=>'
 
    
-   
+Addition
+ = l:Multiplication _ result:(
+     o:AdditionOp _ r:Addition { return '('+l+o+r+')' }
+   / _ { return l }
+   ) { return result; }
+/*   
 Addition
  = l:Multiplication _ o:AdditionOp _ r:Addition { return '('+l+o+r+')' }
  / v:Multiplication _ { return v }
+*/
 
 AdditionOp
  = '+' // test '+'
@@ -1676,8 +1703,44 @@ AdditionOp
  / ANDB Sep {return '&'} // test 'binary and'
  / XORB Sep { return '^'}  // test 'binary xor'
 
+
 Multiplication 
- = DefaultOp
+ = l:Value _ result:(
+     DEFAULT _ v:Multiplication  {  // test 'default*'
+         SafetyFetch=true; 
+         return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
+       } 
+     / '?' !'?' _ v:Multiplication  {  // test 'default*'
+         SafetyFetch=true; 
+         return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
+       } 
+     / o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
+     / '**' _ r:Multiplication { // test '**'
+       return 'Math.pow('+l+','+r+')' 
+     } 
+     / VIA _ op:Value _ x:ParameterList? {
+       var p=undefined;
+       if (x) {
+         p=x[1];
+       }
+       return '('+op+').call($,('+l+'),'+p+')';
+     }
+     / ISOF Sep r:Multiplication { 
+       return '('+l+').isof['+r+']'; 
+     }
+     / _ { return l }
+  ) { return result; }
+  
+/*
+Multiplication 
+ = l:Value _ DEFAULT _ v:Multiplication  {  // test 'default*'
+     SafetyFetch=true; 
+     return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
+   } 
+ / l:Value _ '?' !'?' _ v:Multiplication  {  // test 'default*'
+     SafetyFetch=true; 
+     return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
+   } 
  / l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
  / l:Value _ '**' _ r:Multiplication { // test '**'
    return 'Math.pow('+l+','+r+')' 
@@ -1689,33 +1752,11 @@ Multiplication
    }
    return '('+op+').call($,('+l+'),'+p+')';
  }
- / l:Value _ UPDATE Sep r:Multiplication { // test 'overlay *'
-   return '$AI.overlay_op('+l+','+r+')' 
- }
- / l:Value _ SELECT Sep r:Multiplication { // test 'select *'
-   return '$AI.select_op('+l+','+r+')' 
- }
- / l:Value _ DELETE Sep r:Multiplication { // test 'delete *'
-   return '$AI.delete_op($AI.clone_op('+l+'),'+r+')' 
- }
- / l:Value _ EXPECTS Sep r:Multiplication { 
-   return '$AI.expects_op('+l+','+r+')' 
- }
  / l:Value _ ISOF Sep r:Multiplication { 
    return '('+l+').isof['+r+']'; 
  }
  / v:Value _ { return v }
-
-DefaultOp
- = l:Value _ DEFAULT _ v:Multiplication  {  // test 'default*'
-     SafetyFetch=true; 
-     return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
-   } 
- / l:Value _ '?' !'?' _ v:Multiplication  {  // test 'default*'
-     SafetyFetch=true; 
-     return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
-   } 
-
+*/
 
 MultiplicationOp
  = '*' // test '*'
@@ -2040,9 +2081,7 @@ BLANK = 'blank'
 CATCH = 'catch'
 CHAIN = 'chain'
 COPY = 'copy'
-CONCAT = 'concat'
 CONTRACT = 'contract'
-COUNT = 'count'
 COUNTER = 'counter'
 CREATE = 'create'
 DEC = 'dec'
@@ -2094,7 +2133,6 @@ FALSE = 'false'
 PROMISE = 'promise'
 PROCESS = 'process'
 REFERENCE = 'reference'
-SELECT = 'select'
 SELF = 'self'
 SET = 'set'
 SINGLETON = 'singleton'
@@ -2110,7 +2148,6 @@ TO = 'to'
 TYPEOF = 'typeof'
 UNBOUND = 'unbound'
 UNDEFINED = 'undefined'
-UPDATE = 'update'
 USING = 'using'
 VIA = 'via'
 WITH = 'with'

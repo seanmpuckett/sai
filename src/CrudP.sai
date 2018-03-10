@@ -1,0 +1,72 @@
+
+object QueryP
+
+inherit: Construct
+
+given:
+  SPLIT '^&*SP.L.I.' + ~Math.random() + 'T.H.E.RE*&^'
+
+// MANIFEST
+
+manifest get 
+  return:
+  
+    'pipers':
+
+      'select':
+        clauses:
+          'select': #expr
+        handler bind CrudPiper
+        tools empty
+          
+      'update':
+        clauses:
+          'update': #expr
+        handler bind CrudPiper
+        tools empty
+
+      'delete':
+        clauses:
+          'delete': #expr
+        handler bind CrudPiper
+        tools empty
+
+      'expects':
+        clauses:
+          'expects': #expr
+        handler bind CrudPiper
+        tools empty
+
+
+
+//// FILTER PIPER 
+
+CrudPiper task expects $clauses, $tools
+
+  set
+    pattern '(${SPLIT})'
+    tools empty
+    work $clauses.0
+    
+  if $clauses's length > 1
+     return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
+
+  switch work.type
+  case 'select.expr'
+    set pattern '$AI.select_op(${SPLIT},${work.args.expr})'
+
+  case 'update.expr'
+    set pattern '$AI.overlay_op(${SPLIT},${work.args.expr})'
+
+  case 'delete.expr'
+    set pattern '$AI.delete_op(${SPLIT},${work.args.expr},true)'
+
+  case 'expects.expr'
+    set pattern '$AI.expects_op(${SPLIT},${work.args.expr})'
+
+  else
+    return: error "Unhandled piper type ${trial} in CrudPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+

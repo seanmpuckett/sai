@@ -38,7 +38,7 @@ PromisingConstruct task as work
       kind 'function'
       execute $execute
     if $ispromise
-      set options update:
+      set options | update:
         preface 'return new Promise(function($_resolve,$_reject) {'
         postface 'if ($_resolve) return $_resolve();})'
     return from work's tools.tasker options

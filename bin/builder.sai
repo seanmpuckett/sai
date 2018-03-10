@@ -56,7 +56,7 @@ Instantiate task given SAI
     // return destination path, updating extension and handling overrides
     DestPath task given path, branch
       if dest .. set path PATH.join(dest, branch, PATH.basename(path))
-      with PATH.parse(path) delete 'base'
+      with PATH.parse(path) | delete 'base'
         if  .ext is '.sai'
           set .ext '.js'
         else
