@@ -1,0 +1,36 @@
+  
+object Keywords
+
+
+
+inherit: Construct
+
+given:
+  boring: '{', '}', ']', '%%DEDENT%%', '%%INDENT%%', ','
+
+instance:
+  SAI undefined
+
+manifest get
+  return introspect  
+      
+docs get
+  return introspect
+  
+introspect get
+  
+  set parsefun from SAI.mainParser.parse.toString
+  set matcher to /peg\$literalExpectation.\"([^"]+)\"./g
+  set matches to empty
+  while from matcher.exec parsefun
+    push'd matches it.1
+
+  set boring to /^[0-9a-zA-Z]$|\&\#/
+  set matches | has not (boring.exec(it)) and not boring\it
+  
+  set matches | enkey blank
+  
+  return:
+    'keywords' matches
+      
+  

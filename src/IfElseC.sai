@@ -17,6 +17,9 @@ manifest get
           'elsexists': #exproutblock
           'else': #block
         handler bind IfElseConstruct
+        subtitle 'conditional flow control'
+        summary ''
+        details ''
 
       'unless':
         repeats false
@@ -27,6 +30,9 @@ manifest get
           'elsexists': #exproutblock
           'else': #block
         handler bind IfElseConstruct
+        subtitle 'conditional flow control'
+        summary ''
+        details ''
 
       'exists':
         repeats false
@@ -37,6 +43,9 @@ manifest get
           'elsexists': #exproutblock
           'else': #block
         handler bind IfElseConstruct
+        subtitle 'conditional flow control'
+        summary ''
+        details ''
       
 
 ///////////////   IF ELSE

@@ -45,6 +45,7 @@ reference:
       'assert' '$AI.assert'
       'Error' 'Error'
       'Math' 'Math'
+
     constructs blank // initialized later
     pipers blank // initialized later
     paths:
@@ -68,6 +69,7 @@ reference:
     ListsP
     QueryP
     CrudP
+    Keywords
 
 
 
@@ -83,11 +85,42 @@ instance:
   config undefined
   persist: globalcount 1
 
+  mainParser undefined
+
   protoConstructor undefined
   
   Parse undefined
   Beautify undefined
-  
+
+
+given:
+  validSyntax: 
+    keywords blank
+    
+    constructs:
+      'block'         '[indent code block]'
+      'exprout'       '[expr] (AS var1, var2...)'
+      'exproutblock'  '[expr] (AS var1, var2...) [indent code block]'
+      'exprs'         '[expr1 (, expr2, ...)]'
+      'exprsblock'    '[expr1 (, expr2, ...)] [indent code block]'
+      'exprsoutblock' '[expr1 (, expr2, ...)] (AS var1, var2, ...) [indent code block]'
+      'exprsusing'    '[expr1 (, expr2, ...)] USING [function reference]'
+      'exprusing'     '[expr] USING [function reference]'
+      'none'          ' '
+      'outblock'      '(AS var1, var2...) [indent code block]'
+      'verb'          '[verb sentence]'
+      
+    pipers:
+      'expr'          '[expr]'
+      'exprs'         '[expr1 (, expr2, ...)]'
+      'none'          ' '
+      'outblock'      '(AS var1, var2...) [indent code block]'
+      'use'           'USING [function reference]'
+      'valexpr'       '[value] [expr]'
+      'valuse'        '[value] USING [function reference]'
+      'valoutblock'   '[value] (AS var1, var2...) [indent code block]'
+
+
 
 // Instantiate
 //
@@ -131,31 +164,10 @@ Clean task
     SAILIB.create_op from Create.bind me
 
 
+  IntegrateConstructs
+
   
-  // integrate the external constructs
-  
-  set validSyntax to: 
-    constructs:
-      #block
-      #exprout
-      #exproutblock
-      #exprs
-      #exprsblock
-      #exprsoutblock
-      #exprusing
-      #none
-      #outblock
-      #verb
-    pipers:
-      #expr
-      #exprs
-      #none
-      #outblock
-      #use
-      #valexpr
-      #valuse
-      #valoutblock
-      
+IntegrateConstructs task
 
   set requiredElements to:
     constructs:
@@ -174,6 +186,7 @@ Clean task
     try
       set fn to "./"+file
       set implementation from require fn
+      set implementation.SAI me // this is for introspection in Keywords.sai
       set manifest to implementation's manifest
       
       // a little validation
@@ -185,7 +198,7 @@ Clean task
           each requiredElements\category as description, element
             unless exists construct\element
               fail ' is missing ${description}.'
-          if requiredElements\category.clauses
+          if ?requiredElements\category.clauses
             each construct.clauses as requestedSyntax, clauseName
               each requestedSyntax as val, type
                 unless validSyntax\category\type
@@ -198,8 +211,59 @@ Clean task
       debug error
       
 
+Document task
+  set documents:
+    keywords blank
+    
+  set documents | update from DocumentConstructs
+
+  return documents
 
 
+DocumentConstructs task 
+
+  set documents blank
+  set prefix:
+    'constructs':
+       main ''
+       aux ''
+    'pipers':
+       main '... | '
+       aux '(optional) '
+
+  ply CONSTRUCTS as file
+    set 
+      fn to "./"+file
+      implementation from require fn 
+      implementation.SAI me // this is for introspection in Keywords.sai
+      manifest to implementation's manifest
+      docs to implementation's docs 
+    
+    each manifest as library, category
+      set documents\category default blank
+        
+      each library as construct, constructName
+
+        set doc to ?docs\category\constructName or blank
+        set synref empty
+
+        each construct.clauses as requestedSyntax, clauseName
+          each requestedSyntax as val, type
+            set sub to clauseName is constructName ?? 'main' :: 'aux'
+            push'd synref '${prefix\category\sub}${clauseName} ${validSyntax\category\type}'
+          push'd synref ''
+          
+        set documents\category\constructName:
+          title constructName
+          subtitle doc.subtitle ? 'subtitle'
+          summary doc.summary ? 'summary'
+          synref join'd synref '\n'
+          detail doc.detail ? 'detail'
+            
+
+  return documents
+  
+  
   
 // Dedenter
 //
@@ -228,6 +292,9 @@ Dedenter task given src
     
   ply rawlines as line, lineno
   
+    if line.indexOf('\t') >= 0
+      throw new Error "SAI Compiler: tab characters are not supported in source files ${from Context lineno}"
+
     set trail line.length
     while ' ' is line[trail-1] .. dec trail
     set line (self | limit 0, trail)
@@ -240,32 +307,30 @@ Dedenter task given src
     set isBlank 0 is trimmed's length
     
     unless isComment or isBlank
-    
       set heredoc "'''" is (line | limit -3)
 
-      switch heredocstate
-      case 0
-        if heredoc
-          set heredocstate 1
-          set heredepth depth
-        if depth > indent.0
-          unshift'd indent depth
-          push'd lines INDENT
-      case 1
+      if heredocstate is 2
+        if depth < heredepth
+          set heredocstate 0
+        elsif depth > heredepth
+          set trimmed (line | limit heredepth, undefined)
+
+      if heredocstate is 1
         if depth <= heredepth
           throw new Error "SAI: multi-line quotes must be indented ${from Context lineno}"
         push'd lines INDENT
         unshift'd indent depth
         set heredepth depth
         set heredocstate 2
-      case 2
-        if depth < heredepth
-          set heredocstate 0
-        elsif depth > heredepth
-          set trimmed (line | limit heredepth, undefined)
-      else
-        throw new Error "unknown heredoc state"
         
+      if heredocstate is 0
+        if heredoc
+          set heredocstate 1
+          set heredepth depth
+        if depth > indent.0
+          unshift'd indent depth
+          push'd lines INDENT
+
       if depth < indent.0
         while depth < indent.0
           push'd lines DEDENT
@@ -273,7 +338,8 @@ Dedenter task given src
         if depth isnt indent.0
           throw new Error "SAI: incorrect indentation ${from Context lineno}"
 
-    push'd lines trimmed
+    unless isComment and heredocstate and depth<heredepth
+      push'd lines trimmed
     
   while shift'd indent
     push'd lines DEDENT

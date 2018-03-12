@@ -17,6 +17,7 @@ Instantiate task
   //@AnalyseParseTrace
 
   set tests to list
+    Pipers
     Scope
     Loops
     Generators
@@ -33,7 +34,6 @@ Instantiate task
     Reference
     CompOrderOps
     Inheritance
-    Pipers
 
   set startTime new ~Date
   ply tests

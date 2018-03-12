@@ -14,6 +14,7 @@ manifest get
     'pipers':
 
       'limit':
+        subtitle: 'array/string cropping'
         clauses:
           'limit': #exprs
         handler bind LimitPiper
@@ -237,6 +238,8 @@ SortPiper task expects $clauses, $tools
           return 0;
         }
 
+      fn to source is '^\{this}' ?? 'function(a,b){return ${ascending}*$AI.compare_op(a,b)}' :: self
+
       pattern '$AI.sort_op(${SPLIT},${fn})'
 
   case 'by.outblock'
@@ -258,12 +261,9 @@ SortPiper task expects $clauses, $tools
 
   case 'by.none'
     set 
-      whichway ascending>0 ?? 'a>b' :: 'b>a'
       pattern '''
-        $AI.sort_op(${SPLIT},function(a,b){
-          return (${whichway}) ? 1 : 0;
-        })
-
+        $AI.sort_op(${SPLIT},function(a,b){return ${ascending}*$AI.compare_op(a,b);})
+    
   else
     return: error "Unhandled piper type ${trial} in SortPiper"
 

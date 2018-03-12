@@ -8,7 +8,48 @@ inherit list
 
 Execute task
 
+  @Test 'set order ops', task
+    set a to list a,b
+    set b to list d,e
+    
+    set a | concat <- b | thru 
+      return it+'.'
+    set a | total
+    return a is 'abd.e.'
+    
+    // 1,2,3,6,5,4
+  
+  @Test 'enkey hah', task
+    set a list a,b,c
+    set a | enkey
+    return a.a is true and a.b is true and a.c is true
 
+  @Test 'enkey hah expr', task
+    set a list a,b,c
+    set a | enkey it
+    return a.a is 'a' and a.b is 'b' and a.c is 'c'
+
+
+  @Test 'index ya', task
+    set a to: a 'app', b 'ban', c 'che'
+    set c to ''
+    index a, (list b, c | by it desc)
+      set c + it
+    return c is 'cheban' 
+
+  @Test 'index using ya', task
+    set a to: a 'app', b 'ban', c 'che'
+    set c to ''
+    set t to task given val
+      set c + val
+    index a, list b, c; using t
+    return c is 'banche' 
+
+
+  @Test 'order ops pipers', task
+    set b to list a,b,c
+    set b | concat (b | by it desc)
+    return (b | total) is 'abccba'
 
 
 

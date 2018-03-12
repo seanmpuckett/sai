@@ -29,7 +29,7 @@
   }
 
   var ResWords={},ResWordsA=(
-    "andb,and,array,as,"+
+    "andb,and,array,as,arguments,"+
     "bind,blank,"+
     "chain,create,copy,"+
     "default,delete,"+
@@ -344,11 +344,8 @@
     '?>': '^{1} = Math.max(^{1},^{2})', // test 'self ?>'
     '?<': '^{1} = Math.min(^{1},^{2})', // test 'self ?<'
     
-    update: '^{1} = $AI.update_op(^{1},^{2})', // test 'self update'
-    delete: '$AI.delete_op(^{1},^{2})', // test 'self delete*'
     default: 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
     '?': 'if (undefined===^{1}) ^{1}=^{2}', // test 'self default*'
-    concat: '^{1} = $AI.concat_op(^{1},^{2}, true)', // test 'self concat inplace*'
   };
 
   var unops={
@@ -808,6 +805,7 @@ Pipers
 
 Piper 
  = '|' _ i:JSIdentifier &{ return options.pipers[i];} _ a:(
+ 
      &{ return options.pipers[i].clauses[i].expr        }  o:PiperExpr       { return o }
    / &{ return options.pipers[i].clauses[i].exprs       }  o:PiperExprs       { return o }
    / &{ return options.pipers[i].clauses[i].outblock    }  o:PiperOutblock       { return o }
@@ -815,7 +813,7 @@ Piper
    / &{ return options.pipers[i].clauses[i].valoutblock }  o:PiperValoutblock       { return o }
    / &{ return options.pipers[i].clauses[i].valuse      }  o:PiperValuse       { return o }
    / &{ return options.pipers[i].clauses[i].use         }  o:PiperUse       { return o }
-   / &{ return options.pipers[i].clauses[i].none        }  o:PiperNone       { return o }
+   / &{ return options.pipers[i].clauses[i].none        }  o:PiperNone  { return o }
    
  ) _ cl:(cli:JSIdentifier &{ return options.pipers[i].clauses[cli]; } _ cla:
       ( 
@@ -936,6 +934,7 @@ ConstructStatement
        / &{return options.constructs[i].clauses[i].exprsblock}     ca:CAExprsblock     {return ca}
        / &{return options.constructs[i].clauses[i].exprsoutblock}  ca:CAExprsoutblock     {return ca}
        / &{return options.constructs[i].clauses[i].exprusing}      ca:CAExprusing     {return ca}
+       / &{return options.constructs[i].clauses[i].exprsusing}     ca:CAExprsusing     {return ca}
        / &{return options.constructs[i].clauses[i].outblock}       ca:CAOutblock      {return ca}
        / &{return options.constructs[i].clauses[i].block}          ca:CABlock      {return ca}
        / &{return options.constructs[i].clauses[i].exprs}          ca:CAExprs      {return ca}
@@ -953,6 +952,7 @@ ConstructStatement
        / &{return options.constructs[i].clauses[cli].exprsblock}    claa:CAExprsblock {return claa}
        / &{return options.constructs[i].clauses[cli].exprsoutblock} claa:CAExprsoutblock {return claa}
        / &{return options.constructs[i].clauses[cli].exprusing}     claa:CAExprusing {return claa}
+       / &{return options.constructs[i].clauses[cli].exprsusing}    claa:CAExprsusing {return claa}
        / &{return options.constructs[i].clauses[cli].outblock}      claa:CAOutblock {return claa}
        / &{return options.constructs[i].clauses[cli].block}         claa:CABlock {return claa}
        / &{return options.constructs[i].clauses[cli].exprs}         claa:CAExprs {return claa}
@@ -990,7 +990,7 @@ ConstructStatement
  
 CAError = .* { return { syntax: 'error', location: location().start.offset }; }
  
-CAExprsoutblock = pl:ParameterList _ mo:MultiOutput? _ b:Block { return {
+CAExprsoutblock = pl:LogicalList _ mo:MultiOutput? _ b:Block { return {
   syntax: 'exprsoutblock',
   exprs: pl,
   out: mo,
@@ -1013,6 +1013,12 @@ CAExprout = x:Expression _ mo:MultiOutput? _ { return {
 CAExprusing = x:Expression _ USING Sep task:Value { return {
   syntax: 'exprusing',
   expr: x,
+  using: task
+}; }
+
+CAExprsusing = pl:LogicalList _ USING Sep task:Value { return {
+  syntax: 'exprsusing',
+  exprs: pl,
   using: task
 }; }
 
@@ -1117,8 +1123,10 @@ SetTerm
  / l:RValues _ o:Pipers {
    if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    var code='';
+   var a=tempvar();
+   addLocal(a);
    for (var i in l) {
-     code+= l[i]+'='+o[0]+l[i]+o[1]+';\n';
+     code+=a+'='+l[i]+'; '+l[i]+'='+o[0]+a+o[1]+';\n';
    }
    return code;
  }
@@ -1596,23 +1604,13 @@ ParameterCandidate
 
 
 
-
 Expression
- = v:ListQualify
- 
-
-ListQualify
- = v:Logical _ c:(c:Comprehension _ {return c})* {
-   for (var i in c) {
-     v=c[i][0]+v+c[i][1];
+ = v:Logical _ c:Pipers? {
+   if (c) {  
+     v=c[0]+v+c[1];
    }
    return v;
  } 
-
-
-Comprehension
- = Pipers
-
 
 
 LogicalItem
@@ -1623,8 +1621,6 @@ LogicalItemSep
  
 LogicalList
  = v:(LogicalItemSep)* t:(LogicalItem) _ ';'? _ { return v.concat(t) }
-
-
 
 
 Logical
@@ -1639,18 +1635,6 @@ Logical
    / _ { return l }
   ) { return result; }
 
-/*
-Logical
- = l:Comparison _ o:LogicalOp _ r:Logical { return '('+l+o+r+')' }
- / c:Comparison _ XOR _ l:Logical  { return '($AI.xor_op('+c+','+l+'))' } // test 'xor' 
- / l:Comparison _ NAND _ f:Logical { return '(!('+l+' && '+f+'))' } // test 'nand'
- / l:Comparison _ NOR _ f:Logical { return '(!('+l+' || '+f+'))' } // test 'nor'
- / c:Comparison _ '??' _ l:Logical _ '::' _ r:Logical { 
-     return RV('((^{c})?(^{l}):(^{r}))',{c:c,l:l,r:r}); 
-   } 
- / v:Comparison _ { return v }
-*/
-
 LogicalOp
  = AND Sep { return '&&' } // test 'and'
  / OR Sep { return '||' } // test 'or'
@@ -1662,11 +1646,6 @@ Comparison
      / _ { return l }
   ) { return result; }
 
-/*Comparison
- = l:Addition _ o:MathOp _ r:Comparison { return o+'('+l+','+r+')' }
- / l:Addition _ o:ComparisonOp _ r:Comparison { return '('+l+o+r+')' }
- / v:Addition _ { return v }
- */
  
 ComparisonOp
   = '>=' { return '>=' } // test '>='
@@ -1677,7 +1656,6 @@ ComparisonOp
   / '<=' { return '<=' } // test '<='
   / '<' !'<' { return '<' } // test '<'
   / '!=' { return '!=' } // test '!='
-
 
 MathOp
  = '?>' { return '$AI.max_op' } // test '?>'
@@ -1690,11 +1668,6 @@ Addition
      o:AdditionOp _ r:Addition { return '('+l+o+r+')' }
    / _ { return l }
    ) { return result; }
-/*   
-Addition
- = l:Multiplication _ o:AdditionOp _ r:Addition { return '('+l+o+r+')' }
- / v:Multiplication _ { return v }
-*/
 
 AdditionOp
  = '+' // test '+'
@@ -1706,11 +1679,7 @@ AdditionOp
 
 Multiplication 
  = l:Value _ result:(
-     DEFAULT _ v:Multiplication  {  // test 'default*'
-         SafetyFetch=true; 
-         return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
-       } 
-     / '?' !'?' _ v:Multiplication  {  // test 'default*'
+     (DEFAULT/('?'!'?')) _ v:Multiplication  {  // test 'default*'
          SafetyFetch=true; 
          return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
        } 
@@ -1731,32 +1700,6 @@ Multiplication
      / _ { return l }
   ) { return result; }
   
-/*
-Multiplication 
- = l:Value _ DEFAULT _ v:Multiplication  {  // test 'default*'
-     SafetyFetch=true; 
-     return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
-   } 
- / l:Value _ '?' !'?' _ v:Multiplication  {  // test 'default*'
-     SafetyFetch=true; 
-     return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
-   } 
- / l:Value _ o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
- / l:Value _ '**' _ r:Multiplication { // test '**'
-   return 'Math.pow('+l+','+r+')' 
- } 
- / l:Value _ VIA _ op:Value _ x:ParameterList? {
-   var p=undefined;
-   if (x) {
-     p=x[1];
-   }
-   return '('+op+').call($,('+l+'),'+p+')';
- }
- / l:Value _ ISOF Sep r:Multiplication { 
-   return '('+l+').isof['+r+']'; 
- }
- / v:Value _ { return v }
-*/
 
 MultiplicationOp
  = '*' // test '*'
@@ -1779,8 +1722,7 @@ Value
  / TASK Sep v:TaskClause _ { return v }
  / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
- / BANG Sep? v:VerbSentence _ { return v }
- / FROM Sep v:VerbSentence _ { return v }
+ / (BANG Sep? / FROM Sep) v:VerbSentence _ { return v }
  / BIND Sep v:Value _ { return  'function(){return ('+v+').apply($,arguments);}'; }
  / Verbd
  / '?' v:RValueSafe _ { return v }
@@ -1788,7 +1730,8 @@ Value
  / VerbChain 
  / v:NestedDefinition { return v[1] }
  / o:NewObject _ { return o }
- / '(' _ v:Expression _ o:Output? ')' _ { 
+ / '<-' _ v:Expression { return v; }
+ / LPAREN _ v:Expression _ o:Output? RPAREN _ { 
    if (o) {
      addLocal(o);
      return RV('(^{out}='+v+')',{out:o}); 
@@ -1881,7 +1824,7 @@ VerbChainBlock
    }
  
 VerbChainLine
- = c:Comprehension _ EOLs {
+ = c:Pipers _ EOLs {
      return {left:c[0], right: c[1]}
   }
  / i:Identifier _ o:ParameterList? _ EOLs {
@@ -2029,7 +1972,7 @@ __
  = Whitespace+
 
 Sep
- = Whitespace
+ = Whitespace+
  / &[^a-zA-Z0-9_]
  
 _
@@ -2073,6 +2016,7 @@ ALL = 'all'
 AND = 'and'
 ANDB = 'andb'
 ANY = 'any'
+ARG = 'arg'
 ARGUMENTS = 'arguments'
 ARRAY = 'array'
 AS = 'as'

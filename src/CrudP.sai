@@ -18,25 +18,48 @@ manifest get
           'select': #expr
         handler bind CrudPiper
         tools empty
+        subtitle 'multi-attribute query'
+        summary '''
+          Returns a new collection that is the subset of the original collection 
+          identified by the provided list of keys/indices.
+        details ''
           
       'update':
         clauses:
           'update': #expr
         handler bind CrudPiper
         tools empty
+        subtitle 'multi-attribute update'
+        summary '''
+          Creates a new collection that is a composite of a copy of the left collection with all 
+          of the values in the right collection overlaid. If discrete keys are available in the 
+          left or right collection, they will be used intelligently. 
+          Undefined values on the right will not be assigned.
+        details ''
 
       'delete':
         clauses:
           'delete': #expr
         handler bind CrudPiper
         tools empty
+        subtitle 'multi-attribute removal'
+        summary '''
+          Returns a copy of the collection with the specified attributes removed.
+          Elements in an array are removed in order, so sequence does matter.
+        details ''
 
       'expects':
         clauses:
           'expects': #expr
         handler bind CrudPiper
         tools empty
-
+        subtitle 'attribute rule validator (internal use)'
+        summary '''
+          Expects compares an object againt a set of rules and returns a list of rules 
+          that are **violated**. Thus, a successful test of expectations is an empty array. 
+          An array with one or more elements is returned that contains a list of the 
+          rules that were broken.
+        details ''
 
 
 //// FILTER PIPER 

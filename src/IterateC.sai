@@ -30,6 +30,13 @@ manifest get
           'else': #block
         handler bind EachConstruct
 
+      'index':
+        repeats false
+        clauses:
+          'index': #exprsusing, #exprsoutblock
+          'else': #block
+        handler bind IndexedConstruct
+
       'ply':
         repeats false
         clauses:
@@ -199,6 +206,104 @@ EveryConstruct task expects $clauses, $tools
   catch
     debug error
   
+  return: body text
+
+
+
+///////////////   INDEXED
+//
+//
+
+IndexedConstruct task expects $clauses, $tools
+
+  if $clauses.length > 2
+    return: error 'SAI compile: INDEX can have at most one ELSE clause.'
+
+  set main $clauses.0
+  set none $clauses.1
+
+  unless main.args.exprs.length is 2
+    return: error "SAI Compiler: the INDEX construct requires two comma-separated expressions, the first is the array/object to traverse, the second an array of keys."
+
+  try
+    
+    switch main.type
+  
+    case 'index.exprsoutblock'
+      set
+        outs from my OutVarHelper main.args.out
+      
+        vars:
+          block main.args.block
+          'rawlist' main.args.exprs.0
+          'rawkeys' main.args.exprs.1
+          'keys' false
+          'index' false
+          'this' outs.0 default false
+          'key' outs.1 default false
+          'list' outs.2 default false
+          'length' false
+          none ?none.args.block default false
+    
+        preface '''
+          var ^{list}=^{rawlist},^{keys}=^{rawkeys},^{key};
+          if (undefined===^{keys}) ^{keys}=[];
+          var ^{length}=^{keys}.length,^{index};
+
+        loop '''
+          for (^{index}=0; ^{index}<^{length}; ^{index}++) {
+          ^{key}=^{keys}[^{index}]; ^{this}=^{list}[^{key}];
+          ^{block};
+          }
+      
+        elseclause from task
+          unless none
+            return ''
+          else
+            return '''
+              if (^{key}===0) { ^{none} } 
+      
+        text from $tools.replacer preface + loop + elseclause, vars
+
+    case 'index.exprsusing'
+
+      set 
+        vars:
+          'task' main.args.using
+          'rawlist' main.args.exprs.0
+          'rawkeys' main.args.exprs.1
+          'index' false
+          'keys' false
+          'key' false
+          'list' false
+          'length' false
+          none ?none.args.block default false
+    
+        preface '''
+          var ^{list}=^{rawlist},^{keys}=^{rawkeys},^{key};
+          if (undefined===^{keys}) ^{keys}=[];
+          var ^{length}=^{keys}.length,^{index};
+
+        elseclause from task
+          unless none
+            return ''
+          else
+            return '''
+              if (^{key}===0) { ^{none} } 
+      
+        loop '''
+          for (^{index}=0; ^{index}<^{length}; ^{index}++) {
+          ^{key}=^{keys}[^{index}]; ^{task}(^{list}[^{key}],^{key},^{list});
+          }
+      
+        text from $tools.replacer preface + loop + elseclause, vars
+
+    else
+      return: error "Unhandled construct type ${main.type} in IndexConstruct"
+  
+  catch
+    debug error
+    
   return: body text
 
 
@@ -578,13 +683,13 @@ CountConstruct task expects $clauses, $tools
 
    
 
-     unless main.args.exprs.2.0 
+     unless main.args.exprs.0 
        return: error 'SAI Compiler: Missing end value in COUNT'
 
      set
-       iStart main.args.exprs.2.0 
-       iStop main.args.exprs.2.1 
-       iStep main.args.exprs.2.2 default 1
+       iStart main.args.exprs.0 
+       iStop main.args.exprs.1 
+       iStep main.args.exprs.2 default 1
        
      if undefined is iStop
       set iStop to iStart
@@ -621,13 +726,13 @@ CountConstruct task expects $clauses, $tools
 
    case 'countdown.exprsoutblock'
 
-     unless main.args.exprs.2.0 
+     unless main.args.exprs.0 
        return: error 'SAI Compiler: Missing start value in COUNTDOWN'
 
      set
-       iStart main.args.exprs.2.0        
-       iStop main.args.exprs.2.1 default 0
-       iStep main.args.exprs.2.2 default -1
+       iStart main.args.exprs.0        
+       iStop main.args.exprs.1 default 0
+       iStep main.args.exprs.2 default -1
        
      set 
        vars:

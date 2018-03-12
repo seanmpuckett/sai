@@ -13,19 +13,6 @@ manifest get
   
     'pipers':
 
-      'audit':
-        clauses:
-          'audit': #expr, #outblock, #use
-        handler bind AuditPiper
-        tools empty
-
-      'observe':
-        clauses:
-          'observe': #expr, #outblock, #use
-        handler bind AuditPiper
-        tools empty
-
-
       'set':
         clauses:
          'set': #expr, #outblock, #use
@@ -36,6 +23,19 @@ manifest get
         clauses:
          'thru': #expr, #outblock, #use
         handler bind ThruPiper
+        tools empty
+
+
+      'audit':
+        clauses:
+          'audit': #expr, #outblock, #use
+        handler bind AuditPiper
+        tools empty
+        
+      'observe':
+        clauses:
+          'observe': #expr, #outblock, #use
+        handler bind AuditPiper
         tools empty
 
 
@@ -96,6 +96,12 @@ manifest get
         handler bind ArraysPiper
         tools empty
 
+      'enkey':
+        clauses:
+          'enkey': #none, #expr
+        handler bind ArraysPiper
+        tools empty
+
     
       'replicate':
         clauses:
@@ -108,6 +114,108 @@ manifest get
             while (c>0) r[--c]=a;
             return r;
           }
+
+
+
+docs get
+  return:
+    pipers:
+
+      'observe':
+        subtitle 'inspect a value without changing it'
+        summary '''
+          Evaluates the right expression using the left expression value as the **it** pronoun; 
+          however, **observe** always returns the original left hand expression, no matter the result 
+          of the right expression.
+        detail '''
+          For example:
+        
+              set b to 'Fred'
+              set c to b observe debug '$\{it.length} letters.'
+              debug c
+
+              > 4 letters.
+              > Fred
+
+          See the example for __audit__ for a more interesting reason why __observe__ is nice.
+
+          A warning: while you can **observe** an iterable expression, all you will see is a function.
+          Take care not to invoke it, lest you drain it inadvertently.
+          Heisenberg's uncertainty principle is very much at play with iterables: 
+          you can either have it or know what's in it.
+
+          N.B. **observe** very useful in **chain** expressions.
+
+      'set':
+        subtitle 'replacement operator'
+        summary '''
+          A chainable comprehension operator that allows direct reference and replacement of the incoming dataset within an expression or code block, using the  **it**  pronoun. 
+        detail '''
+          **Set** can be used with an expression:
+
+              debug 4 | set 5*it+2 | set it/7 
+
+              > 3.142857142857143
+
+          **Set** can use an indented code block:
+
+              debug friends by .age | set
+                set .length to 3
+
+              > [ { name: 'Doug', age: 18, province: 'ON' },
+              >    { name: 'John', age: 19, cat: true, dog: true, province: 'ON' },
+              >    { name: 'Marshal', age: 21, dog: true, province: 'ON' } ]
+
+          _If you don’t specifically **return** a value or object from within an **set** code block, the original value will be used (as in the example above). In other words, there is an implicit `return it` at the end of every **set** block._
+
+          **Set** supports the **using** clause, in which case the function specified receives the original value as its first parameter, and the return value is passed forward. The two debug statements below are equivalent
+
+              set ExtractFirst to task
+                return $[0]
+
+              debug friends #cat | set Extract(it)    
+              debug friends #cat | set using Extract  
+
+              > { name: 'Sara', age: 23, cat: true, province: 'ON' }
+              > { name: 'Sara', age: 23, cat: true, province: 'ON' }
+
+          You must specifically return a value in the function called by **set using**.
+
+          
+      
+      'audit':
+        subtitle 'observe the elements of a collection'
+        summary '''
+          Audit is used to pass all values in a collection into an expression, code block or method. 
+          Audit doesn’t alter the collection, it just observes all values and keys/indices going by.
+        detail '''      
+          For example:
+          
+              set b to chain fruit 
+                |observe debug('Pre-sort')
+                |audit debug('Fruit #$\{key} is $\{it}') 
+                |by desc
+                |observe debug('Post-sort')
+                |audit debug('Fruit #$\{key} is $\{it}') 
+              debug b
+            
+              > Pre-sort
+              > Fruit #0 is Apple
+              > Fruit #1 is Banana
+              > Fruit #2 is Citron
+              > Post-sort
+              > Fruit #0 is Citron
+              > Fruit #1 is Banana
+              > Fruit #2 is Apple
+              > [ 'Citron', 'Banana', 'Apple’ ] 
+
+          This example shows how one could add instrumentation to a process in a light-weight fashion.
+
+          Neither **observe** nor **audit** alter the chained data. _A side effect of this is that
+          **observe** can’t be used with non-reproducible iterators as it’s impossible to statically observe 
+          an iterator without draining it._
+        
+        
 
 
 
@@ -324,6 +432,21 @@ ArraysPiper task expects $work, $tools
 
   case 'entrait.none'
     set pattern '$AI.entrait_op(${SPLIT})'
+
+  case 'enkey.none'
+    set pattern '$AI.reduce_op(${SPLIT},function(s,a){s[a]=true;return s;},{})'
+
+  case 'enkey.expr'
+    set 
+      vars:
+        'this' 'v'
+        'key' 'k'
+        'block' $work.args.expr
+      fn '''
+        ^{block}
+      fn from $tools.replacer fn, vars
+      pattern '$AI.reduce_op(${SPLIT},function(s,v,k){s[v]=${fn};return s;},{})'
+
 
   else
     return: error "Unhandled piper type ${trial} in KVPiper"
