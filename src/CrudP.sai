@@ -10,7 +10,6 @@ given:
 
 manifest get 
   return:
-  
     'pipers':
 
       'select':
@@ -18,51 +17,33 @@ manifest get
           'select': #expr
         handler bind CrudPiper
         tools empty
-        subtitle 'multi-attribute query'
-        summary '''
-          Returns a new collection that is the subset of the original collection 
-          identified by the provided list of keys/indices.
-        details ''
           
       'update':
         clauses:
           'update': #expr
         handler bind CrudPiper
         tools empty
-        subtitle 'multi-attribute update'
-        summary '''
-          Creates a new collection that is a composite of a copy of the left collection with all 
-          of the values in the right collection overlaid. If discrete keys are available in the 
-          left or right collection, they will be used intelligently. 
-          Undefined values on the right will not be assigned.
-        details ''
-
+  
       'delete':
         clauses:
           'delete': #expr
         handler bind CrudPiper
         tools empty
-        subtitle 'multi-attribute removal'
-        summary '''
-          Returns a copy of the collection with the specified attributes removed.
-          Elements in an array are removed in order, so sequence does matter.
-        details ''
-
+  
       'expects':
         clauses:
           'expects': #expr
         handler bind CrudPiper
         tools empty
-        subtitle 'attribute rule validator (internal use)'
-        summary '''
-          Expects compares an object againt a set of rules and returns a list of rules 
-          that are **violated**. Thus, a successful test of expectations is an empty array. 
-          An array with one or more elements is returned that contains a list of the 
-          rules that were broken.
-        details ''
 
 
-//// FILTER PIPER 
+docs get
+  return from Documentation
+
+// DOCS BELOW
+  
+
+//// CRUD PIPER 
 
 CrudPiper task expects $clauses, $tools
 
@@ -91,5 +72,210 @@ CrudPiper task expects $clauses, $tools
     return: error "Unhandled piper type ${trial} in CrudPiper"
       
   return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Documentation task
+  return:
+    'pipers':
+
+      'select':
+        subtitle 'multi-attribute query'
+        summary '''
+          Returns a new collection that is the subset of the original collection 
+          identified by the provided list of keys/indices.
+        detail '''
+          Example:
+          
+              debug fruits | select: 2, 0;
+
+              > [ 'Citron', 'Apple' ]
+
+              debug friends | limit 3 | thru <- it | select list name, age 
+
+              > [ { name: 'Sara', age: 32 },
+                  { name: 'John', age: 19 },
+                  { name: 'Ellie', age: 23 } ]
+ 
+          
+      'update':
+        subtitle 'multi-attribute update'
+        summary '''
+          Creates a new collection that is a composite of a copy of the left collection with all 
+          of the values in the right collection overlaid. If discrete keys are available in the 
+          left or right collection, they will be used intelligently. 
+          Undefined values on the right will not be assigned.
+        detail '''
+          Examples
+
+              Sample data
+  
+              set list1 to list Apple, Banana, Citron
+              set list2 to list Kiwi, undefined, Mango
+              set traits1 to: a 1, b 2, c 3
+              set traits2 to: '1' 4, d 5
+  
+              debug list1 | update list2
+              > [ 'Kiwi', 'Banana', 'Mango' ]
+  
+              debug list1 | update traits1
+              > [ 'Apple', 4, 'Citron', d: 5 ]
+  
+              debug traits1 | update traits2
+              > { '1': 4, a: 1, b: 2, c: 3, d: 5 }
+  
+              debug traits1 | update list2
+              { '0': 'Kiwi', '2': 'Mango', a: 1, b: 2, c: 3 }
+
+          __Update__ also works with iterators and treats them like arrays.  
+          If the left side collection is **undefined**, it will be initialized **blank**.
+
+          __Update__ is handy when used in __set__ statements.
+
+            set [variable] | update [collection]
+
+          Update a collection variable with a set of keys/values. When used like this in a __set__ statement, 
+          the original data is updated in-place (maybe). Works on lists and traits, and accepts lists, traits 
+          and iterators for update data.
+
+          Updating a list:
+
+              debug fruit
+  
+              > [ 'Apple', 'Banana', 'Citron' ]
+  
+              set fruit update: '1' 'Pear', '3' 'Guava'
+              debug fruit
+  
+              > [ 'Apple', 'Pear', 'Citron', 'Guava' ]
+  
+              set fruit update list Grape, undefined, Melon
+              debug fruit
+  
+              > [ 'Grape', 'Pear', 'Melon', 'Guava' ]
+
+          Updating traits:
+
+              set friend to friends.1
+              debug friend
+  
+              > { name: 'John', age: 19, cat: true, dog: true, province: 'ON' }
+  
+              set friend update: name 'Jon', province 'QC'
+              debug friend
+  
+              > { name: 'Jon', age: 19, cat: true, dog: true, province: 'QC' }
+  
+              set friends update: undefined, friend
+              debug friends
+  
+              [ { name: 'Sara', age: 23, cat: true, province: 'ON' },
+                { name: 'Jon', age: 19, cat: true, dog: true, province: 'QC' },
+                { name: 'Ellie', age: 22, province: 'QC' },
+                { name: 'Marshal', age: 21, dog: true, province: 'ON' },
+                { name: 'Doug', age: 18, province: 'ON' },
+                { name: 'Ann', age: 23, cat: true, province: 'QC' },
+                { name: 'Harry', age: 31, province: 'QC' },
+                { name: 'Jenna', age: 28, dog: true, province: 'ON' } ]
+
+          If the left-side collection is undefined, **update** initializes it to **blank** before merging.
+
+
+      'delete':
+        subtitle 'multi-attribute removal'
+        summary '''
+          Returns a copy of the collection with the specified attributes removed.
+          Elements in an array are removed in order, so sequence does matter.
+        detail '''
+          Examples
+
+              set obj to: a 1, b 2, c 3, d 4, e 5, f 6
+              set obj delete 'a'
+              debug obj
+  
+              > { b: 2, c: 3, d: 4, e: 5, f: 6 }
+  
+              set obj delete: 'c', 'f'
+              debug obj
+  
+              > { b: 2, d: 4, e: 5 }
+  
+              set obj delete: b 'B is for Bonobo.', d 'D is for Dixie cups.'
+              debug obj
+  
+              > { e: 5 }
+  
+          When **delete** operates on an array, it returns a copy of the array with the elements specified removed. 
+
+              debug (list 1,2,3,4,5) delete 1
+
+              > 1, 3, 4, 5
+
+              debug (list 1,2,3,4,5) delete (list 1,2)
+
+              > 1, 3, 5
+
+          Elements are removed in first->last order, so sequence does matter.
+
+              debug (list 1,2,3,4,5) delete (list 2,1)
+
+              > 1, 4, 5
+
+          __delete__ is also a first-class keyword used for undefining variables entirely. Please review 
+          the related entry in the keywords documentation.
+          
+
+      'expects':
+        subtitle 'rule enforcer for traits'
+        summary '''
+          Expects compares an object againt a set of rules and returns a list of rules 
+          that are **violated**. Thus, a successful test of expectations is an empty array. 
+          An array with one or more elements is returned that contains a list of the 
+          rules that were broken.
+        detail '''
+          In first-class usage as a keyword, __expects__ is used to check whether a function’s named parameters 
+          (or any arbitrary object) has certain traits, and optionally if those traits are of a particular type.
+          For more on this, review the keywords documentation.
+          
+          For use as a piper, __expects__ compares an object againt a set of rules and returns a list of rules 
+          that are **violated**. Thus, a successful test of expectations is an empty array. An array with one 
+          or more elements contains a list of the rules that were broken.
+
+          #### expects rules
+
+          Rules for **expects** take the form of a set of traits. Their names correspond to names of traits 
+          that must be found in the expression under test. The value, if not _true_, is interpreted as an 
+          object type; the trait must be of that type (or a child of that type).
+ 
+          Any violations to the rules are returned in a list; that list being made up of plain objects 
+          with the following fields:
+
+              .trait - name expected
+              .expects - type expected
+              .found - type found
+  
+          Here are some examples, first as a keyword
+
+              AddStudent task expects $name string, $age number
+                @students.push copy $ 
+              ..
+              @AddStudent name 'Sally', age '12'
+  
+              > Error: SAI: parameter exception in AddStudent
+              > age should be number, but it's string
+
+          Performing this same test in an ad-hoc fashion using the **expects** operator would look like this:
+
+              set newStudent to: name 'Sally', age '12'
+              set studentRules to: name 'string', age 'number'
+              debug newStudent expects studentRules
+  
+              > [ { trait: 'age', expects: 'number', found: 'string' } ]    
+
+          N.B. the **expects** clause rule format is identical to that of a single-line **traits** definition, with the additional requirement of a **$** before every trait name.
+
 
 

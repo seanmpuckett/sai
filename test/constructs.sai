@@ -9,6 +9,20 @@ inherit list
 Execute task
 
 
+  @Test 'with 1', task
+    with true
+      return it
+    return false
+    
+  @Test 'with 2', task
+    set a: a 0, b 1
+    with a
+      with .b
+        return it is 1
+    return false
+    
+
+
   @Test 'if true', task
     if true
       return true

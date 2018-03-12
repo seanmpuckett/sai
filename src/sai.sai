@@ -66,6 +66,7 @@ reference:
     TryCatchC
     IfElseC
     SwitchC
+    MiscC
     ListsP
     QueryP
     CrudP

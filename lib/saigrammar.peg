@@ -787,9 +787,8 @@ LineTerm
 Line
  = ConstructStatement
  / SetStatement
- / WithStatement
  / SwapStatement
- / MiscStatement
+ / NopStatement
  / VerbStatement
  
  
@@ -1055,17 +1054,8 @@ CANone = _ &EOLs { return {
  
  
 
-MiscStatement
- = ORPHAN _ { return 'var $=this;\n' }
- / NOP _ { return ';' }
-
-
-WithStatement
-  = WITH Sep value:Expression out:Output? block:Block {
-      var r={this:(out?out:tempvar())};
-      var code=RV('var ^{this}=',r)+value+RV(';\n'+block+'\n',r);
-      return code; 
-  }
+NopStatement
+ = NOP _ { return ';' }
  
 SwapStatement
  = SWAP Sep a:LValue Sep b:LValue {

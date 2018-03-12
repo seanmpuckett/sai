@@ -1,0 +1,107 @@
+
+object MiscC
+
+inherit: Construct
+
+// MANIFEST
+
+manifest get 
+  return:
+    'constructs':
+      'orphan':
+        repeats false
+        clauses:
+          'orphan': #none
+        handler bind MiscConstruct
+      
+      'with':
+        repeats false
+        clauses:
+          'with': #exproutblock
+        handler bind MiscConstruct
+      
+
+docs get 
+  return:
+    'constructs':
+      'orphan':
+        subtitle 'rescoping this'
+        summary '''
+          **Orphan** causes the __@__ scoping prefix within the function to refer to the context 
+          of the function call, instead of the context of the function definition. 
+        detail '''
+          You probably want to use this in combination with **local** variable definitions.
+
+          For clarifications and example code on this, see **task**.
+
+          To do this on a case-by-case basis, use the __@@__ scoping prefix (which see).
+
+      'with':
+        subtitle 'block-level pronoun assignment'
+        summary '''
+          Allows the use of the **it** pronoun (and the `.` scoping prefix) within an arbitrary block of code. 
+        detail '''
+          For example:
+
+              with customer
+                set label to '''
+                  $\{.name}
+                  $\{.address1}
+                  $\{.address2}
+                  $\{.city} $\{.region} $\{.postcode}
+
+          Another example, this time using an assigned pronoun:
+          
+              with category\\document\\page as p
+                set precis:
+                  title p.title
+                  authors join'd p.authors ', '
+                  summary p.abstract ? p.summary
+                  
+          Though that is much the same as this:
+          
+              local p category\\document\\page
+              set precis:
+                title p.title
+                authors join'd p.authors ', '
+                summary p.abstract ? p.summary
+                
+          __WITH__ can make things tidier, but mind what your pronouns are.
+
+
+
+MiscConstruct task
+
+  if $clauses.length > 1
+    return: error 'SAI bug: error parsing construct with multiple clauses: ${join'd ($clauses | keys) ', '}'
+
+  set body ''
+
+  // args.exprs.0 = 'array' / 'fields'
+  // args.exprs.1 = insertable text
+  // args.exprs.2 = heirarchical structure of elements
+
+  with $clauses.0
+  
+    switch .type
+    case 'orphan.none'
+      set body `var $=this;\n
+
+    case 'with.exproutblock'
+      set
+        outs from my OutVarHelper .args.out      
+        vars:
+          'this' outs.0
+          'block' .args.block
+          'expr' .args.expr
+        body '''
+          var ^{this}=^{expr};
+          ^{block}; 
+        body from $tools.replacer body, vars  
+
+    else
+      return: error "Unhandled construct type ${.type} in ReturnConstruct"
+      
+  return: body body
+
+
