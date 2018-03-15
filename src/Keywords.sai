@@ -324,6 +324,61 @@ Documentation task
               > { ON: 5, QC: 3 }
 
 
+      'trial':
+        subtitle 'pronoun for conditionals and switch'
+        summary '''
+          A pronoun set to the value tested in an **if/exists** or **switch** statement. 
+        synref '''
+          if [expr] 
+            .. trial ..
+
+          switch [expr] 
+            case [match] 
+              .. trial ..
+            default
+              .. trial ..
+        detail '''
+          In an **if/exists** statement, **trial** is only valid in the body of the first code block.
+
+              exists readline()
+                // trial is available here 
+              else
+                // trial is undefined here
+
+          In a **switch** statement, **trial** is available through all **case**s and the **default**.
+
+              switch Keypress.toUpperCase()
+                case 'N'
+                  Move 0,-1
+                case 'S'
+                  Move 0,1
+                default
+                  debug 'I don't know what \${trial} means.'
+              ...
+
+          You can grant a specific name to the tested value with the **as** clause:
+
+              if Keypress as key
+                switch key.toUpperCase()
+              ...
+
+          Note that **trial** receives the tested value; the final result of the **if** or **switch** expression, not the value of any component:
+
+              if Keypress>0
+                debug trial
+  
+              // the debug statement can only ever print 'true'
+
+          Using the parenthetical **as** is one solution to this problem:
+
+              if ( Keypress as key) > 0
+                debug key
+  
+              // reports the actual value of key
+
+
+
+
 
 // pronouns
 /////////////////////////////////////////////////// OPERATORS
@@ -347,7 +402,7 @@ Documentation task
 
 
       '%':
-        subtitle 'modulus operator'
+        subtitle 'modulus'
         summary '''
           Calculates the mathematical **modulus**; returns the remainder of the left expression divided by the right.
         synref '''
@@ -363,7 +418,7 @@ Documentation task
 
 
       '*':
-        subtitle 'multiplication operator'
+        subtitle 'multiplication'
         summary '''
           Multiplies two expressions.
         synref '''
@@ -377,7 +432,7 @@ Documentation task
 
 
       '**':
-        subtitle 'exponentiation operator'
+        subtitle 'exponentiation'
         summary '''
           Raises one value to the power of another.
         synref '''
@@ -392,7 +447,7 @@ Documentation task
 
       '+':
         title '+'
-        subtitle 'addition / string concatenation operator'
+        subtitle 'addition / string concatenation'
         summary '''
           summary
         synref '''
@@ -414,8 +469,8 @@ Documentation task
 
 
       '-':
-        title '- (minus)'
-        subtitle 'subtraction/negation operator'
+        title '-'
+        subtitle 'subtraction/negation'
         summary '''
           summary
         synref '''
@@ -452,8 +507,8 @@ Documentation task
           
 
       '/':
-        title '/ (forward slash)'
-        subtitle 'mathematical division operator'
+        title '/'
+        subtitle 'mathematical division'
         summary '''
           Divides the expression on the left by the expression on the right.
         synref '''
@@ -486,7 +541,7 @@ Documentation task
 
 
       '<<':
-        subtitle 'left-shift operator'
+        subtitle 'left-shift'
         summary '''
           Performs a binary left shift.
         synref '''
@@ -510,7 +565,7 @@ Documentation task
 
 
       '<=>':
-        subtitle 'comparison operator'
+        subtitle 'comparison'
         summary '''
           Evaluates to **-1** if lexpr is lower than rexpr, **1** if it is greater, and **0** if they are equal.
         synref '''
@@ -570,7 +625,7 @@ Documentation task
         
 
       '>>':
-        subtitle 'signed bitwise right shift operator'
+        subtitle 'signed bitwise right shift'
         summary '''
           Convert the expression to a 32 bit signed integer, then shift it right bitcount times, 
           maintaining the sign of the expression.
@@ -586,7 +641,7 @@ Documentation task
 
 
       '>>>':
-        subtitle 'unsigned bitwise right shift operator'
+        subtitle 'unsigned bitwise right shift'
         summary '''
           Convert the expression to a 32 bit signed integer, then shift it right bitcount times, 
           Zero bits are added on the left side (msb), which does not preserve negative sign.
@@ -602,7 +657,7 @@ Documentation task
 
 
       '?<':
-        subtitle 'minimum operator'
+        subtitle 'minimum'
         summary '''
           Evaluates to whichever expression is numerically or lexically lower.
         synref '''
@@ -617,7 +672,7 @@ Documentation task
 
 
       '?>':
-        subtitle 'maximum operator'
+        subtitle 'maximum'
         summary '''
           Evaluates to whichever expression is numerically or lexically higher.
         synref '''
@@ -632,7 +687,8 @@ Documentation task
 
 
       '??':
-        subtitle 'trinary operator'
+        title '?? ::'
+        subtitle 'trinary conditional'
         summary '''
           Evaluates to expr1 if the left expression is _truthy_, otherwise evaluates to expr2.
         synref '''
@@ -650,7 +706,7 @@ Documentation task
 
 
       'and':
-        subtitle 'logical and operator'
+        subtitle 'logical and'
         summary '''
           If the left expression evaluates to **falsy**, returns it, otherwise returns the right expression.
         synref '''
@@ -669,7 +725,7 @@ Documentation task
 
 
       'andb':
-        subtitle 'bitwise and operator'
+        subtitle 'bitwise and'
         summary '''
           Bitwise and operator. Converts, if possible, both left and right expressions into 32 bit signed integers, and performs a bitwise AND operation on them.
         synref '''
@@ -740,7 +796,7 @@ Documentation task
 
 
       'copy':
-        subtitle 'shallow copy operator'
+        subtitle 'shallow copy'
         summary '''
           Use the **copy** unary operator to create a _shallow copy_ of the expression it precedes.  
         synref '''
@@ -774,7 +830,7 @@ Documentation task
 
 
       'create':
-        subtitle 'object creation operator'
+        subtitle 'object creation'
         summary '''
           Creates a SAI object by name. 
         synref '''
@@ -819,7 +875,7 @@ Documentation task
 
 
       'default':
-        subtitle 'variable initialization operator'
+        subtitle 'variable initialization'
         summary '''
           Examines the expression on the left; if it has a value, returns it. Otherwise returns the value on the right.
         synref '''
@@ -872,7 +928,7 @@ Documentation task
           
 
       'inc':
-        subtitle 'value increment operator'
+        subtitle 'value increment'
         summary '''
           Increments (adds 1 to) the given variable.
         synref '''
@@ -904,7 +960,7 @@ Documentation task
 
 
       'is':
-        subtitle 'equivalence test operator'
+        subtitle 'equivalence test'
         summary '''
           Returns **true** if the two expressions are completely indistinguishable.  
         synref '''
@@ -923,7 +979,7 @@ Documentation task
 
 
       'isNaN':
-        title 'isNaN (case matters)'
+        title 'isNaN'
         subtitle 'checks for NaN'
         summary '''
           Returns true if the expression is the **NaN** flag.  
@@ -950,7 +1006,7 @@ Documentation task
 
         
       'isnt':
-        subtitle 'equivalence test operator'
+        subtitle 'equivalence test'
         summary '''
           Returns **true** if the two expressions are in any way distinguishable. 
         synref '''
@@ -968,7 +1024,7 @@ Documentation task
 
 
       'isof':
-        subtitle 'object information trait/operator'
+        subtitle 'object information'
         summary '''
           All prototyped SAI objects have an **isof** trait that is a plain object that encapsulates detailed 
           information about the SAI object and its heritage. 
@@ -1031,7 +1087,7 @@ Documentation task
 
 
       'nand':
-        subtitle 'not-and logical operator'
+        subtitle 'not-and logical'
         summary '''
           Performs the logical not-and operation. 
         synref '''
@@ -1055,7 +1111,7 @@ Documentation task
 
 
       'new':
-        subtitle 'object instantiation operator'
+        subtitle 'object instantiation'
         summary '''
           Instantiates a new object with the given prototype. 
         synref '''
@@ -1102,7 +1158,7 @@ Documentation task
 
 
       'nor':
-        subtitle 'not-or logical operator'
+        subtitle 'not-or logical'
         summary '''
           Performs the logical not-or operation. 
         synref '''
@@ -1125,7 +1181,7 @@ Documentation task
 
 
       'not':
-        subtitle 'logical not operator'
+        subtitle 'logical not'
         summary '''
           Performs the logical not operation. 
         synref '''
@@ -1145,7 +1201,7 @@ Documentation task
             
 
       'notb':
-        subtitle 'binary not operator'
+        subtitle 'binary not'
         summary '''
           Performs a bitwise logical not on a 32-bit signed integer.
         synref '''
@@ -1160,7 +1216,7 @@ Documentation task
 
 
       'number':
-        subtitle 'numeric coercion operator'
+        subtitle 'numeric coercion'
         summary '''
           Attempts to convert the following expression into a numeric value. 
         synref '''
@@ -1178,7 +1234,7 @@ Documentation task
 
 
       'or':
-        subtitle 'logical or operator'
+        subtitle 'logical or'
         summary '''
           If the left expression is **truthy**, returns it without executing the right expression, 
           otherwise returns the right expression.
@@ -1194,7 +1250,7 @@ Documentation task
 
 
       'orb':
-        subtitle 'bitwise-or operator'
+        subtitle 'bitwise-or'
         summary '''
           Performs a bitwise or on two 32-bit integers.
         synref '''
@@ -1210,7 +1266,7 @@ Documentation task
 
 
       'singleton':
-        subtitle 'singleton object access operator'
+        subtitle 'singleton object access'
         summary '''
           Creates one instance of SAI object by name. 
         synref '''
@@ -1245,7 +1301,7 @@ Documentation task
 
 
       'typeof':
-        subtitle 'javascript type disclosure operator'
+        subtitle 'javascript type disclosure'
         summary '''
           Returns the Javascript-native type of an expression.
         synref '''
@@ -1255,7 +1311,7 @@ Documentation task
 
 
       'xor':
-        subtitle 'logical exclusive-or operator'
+        subtitle 'logical exclusive-or'
         summary '''
           If both expressions are _truthy_, or both expressions are _falsy_, return `false`. Otherwise return the expression that is _truthy_.
         synref '''
@@ -1280,7 +1336,7 @@ Documentation task
 
 
       'xorb':
-        subtitle 'binary exclusive-or operator'
+        subtitle 'binary exclusive-or'
         summary '''
           Performs a bitwise XOR operation on two 32-bit integers.
         synref '''
@@ -1305,7 +1361,7 @@ Documentation task
     'syntax':
 
       '!':
-        title '! (bang)'
+        title '!'
         subtitle 'function invocation operator'
         summary '''
           **!** (bang) invokes the following identifier as a function call that returns a value, 
@@ -1340,7 +1396,7 @@ Documentation task
 
 
       '#':
-        title '# (hashtag)'
+        title '#'
         subtitle 'existence assertion'
         summary '''
           When defining fields or traits, using a hash in front of a trait _name_ will automatically assign 
@@ -1484,10 +1540,10 @@ Documentation task
 
 
       "'d":
-        title "'d (verb'd)"
+        title "'d"
         subtitle 'conversational syntax'
         summary '''
-          An alternate way of invoking a verb on an object.
+          The _verb'd_. An alternate way of invoking a verb on an object.
         synref '''
           .. [verb]'d [object] (parameters)
         detail '''
@@ -1517,10 +1573,10 @@ Documentation task
           
 
       "'s":
-        title "'s (attribute)"
+        title "'s"
         subtitle 'conversational syntax'
         summary '''
-          An alternate way of referencing the attributes of an object.
+          The _posessive_. An alternate way of referencing the attributes of an object.
         synref '''
           .. [value]'s [attribute]
           [object]'s verb
@@ -1643,10 +1699,10 @@ Documentation task
 
 
       '..':
-        title '.. (caboose)'
+        title '..'
         subtitle 'pastes two related lines together'
         summary '''
-          You can use the two-dot caboose to stitch a *single line* child code block onto the end of the
+          You can use the two-dot _caboose_ to stitch a *single line* child code block onto the end of the
           statement that requires it. 
         synref '''
           line 1 .. line 2
@@ -1662,10 +1718,10 @@ Documentation task
 
 
       '...':
-        title '... (continue)'
+        title '...'
         subtitle 'statement pasting operator'
         summary '''
-          You can use the three-dot continue syntax to insert line breaks, or multiple child code blocks, 
+          You can use the three-dot _continue_ syntax to insert line breaks, or multiple child code blocks, 
           into a single statement. 
         synref '''
           first part of statement
@@ -1767,7 +1823,6 @@ Documentation task
 
 
       ':':
-        title ': (colon)'
         subtitle 'create an array or object literal'
         summary '''
           The colon __:__ is used to begin the declaration of a data structure.
@@ -1817,7 +1872,6 @@ Documentation task
           
 
       ';':
-        title '; (semicolon)'
         subtitle 'structure definition closer'
         summary '''
           Optional, closes the current structure definition when needed for clarity. 
@@ -1864,10 +1918,9 @@ Documentation task
 
 
       '<-':
-        title '<- (after)'
         subtitle 'calculation precedence modifier'
         summary '''
-          Ensures the expression on the right is calculated before the expression on the left.
+          The _precedent_ operator, __<-__ ensures the expressions on the right is calculated before the expression on the left.
         synref '''
           .. [expr] [operator1] <- [expr] [operator2] [expr]
         detail '''
@@ -2064,6 +2117,64 @@ Documentation task
               set @x from Math.sin $angle; * $magnitude    
 
           Both __from__ and __!__ (bang) do the same thing.
+
+
+      '~':
+        subtitle 'global scoping prefix'
+        summary '''
+          Use `~` in front of an identifier to access an object defined globally, e.g. by the runtime environment.  
+        synref '''
+          .. ~GlobalIdentifier
+        detail '''
+          You must use `~` in each of the following examples:
+
+              set validated to ~parseInt(raw)
+              ~process.exit 1
+              set attendees to new ~Set
+              set func to new ~Function(arg1, src)
+    
+          You do not need to use `~` on file-level pseudo-globals defined with `reference`; it is only required 
+          for functions/values/objects that originate outside SAI.  
+        
+
+      '|':
+        subtitle 'pipe operator prefix'
+        summary '''
+          The pipe character is a scoping prefix for second-class operators defined with the _piper_ system.
+        synref '''
+          .. | [operator name] [clauses] ...
+        detail '''
+          A note about order of operations.
+          
+          Pipers are processed left-to-right, as if data were feeding through a series of tubes, or machines
+          that slurped up what's given on the left and spits it out to the next machine along the line or as the 
+          result of the operation.
+          
+          Be sure when you're coding that you're aware of the order of operations, especially in a set statement.
+          For example, this may not produce what you want:
+          
+              set a list 1, 2, 3
+              set b list 4, 5, 6
+              
+              set a | concat b | thru it * 2
+              debug a
+              
+              > [ 2, 4, 6, 8, 10, 12 ]
+              
+          Were you expecting this:
+              
+              > [ 1, 2, 3, 8, 10, 12 ]
+          
+          Keep in mind that the flow of data is left to right, and in a self-modifying __set__ statement
+          the assignment happens at the end. These are the same:
+          
+              set a | concat b | thru it * 2
+              set a to a | concat b | thru it * 2
+
+          If you want that construct to work the other way, use parenthesis, or the "precedent" syntax:
+          
+              set a | concat ( b | thru it * 2 )
+              set a | concat <- b | thru it * 2 
 
 
 
@@ -2430,7 +2541,6 @@ Documentation task
 
 
       'exists':
-        title: 'exists (unary operator)'
         subtitle 'check for undefined'
         summary '''
           Returns true if the following expression is _not_ `undefined`.
@@ -2453,7 +2563,6 @@ Documentation task
 
 
       'expects':
-        title 'expects (keyword)'
         subtitle 'runtime paramater type validation'
         summary '''
           Used to check whether a function’s named parameters (or any arbitrary object) has certain 
@@ -2651,7 +2760,6 @@ Documentation task
 
 
       'Infinity':
-        title 'Infinity (note case)'
         subtitle 'constant representing infinity'
         summary '''
           Represents an infinitely large value. 
@@ -2818,7 +2926,7 @@ Documentation task
 
 
       'Iterator':
-        title 'Iterator (case matters)'
+        title 'Iterator'
         subtitle 'name-of-the-Iterator method'
         summary '''
           When creating an object you want to provide an invisible iterator for, use this keyword as the name of the
@@ -2868,7 +2976,7 @@ Documentation task
 
 
       'list':
-        subtitle ''
+        subtitle 'literal-based array construction'
         summary '''
           Used to specify the creation of a plain array of literal values. 
         synref '''
@@ -2971,7 +3079,7 @@ Documentation task
 
 
       'NaN':
-        title 'NaN (case matters)'
+        title 'NaN'
         subtitle 'not-a-number'
         summary '''
           **NaN** (capitalization matters) means Not a Number.  
@@ -3651,60 +3759,6 @@ Documentation task
           See **fields** for examples.
 
 
-      'trial':
-        subtitle 'pronoun for conditionals and switch'
-        summary '''
-          A pronoun set to the value tested in an **if/exists** or **switch** statement. 
-        synref '''
-          if [expr] 
-            .. trial ..
-
-          switch [expr] 
-            case [match] 
-              .. trial ..
-            default
-              .. trial ..
-        detail '''
-          In an **if/exists** statement, **trial** is only valid in the body of the first code block.
-
-              exists readline()
-                // trial is available here 
-              else
-                // trial is undefined here
-
-          In a **switch** statement, **trial** is available through all **case**s and the **default**.
-
-              switch Keypress.toUpperCase()
-                case 'N'
-                  Move 0,-1
-                case 'S'
-                  Move 0,1
-                default
-                  debug 'I don't know what \${trial} means.'
-              ...
-
-          You can grant a specific name to the tested value with the **as** clause:
-
-              if Keypress as key
-                switch key.toUpperCase()
-              ...
-
-          Note that **trial** receives the tested value; the final result of the **if** or **switch** expression, not the value of any component:
-
-              if Keypress>0
-                debug trial
-  
-              // the debug statement can only ever print 'true'
-
-          Using the parenthetical **as** is one solution to this problem:
-
-              if ( Keypress as key) > 0
-                debug key
-  
-              // reports the actual value of key
-
-
-
       'true':
         subtitle 'boolean value true'
         summary '''
@@ -3812,60 +3866,3 @@ Documentation task
           makes your intention clear.
 
 
-      '|':
-        subtitle 'pipe operator prefix'
-        summary '''
-          The pipe character is a scoping prefix for second-class operators defined with the _piper_ system.
-        synref '''
-          .. | [operator name] [clauses] ...
-        detail '''
-          A note about order of operations.
-          
-          Pipers are processed left-to-right, as if data were feeding through a series of tubes, or machines
-          that slurped up what's given on the left and spits it out to the next machine along the line or as the 
-          result of the operation.
-          
-          Be sure when you're coding that you're aware of the order of operations, especially in a set statement.
-          For example, this may not produce what you want:
-          
-              set a list 1, 2, 3
-              set b list 4, 5, 6
-              
-              set a | concat b | thru it * 2
-              debug a
-              
-              > [ 2, 4, 6, 8, 10, 12 ]
-              
-          Were you expecting this:
-              
-              > [ 1, 2, 3, 8, 10, 12 ]
-          
-          Keep in mind that the flow of data is left to right, and in a self-modifying __set__ statement
-          the assignment happens at the end. These are the same:
-          
-              set a | concat b | thru it * 2
-              set a to a | concat b | thru it * 2
-
-          If you want that construct to work the other way, use parenthesis, or the "precedent" syntax:
-          
-              set a | concat ( b | thru it * 2 )
-              set a | concat <- b | thru it * 2 
-
-
-      '~':
-        subtitle 'global scoping prefix'
-        summary '''
-          Use `~` in front of an identifier to access an object defined globally, e.g. by the runtime environment.  
-        synref '''
-          .. ~GlobalIdentifier
-        detail '''
-          You must use `~` in each of the following examples:
-
-              set validated to ~parseInt(raw)
-              ~process.exit 1
-              set attendees to new ~Set
-              set func to new ~Function(arg1, src)
-    
-          You do not need to use `~` on file-level pseudo-globals defined with `reference`; it is only required 
-          for functions/values/objects that originate outside SAI.  
-        

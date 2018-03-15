@@ -1942,6 +1942,7 @@ BarelineStringChar
 EscapedChar
  = '\x5c\x27'  { return [ true, "\x27" ] }
  / '\x5c' c:. { return [ true, '\x5c'+c ] }
+ / '\x5e' { return [ true, '\\x5e' ]}
   
 EscapedCharx
  = '\x5c' "'" { return [true,'\x5c'+"'"] }

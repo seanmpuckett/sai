@@ -216,33 +216,53 @@ SortPiper task expects $clauses, $tools
 
   case 'by.expr'
     try
-      set pattern to chain $clauses
-        | into empty 
-          switch .clause
-          case 'by'
-            push'd sum: 
-              expr ( .args.expr ? '^{this}' )
-              order 1
-          case 'asc'
-            set (sum|last).order 1
-          case 'desc'
-            set (sum|last).order to -1
-          else
-            throw "SAI Compiler: unexpected clause in BY: ${trial}"
-        | thru '''
-          aa=${from Repl .expr, fields 'this' 'a'};
-          bb=${from Repl .expr, fields 'this' 'b'};
-          if (aa<bb) return ${-.order}; if (aa>bb) return ${.order};
-        | total
-        | set '''
-          $AI.sort_op(${SPLIT},function(a,b){
-            var aa,bb;
-            ${it};
-            return 0;
-          })
+      set
+        keyed false
+        pattern to chain $clauses
+          | into empty 
+            switch .clause
+            case 'by'
+              unless keyed 
+                set keyed ( .args.expr.indexOf('^{key}') >= 0 ) 
+              push'd sum: 
+                expr ( .args.expr ? '^{this}' )
+                order 1
+            case 'asc'
+              set (sum|last).order 1
+            case 'desc'
+              set (sum|last).order to -1
+            else
+              throw "SAI Compiler: unexpected clause in BY: ${trial}"
+          | thru '''
+            aa=${from Repl .expr, fields 'this' keyed??'a[1]'::'a', 'key' 'a[0]'};
+            bb=${from Repl .expr, fields 'this' keyed??'b[1]'::'b', 'key' 'b[0]'};
+            if (aa<bb) return ${-.order}; if (aa>bb) return ${.order};
+          | total
+          | set 
+            unless keyed .. return '''
+              $AI.sort_op(${SPLIT},function(a,b){
+                var aa,bb;
+                ${it};
+                return 0;
+              })
+            else .. return '''
+              $AI.map_op($AI.sort_op($by$enlistcheck(${SPLIT}),function(a,b){
+                var aa,bb;
+                ${it};
+                return 0;
+              }),function(a,b){return a[1];})
     catch as msg
       return: error msg
-      
+
+    if keyed
+      push'd tools '''
+        var $by$enlistcheck=function(o) {
+          if ($AI.isArray(o) || $AI.mustIterate(o)) {
+            throw new Error("SAI Runtime: call to BY using the key pronoun applied to something that isn't a true object.");
+          }
+          return $AI.enlist_op(o);
+        }
+        
   case 'by.outblock'
     if $clauses.length > 1
       return: error "SAI Compiler: BY.outblock should not have any extra clauses"
@@ -451,13 +471,14 @@ Documents task
 
 
       'by':
-        subtitle 'array sorting'
+        subtitle 'collection sorting'
         summary '''
           To create a sorted array, use **by**. The newly resulting array will be sorted by the specified 
           inline expression or code block. 
         detail '''
           **By** does not sort in-place; it always returns a new array.
           If **by** is used on an iterable, it will **collect** all values before sorting.
+          If **by** is used on a true object, it will be converted to an array.
 
           #### by inline
 
@@ -482,7 +503,7 @@ Documents task
 
               set result to friends | by .name.length by .age
   
-              debug (result | thru '$\{.name}: $\{.age}').join('\n')
+              debug (result | thru '$\{.name}: $\{.age}').join('\\n')
   
               > Ann: 23
               > Doug: 18
@@ -492,6 +513,27 @@ Documents task
               > Jenna: 28
               > Harry: 31
               > Marshal: 21
+
+          #### Sorting of objects by the property/key
+          
+          In _inline_ expression sorting only, if your source collection is an object, you can use the __key__ 
+          pronoun as sort criteria, in addition to the __it__ pronoun and related accessors. The key is the 
+          property name. In the example below, `rejections` is one of the keys in the folder object, 
+          while `34` is its value.
+          
+              set folder:
+                rejections 34
+                acceptances 23
+                pending 4
+              debug folder | by key
+
+              > [ 4, 23, 34 ]
+              
+          As you can see, the key is discarded in the final array output.  If you need
+          different behaviour, you'll need to partition the task into simpler components, e.g. by using
+          __enlist__, __by__ and __thru__ in turn to preserve the data in the form you need.
+
+          Using __key__ as sort criteria on something that isn't an object will throw a runtime exception.
 
           #### by block
 
@@ -515,6 +557,8 @@ Documents task
               > Ellie: QC, 22
               > Ann: QC, 23
               > Harry: QC, 31
+
+          Note the __key__ pronoun is not available with block expression sorting.
 
           #### by using
 

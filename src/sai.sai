@@ -250,7 +250,7 @@ DocumentConstructs task
         
         each construct.clauses as requestedSyntax, clauseName
           set seealso\clauseName default empty
-          push'd seealso\clauseName array category, constructName
+          push'd seealso\clauseName array (doc.category ? category), constructName, doc.title ? clauseName
           each requestedSyntax as val, type
             set sub to clauseName is constructName ?? 'main' :: 'aux'
             push'd synref '${?prefix\category\sub ? ''}${clauseName} ${validSyntax\category\type}'

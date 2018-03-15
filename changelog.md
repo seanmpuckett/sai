@@ -8,6 +8,8 @@
  - Good news, though, you can mostly just search/replace for those operators, adding a `|` before each one, and everything should work just fine. 
  - Bad news: support for `|into it` has been removed. You will now always need to provide a type-appropriate starting value for the accumulator used in with `|into`.  However, see the new __total__ piper which may get you most of the way there anyhow.
  - I've removed the bareline quote, which was the backtick.  Seemed an unwarranted use for a character that might be needed for something else some day. 
+ - got rid of `me` and `my` synonyms for `@` because of the big effort to reduce reserved words.
+ 
 
 #### Enhancements
 

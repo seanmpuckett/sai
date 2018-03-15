@@ -9,6 +9,8 @@ inherit list
 Execute task
 
 
+
+
   set friends to:
     :name 'Sara', age 23, #cat, province 'ON'
     :name 'John', age 19, #cat, #dog, province 'ON'
@@ -18,6 +20,20 @@ Execute task
     :name 'Ann', age 23, #cat, province 'QC'
     :name 'Harry', age 31, province 'QC'
     :name 'Jenna', age 28, #dog, province 'ON'  
+
+  set f2 friends | into blank 
+    set sum[.name] it
+
+  @Test 'sorted traits woah', task
+    set b f2 | by key
+    return b.0.name is 'Ann'
+
+  @Test 'sorted traits bang', task
+    try
+      set b friends | by key
+    catch
+      return true
+    return false
 
   @Test 'static index plain', task
     set tally blank
@@ -126,7 +142,8 @@ Execute task
   @Test 'expects 1', task
     set b to: a 1, b 2
     set a to b | expects: #a, #b, #c
-    return a.length=1 and a.0.trait='c' and a.0.expects=true and a.0.found='undefined'
+    debug a
+    return a.length=1 and a.0.trait='c' and a.0.expects=true and a.0.found='missing'
 
   @Test 'expects 2', task
     set b to: a 1, b 'cat'

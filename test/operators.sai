@@ -442,7 +442,7 @@ Execute task
   @Test 'expects 1', task
     set b to: a 1, b 2
     set a to b | expects: #a, #b, #c
-    return a.length=1 and a.0.trait='c' and a.0.expects=true and a.0.found='undefined'
+    return a.length=1 and a.0.trait='c' and a.0.expects=true and a.0.found='missing'
 
   @Test 'expects 2', task
     set b to: a 1, b 'cat'

@@ -93,6 +93,7 @@ Documents task
 
 
       'reject':
+        category 'keywords'
         subtitle 'mark a Promise as having failed'
         summary '''
           Call the failed potential outcome for a function declared with **promise**. 
@@ -103,6 +104,7 @@ Documents task
           
           
       'resolve':
+        category 'keywords'
         subtitle 'mark a Promise as succeeding'
         summary '''
           Call the successful potential outcome for a function declared with **promise**.
@@ -113,6 +115,7 @@ Documents task
 
       
       'return':
+        category 'keywords'
         subtitle 'exit a function, returning a value maybe'
         summary '''
           Return a value to the caller of a **task**. 
@@ -128,6 +131,7 @@ Documents task
 
 
       'yielding':
+        category 'keywords'
         subtitle 'process inclusion'
         summary '''
           Yields to another process until that process is done yielding. 
@@ -165,6 +169,7 @@ Documents task
       
       
       'yield':
+        category 'keywords'
         subtitle 'process product'
         summary '''
           Produces the _next_ value in a __process__.

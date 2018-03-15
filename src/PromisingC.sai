@@ -116,7 +116,7 @@ Documents task
   return:
     'constructs':
       'promising':
-        subtitle ''
+        subtitle 'asynchronous flow control for Promises'
         summary '''
           The __promising__ construct lends clarity to asynchronous operations using `promise`-based functions. 
         synref '''

@@ -1,7 +1,8 @@
 # SAI
+
 An attempt to add rigour, elegance and clarity to programs in the Javascript ecosystem.
 
-### About
+## About
 
 SAI is a transpiler for the Node Javascript environment. 
 
@@ -24,9 +25,14 @@ SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, S
 Both the SAI runtime library and the runtime manager are as of 0.1.14 / 0.1.7 written in SAI and compiled to Javascript.
 
 
-### Usage Notes
+## Usage 
 
-#### To run a SAI object
+SAI can be used in dynamic or runtime modes.  Dynamic mode requires that the compiler `sai-language` be required into the running program. You can reference SAI language files, with the extension `.sai`, and they will be compiled immediately and turned into standard Javascript prototypes.
+
+Runtime mode necessitates a build pass with `sai-build` during which all of the SAI source is pre-compiled into Javascript modules that can be `required` just like any other JS. A small run-time package, `sai-library` will be needed; however once compiled the full language package is not necessary.
+
+
+#### To run a SAI object from the command line
 
     $ ./sai-run [path/objectname]
 
@@ -47,13 +53,13 @@ Then compiling and executing:
     Hello world!
 
 
-#### To compile an object to native JS
+#### To compile an object to native JS (create a runtime module)
 
 `sai-build` can be executed on the command line with a path to a SAI object. 
 
     $ ./sai-build [path/objectname]
 
-A full prototype for that object will be saved as objectname.js.  
+A full prototype for that object will be saved as `objectname.js`.  
 
 For example:
 
@@ -68,7 +74,23 @@ For example:
     Solution 1: X=4, Y=13; sum=17, product=52
 
 
-#### To evaluate a SAI expression in a JS file
+#### To reference a SAI object from a Javascript module (dynamic mode)
+
+Start with the require, and tell the compiler where to find your SAI source.
+
+    var SAI = require('sai-language');
+    SAI.Configure({options:{},paths:[__dirname]});
+
+This is how you create a JS object from a `.sai` file:
+
+    var ObjectPrototype=SAI.Require('ObjectName'); 
+    
+Everything else is pure Javascript:
+
+    var Object = new ObjectPrototype(instantiation task parameters);
+
+
+#### To evaluate a SAI expression in a JS file, e.g. to play around:
 
     var SAI = require('sai-language');
     var fruit = SAI.Expression('list apple, banana, cherry');
@@ -81,15 +103,14 @@ Result:
 
 _Note that it is computationally unwise to compile the same SAI expression over and over. Assign things your results to a variable and re-use the compiled Javascript._
 
-
-#### To define a function using SAI in a JS file
+Here's creating a function from Javascript:
 
     var SAI = require('sai-language');
     var ReverseItems=SAI.Expression(`task given items
       return items thru chain .
-        split ''
-        reverse
-        join ''
+        | split ''
+        | reverse
+        | join ''
     `);
 
 Result:
@@ -98,8 +119,7 @@ Result:
     
     > [ 'elppa', 'ananab', 'yrrehc' ]
 
-
-#### To define a process (generator) using SAI
+Making a process (generator) from Javascript:
 
     var SAI = require('sai-language');
     var FibonacciGenerator=SAI.Expression(`process given n
@@ -120,21 +140,8 @@ Result:
     
     > [ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55 ]
     
-
-#### To create a SAI object given a .SAI source file:
-
-    var SAI = require('sai-language');
-    SAI.Configure({options:{},paths:[__dirname]});
-
-    // build native JS prototype from ObjectName.sai in __dirname
-    var ObjectPrototype=SAI.Require('ObjectName'); 
     
-    // instantiate object from prototype as usual
-    var Object = new ObjectPrototype(instantiation task parameters);
-
-
-    
-#### Notes
+## Notes 
 
 Modules used: 
 - `sai-library` is the runtime library, and is necessary.
@@ -154,7 +161,7 @@ The `docs` directory contains the documentation.
 
 The `20.Keywords` file is the reference documentation and is the most definitive information about SAI.
 
-SAI does not yet have a beautiful and competently written introduction to the language, e.g. "Learn you a SAI for Great Justice," which sucks. Maybe someday this will happen.
+There are other documents out there in varying degrees of revision. Sadly, SAI does not yet have a beautiful and competently written introduction to the language, e.g. "Learn you a SAI for Great Justice," which sucks. Maybe someday this will happen. Probably some time after breaking changes are so frequent.
 
 
 ### Additional Samples
@@ -184,11 +191,11 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
 
     set Permutations process given cards
       local Pick to process given hand, deck
-        unless deck count
+        unless deck.length
           yield hand
         else
           ply deck as card, index
-            yielding from Pick hand concat card, deck delete index
+            yielding from Pick (hand | concat card), (deck | delete index)
       yielding from Pick empty, cards
 
     iterate from Permutations list apple, banana, cherry
@@ -223,27 +230,29 @@ You may also look at my solutions to Advent of Code 2017 which were all written 
 #### Promises sample
 
     set 
-      willIGetNewPhone promise given isMomHappy
-        if isMomHappy
-          resolve:
-            brand 'Wangdoodle'
-            colour 'paisley'
-        else
-          reject new ~Error 'Mom is not happy.'
+      couch from require 'node-couchdb'
+      cnx new couch:
+        auth:
+          user 'admin'
+          pass 'couch'
+      dbName 'test'
+
+    promising cnx.dropDatabase dbName
+    catch
+      unless 'EDBMISSING' is $code
+        throw $
+    then cnx.createDatabase dbName
+    then cnx.listDatabases
+    all $ | thru from cnx.get it, '/'
+    then 
+      debug $ | total "Database ${.data.db_name} is ${.data.disk_size} bytes.\n"
+    catch
+      debug $
     
-      showOff promise given phone
-        with phone
-          debug 'Hey friend, I have a new ${.colour} ${.brand} phone'
-  
-      askMom task given happiness
-        chain from willIGetNewPhone happiness
-          then showOff
-          catch promise given e
-            debug '${e} No phone for you.'
-      
-    askMom true
-    askMom false
-    
-    > Hey friend, I have a new paisley Wangdoodle phone
-    > Error: Mom is not happy. No phone for you.
+    > Database _global_changes is 86394 bytes.
+    > Database _replicator is 12622 bytes.
+    > Database _users is 12622 bytes.
+    > Database test is 8488 bytes.
+
+
     
