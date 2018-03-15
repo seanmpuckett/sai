@@ -1,15 +1,17 @@
 ## Change log
 
-### 0.1.23
+### 0.2.0
 
 #### Breaking Changes
 
  - This one is going to hurt.  All of the comprehensions and list operators have been converted to __piper__ style. Which for the most part just means that you will need to now use a `|` (pipe) before each of those operator words.  This was done to streamline and speed up the parser and to add flexibility to the language. Also, since these operators are now visually indicated as such with a pipe, it's easier to visually parse more complicated expressions. I was originally going to wait and just deprecate the old operators before tearing them out, but i am pretty sure no one is using this but me so let's just pull the bandaid off. I think this will be the last major shift in syntax.
  - Good news, though, you can mostly just search/replace for those operators, adding a `|` before each one, and everything should work just fine. 
  - Bad news: support for `|into it` has been removed. You will now always need to provide a type-appropriate starting value for the accumulator used in with `|into`.  However, see the new __total__ piper which may get you most of the way there anyhow.
+ - I've removed the bareline quote, which was the backtick.  Seemed an unwarranted use for a character that might be needed for something else some day. 
 
 #### Enhancements
 
+ - completely revisited all of the reference documentation. All of the reference docs are built into the source and generated automatically, which is really nice.
 - found a way to propogate syntax and grammar errors so that reporting is more finely detailed.
  - support for __pipers__ which are like constructs, but as operators. The plan is eventually to roll the standard set of comprehensions into piper land so as to free up keyword space and, at the expense of introducing one symbol, make human parsing perhaps a little easier as well.
  - The good news is that it's now trivial to add additional cool functionality via pipers without polluting the global namespace.

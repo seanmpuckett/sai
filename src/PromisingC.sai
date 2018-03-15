@@ -23,6 +23,10 @@ manifest get
         handler bind PromisingConstruct
 
 
+docs get
+  return from Documents
+  
+
 // PROMISING HANDLER
 
 PromisingConstruct task as work
@@ -106,3 +110,277 @@ PromisingConstruct task as work
   set body + ';\n'
   return: body body
 
+
+
+Documents task
+  return:
+    'constructs':
+      'promising':
+        subtitle ''
+        summary '''
+          The __promising__ construct lends clarity to asynchronous operations using `promise`-based functions. 
+        synref '''
+          promising [active promise]
+            resolve/reject [parameters]
+           - or -
+          promising
+            [code that is turned into a promise]
+            resolve/reject (parameters)
+
+          ... followed by one or more of ...
+
+          then [active promise]
+           - or -
+          then (promise parameters)
+            [code that is turned into a promise]
+            resolve/reject (parameters)
+
+          catch [active promise]
+           - or -
+          catch (promise parameters)
+            [code that is turned into a promise]
+            resolve/reject (parameters)
+
+          finally [active promise]
+           - or -
+          finally (promise parameters)
+            [code that is turned into a promise]
+            resolve/reject (parameters)
+
+          any [array of active promises]
+
+          all [array of active promises]
+
+          rejecting (expression)
+
+          resolving (expression)
+
+          finalizing 
+
+        detail '''
+          In one sense __promising__ is just a bit of syntactical sugar for using `chain` 
+          to connect `then` and `catch` etc in a series of chained method calls. And indeed, 
+          that's what it does behind the scenes. But simplifying syntax is not a bad thing, 
+          especially if it eases working with a more hat can be quite confusing. 
+          And Promises are certainly that.
+
+          In order to make this construct work, you need to know what each clause 
+          requires, not only syntactically, but from a code point of view.  
+          We'll take each clause one by one. 
+
+          Most clauses in __promising__ are either a single line with a verb (with 
+          optional parameters) that returns a Promise (a.k.a a _thenable_), or 
+          multi-line, accepting a block of code that it will wrap in a Promise, 
+          as if it were the body of a function.
+
+          First things first: the __promising__ clause must be the first clause in 
+          the construct, and you can only use it once. (You can start with either form 
+          of the __promising__ clause.) You can mix and match the other clauses in 
+          any order once you've started the __promising__.  
+
+          The final clause in the construct must be either __catch__ or __finally__ 
+          to ensure that errors are properly caught. However, you can use either of 
+          these multiple times in the same construct, in order to control execution flow 
+          between error handlers and the normal flow of code.
+
+          #### promising 
+
+              promising [verb expression returning an active Promise]
+               - or -
+              promising 
+                [code block that will be wrapped as a Promise]
+
+          __Promising__ starts the clause. It expects an active Promise -- an object 
+          with `.then` and `.catch` ready for use. 
+
+          In single line form, use it with a verb expression -- the same syntax you'd 
+          use on a bare line to invoke a function. (You do not use `from` or `!` to 
+          invoke the verb, that happens automatically.) 
+
+              promising db.listDatabases
+
+          In this form, the function you are promising must have been declared as a __promise__, or 
+          been created in or wrapped in a _Promise_ wrapper by a library or helper.  
+
+          If you need to use asynchronous functions that use callbacks or other methodologies, 
+          ideally you'd wrap them for easier use, but 
+    
+          In multi-line form, you're crafting the body of a __promise__ function, and you'll 
+          use __reject__ and __resolve__ to pass along asynchronous results to the next 
+          clause of the construct.
+
+              promising
+                https.get url, task
+                  set body ''
+                  $setEncoding 'utf8'
+                  $on 'data', task
+                    set body + $
+                  $on 'end', task
+                    resolve body
+                  $on 'error', task
+                    reject $
+
+          Of course you could just take that bunch of code and wrap it in a __promise__ 
+          yourself, perhaps as part of some global object. But more likely you'd just find 
+          a package on npm that offers promisified fetchers ai Because you're smart.
+
+          #### then 
+
+              then [verb expression returning an active Promise]
+               - or -
+              then (optional [GIVEN parameter list])
+                [code block that will be wrapped as a Promise]
+
+          The __then__ clause continues the chain of asynchronous execution. Whatever 
+          you __resolve__ in the previous clause is given to the next __then__ clause as 
+          one (or more) parameters. (You can use the pronoun __$__ to refer to the first 
+          parameter passed without giving it a name.)
+
+              then db.dropDatabase dbName
+    
+          Which, by the way, does the exact same thing as this:
+
+              then
+                resolve from db.dropDatabase dbName
+      
+          Notice how the second form uses `from` to invoke the function before resolving 
+          the value, while the first form just assumes you'll be wanting to execute a 
+          function so makes the invokation syntax implicit.
+
+          The block takes the same form and acts the same way as the one in __promising__.
+
+          Here's a fun note: when coding these _block form_ clauses, there is an automatic 
+          __resolve__ applied at the end of the code block, so execution carries onwards without 
+          you having to be explicit about it. So you can  do this:
+
+              promising
+                debug "First this"
+              then
+                debug "Then this"
+                reject "Ninja!"
+              then
+                debug "But not this."
+              catch
+                debug $
+    
+          Which prints:
+
+              First this
+              Then this
+              Ninja!
+
+          Notice how `Ninja!` is transferred by passing the message to the __catch__ clause 
+          via __reject__.  And also note the __$__ pronoun. The __catch__ clause could have 
+          been written either of these ways too.
+
+              catch given msg
+                debug msg
+      
+              catch debug $
+
+          #### catch 
+
+              catch [verb expression returning an active Promise]
+               - or -
+              catch (optional [GIVEN parameter list])
+                [code block that will be wrapped as a Promise]
+
+          As you'd expect __catch__ works just like the other line or block form clauses, 
+          except that it is only executed if a previous clause __rejects__ something. As 
+          illustrated in the above text!
+
+          If there is a __then__ or __finally__ clause after __catch__ in the construct, 
+          it will be executed, unless you __reject__ again.
+
+          #### finally 
+
+              finally [verb expression returning an active Promise]
+               - or -
+              finally (optional [GIVEN parameter list])
+                [code block that will be wrapped as a Promise]
+
+          This clause captures both main and error code paths in the Promise pseudo-thread, 
+          thus it is always executed regardless of whether the previous clause ended with a __reject__ or __resolve__.
+
+          Support for __finally__ is dependent on whether the Promises library you are using 
+          supports it; SAI does not shim it for you. As of this writing, `Promise.finally` 
+          has not been ratified for inclusion in ES6, and node.js does not support it.
+
+          #### all 
+
+              all [expression yielding an array of promises]
+               - or -
+              all 
+
+          The __all__ clause, along with __any__ is different than the other clauses. __All__ is 
+          a simple way of waiting for an array of promises to _all_ be resolved. It takes a single 
+          parameter -- an array -- and waits for each Promise in the array to be resolved. 
+          It uses the `Promise.all` helper to do this.
+
+          The stand-alone version of all, that takes no expression, assumes the array has been 
+          sent to it from the __resolve__ in the previous clause. The following two lines are identical:
+
+              all       // all (implicit)
+              all $     // all (explicit)
+    
+          The __all__ clause is great to use when you need to fetch multiple resources all at 
+          once and need to know when they're done. The following two line snippet fetches a list of 
+          databases (asynchronously) and then passes the resulting list __thru__ a function that 
+          creates multiple requests for more information about each database. The result is 
+          an array of promises that are used as a parameter to __all__.
+
+              promising db.listDatabases
+              all $ thru db.get(it, '/')
+
+          __All__ resolves either with a list of the __resolve__ values of every promise in the 
+          array, or a _single_ value that is the _first_ rejection of any of those promises.  
+          In other words, __all__ will wait to __resolve__ until all of it's work done, but the 
+          instant something breaks, it __rejects__ everything and gives up.
+
+          #### any
+
+              any [expression yielding an array of promises]
+               - or -
+              any
+    
+          The __any__ clause is very similar to __all__, except that it either __rejects__ or 
+          __resolves__ based on the first event in all of the promises in its array. So while __all__ 
+          will wait to resolve for everything to be finished, __any__ will resolve when the first 
+          Promise it is monitoring does so. Like __all__, however, it __rejects__ on the first Promise to do so.
+
+          #### rejecting 
+
+              rejecting [expression]
+               - or -
+              rejecting
+
+          So you might be wondering how do you pass the results of a __promising__ construct to a 
+          Promise that contains it. After all, you cannot __resolve__ or __reject__ an outer promise 
+          from an inner one -- the rules of scoping forbid it. In this case, the last three clauses help you out.
+
+          __Rejecting__ is internally equivalent to a __catch__ clause, in that any error conditions 
+          are caught by it. However, it then marks the Promise _containing_  the __promising__ construct as rejected. 
+
+          The bare word version of __rejecting__ sends the error value it received to the containing 
+          Promise, while the version with an expression allows you to customise it.
+
+          #### resolving
+
+              resolving [expression]
+               - or -
+              resolving
+
+          Similarlly, __resolving__ will resolve a containing Promise with either an expression 
+          or a passed-on value.
+    
+          #### finalizing
+
+              finalizing [expression]
+               - or -
+              finalizing
+    
+          And, most useful, the __finalizing__ clause will take the current state of the __promising__ 
+          clause it is a part of and transfer it to the containing promise, kind of like a `return` statement. 
+
+
+        

@@ -15,6 +15,10 @@ manifest get
         handler bind StateConstruct
 
 
+docs get
+  return from Documents
+
+
 // STATE HANDLER
 
 StateConstruct task as work
@@ -78,3 +82,156 @@ StateConstruct task as work
 
 
 
+Documents task
+  return:
+    'constructs':
+      state:
+        subtitle 'asynchronous finite state machine'
+        summary '''
+          The __state__ construct creates an asynchronous state machine (or finite automata) that can 
+          be used for many different kinds of processes, from making requests or managing other machines, 
+          to controlling and responding to near-realtime events. 
+        detail '''
+          Each declared __state__ is given a name (the value), and has an associated block of code. 
+          Each block is a function, with optional parameters. These functions are invoked with 
+          the __goto__ verb. The first parameter of __goto__ is the name of the state; any additional 
+          parameters are passed in to the state function. 
+
+              state [value1] (given [parameter list])
+                ... code ...
+                goto [value] (, [parameters for next state])
+                ... code ...
+              state [value2] (given [parameter list])
+                goto etc...
+              ... repeats for as many states as supplied
+
+          The uppermost defined __state__ in the construct is the starting state by convention, 
+          and it is invoked first. When you __goto__ a new state, you'll just be scheduling the next 
+          state to occur next. You must `return` if you want its execution to stop immediately. If you 
+          do not __goto__ another state, the machine ends (unless a callback into to a state happens 
+          asynchronously). State machine context is preserved until there is no more opportunity for a callback.
+
+          *Note*: The __state__ construct runs asynchronously. Synchronous code execution passes the 
+          state machine definition instantly, and the first state executes on the next event loop 
+          tick via node's `setImmediate`. Each time you __goto__ a new state, that state is also 
+          scheduled asynchronously. 
+          
+          While the event loop is quite fast (perhaps 100k state transitions 
+          per second on a laptop), you will want to avoid using the __state__ construct for applications 
+          that require high performance and/or that do not benefit greatly from asynchronous response. 
+          In these cases, a `while` loop around a `switch` statement is a good place to start.
+
+          Context is preserved with the state machine, including the _current_ (this) object. You have 
+          access to all member variables/methods of the object instance that invoked the __state__ construct. 
+          Variables you `set` within any state are available to all states. However, `local` variables are 
+          restricted to the state they're defined in. (Examine the generated Javascript code for clarity.) 
+
+          Here is a simple example of a state machine, a Turing machine that adds two unary (bitcount) 
+          numbers starting at the read head, extending right and separated by a single 0 digit.
+
+              set Readout to task  // display Turing tape and current head position
+                debug tape | into '' sum + ((key is head) ?? '[$\{it}]' :: ' $\{it} ')
+
+              state 'start' // turing machine to add two numbers, in this case 3 & 4.
+                set tape list 0, 1, 1, 1, 0, 1, 1, 1, 1, 0
+                set head 1
+                goto 'a'
+
+              state 'a' 
+                Readout
+                if tape\head       // seek end of first number
+                  set tape\head 1
+                  inc head
+                  goto 'a'
+                else               // set bit between numbers
+                  set tape\head 1
+                  inc head
+                  goto 'b'
+
+              state 'b'
+                Readout
+                if tape\head       // seek end of second number
+                  set tape\head 1
+                  inc head
+                  goto 'b'
+                else
+                  set tape\head 0  // rewind to end of second number
+                  dec head
+                  goto 'c'
+  
+              state 'c'
+                Readout
+                if tape\head       // clear bit at end of second number
+                  set tape\head 0
+                  dec head
+                  goto 'd'
+                else
+                  debug "Should not be able to get here."
+                  goto 'halt'
+      
+              state 'd'
+                Readout
+                if tape\head       // seek back to the beginning of the result
+                  set tape\head 1
+                  dec head
+                  goto 'd'
+                else
+                  set tape\head 0  // return to first set bit and halt
+                  inc head
+                  goto 'halt'
+
+              state 'halt'
+                Readout
+                debug "Run complete."
+
+              debug "State machine started." // appears first because STATE is asynchronous
+
+          The output is: 
+
+              State machine started.
+               0 [1] 1  1  0  1  1  1  1  0 
+               0  1 [1] 1  0  1  1  1  1  0 
+               0  1  1 [1] 0  1  1  1  1  0 
+               0  1  1  1 [0] 1  1  1  1  0 
+               0  1  1  1  1 [1] 1  1  1  0 
+               0  1  1  1  1  1 [1] 1  1  0 
+               0  1  1  1  1  1  1 [1] 1  0 
+               0  1  1  1  1  1  1  1 [1] 0 
+               0  1  1  1  1  1  1  1  1 [0]
+               0  1  1  1  1  1  1  1 [1] 0 
+               0  1  1  1  1  1  1 [1] 0  0 
+               0  1  1  1  1  1 [1] 1  0  0 
+               0  1  1  1  1 [1] 1  1  0  0 
+               0  1  1  1 [1] 1  1  1  0  0 
+               0  1  1 [1] 1  1  1  1  0  0 
+               0  1 [1] 1  1  1  1  1  0  0 
+               0 [1] 1  1  1  1  1  1  0  0 
+              [0] 1  1  1  1  1  1  1  0  0 
+               0 [1] 1  1  1  1  1  1  0  0 
+              Run complete.
+
+          There are many easier ways of programming a Turing machine without hardcoding everything 
+          like this. This one does show off the __state__ construct fairly nicely, however.
+
+          #### goto 
+
+          Within the __state__ construct, the variable `goto` is defined as a function that schedules
+          execution of the next state.  (This trickery should be essentially invisible, but just in case you
+          need to know how, this is how.)
+
+          #### then
+
+          Similarly, __then__ is a function that immediately jumps to the next state rather than rescheduling
+          another callback.  (Don't use __then__ except in callbacks, you'll trash the stack.) 
+          
+          Use __then__ like this:
+          
+              state 'empty'
+                ply array position-1, position+1 as adjacent
+                  each features as dsc, feat
+                    if feat is maze[from Valid adjacent]
+                      debug dsc
+          
+                Timer 800, !then 'step'
+          
+          This example does some housekeeping, delays for 800ms, _then_ the timer callback jumps to the next state.

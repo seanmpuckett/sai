@@ -9,8 +9,6 @@ inherit list
 Execute task
 
 
-
-
   set friends to:
     :name 'Sara', age 23, #cat, province 'ON'
     :name 'John', age 19, #cat, #dog, province 'ON'
@@ -21,8 +19,47 @@ Execute task
     :name 'Harry', age 31, province 'QC'
     :name 'Jenna', age 28, #dog, province 'ON'  
 
-  debug friends | limit 3 | thru <- it | select list name, age 
+  @Test 'static index plain', task
+    set tally blank
+    set Tally to task as name
+      inc tally\name
+    set fruit to traits a Apple, b Banana, c Cherry
+    index fruit, list b, c, a, c
+      Tally it
+    return tally.Apple is 1 and tally.Cherry is 2 and tally.Banana is 1
 
+  @Test 'iterated index plain', task
+    set tally blank
+    set Tally to task as name
+      inc tally\name
+    set fruit to traits a Apple, b Banana, c Cherry
+    index fruit, ( list b, c, a, c; | iterate)
+      Tally it
+    return tally.Apple is 1 and tally.Cherry is 2 and tally.Banana is 1
+
+  @Test 'iterated index using', task
+    set tally blank
+    set Tally to task as name
+      inc tally\name
+    set fruit to traits a Apple, b Banana, c Cherry
+    index fruit, ( list b, c, a, c; | iterate) using Tally
+    return tally.Apple is 1 and tally.Cherry is 2 and tally.Banana is 1
+
+
+  @Test 'static index using', task
+    set tally blank
+    set Tally to task as name
+      inc tally\name
+    
+    set fruit to traits a Apple, b Banana, c Cherry
+    index fruit, list b, c, a, c; using Tally
+    return tally.Apple is 1 and tally.Cherry is 2 and tally.Banana is 1
+
+
+
+  @Test 'friends 3', task
+    set a to friends | limit 3 | thru <- it | select list name, age 
+    return a.0.name is 'Sara' and a.0.province is undefined and a.length is 3
 
   @Test 'set order ops', task
     set a to list a,b

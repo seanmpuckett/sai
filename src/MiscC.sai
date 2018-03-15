@@ -24,6 +24,8 @@ manifest get
 docs get 
   return:
     'constructs':
+    
+    
       'orphan':
         subtitle 'rescoping this'
         summary '''
@@ -35,6 +37,7 @@ docs get
           For clarifications and example code on this, see **task**.
 
           To do this on a case-by-case basis, use the __@@__ scoping prefix (which see).
+
 
       'with':
         subtitle 'block-level pronoun assignment'
@@ -85,11 +88,11 @@ MiscConstruct task
   
     switch .type
     case 'orphan.none'
-      set body `var $=this;\n
+      set body 'var $=this;\n'
 
     case 'with.exproutblock'
       set
-        outs from my OutVarHelper .args.out      
+        outs from @OutVarHelper .args.out      
         vars:
           'this' outs.0
           'block' .args.block

@@ -23,6 +23,13 @@ manifest get
         handler bind ThrowConstruct
       
 
+docs get
+  return from Documents
+  
+
+
+
+
 TryConstruct task expects $clauses, $tools
 
   set pattern $clauses | total (.type | limit 1)
@@ -42,7 +49,7 @@ TryConstruct task expects $clauses, $tools
       set body + 'try { ${.args.block} }\n'
 
     case 'catch.outblock'
-      set outs from my OutVarHelper .args.out
+      set outs from @OutVarHelper .args.out
       set vars:
         'error' outs.0
         'block' .args.block
@@ -74,3 +81,42 @@ ThrowConstruct task expects $clauses, $tools
   return: body body
 
 
+Documents task
+  return:
+    'constructs':
+      'try':
+        subtitle 'handle exceptional errors'
+        summary '''
+          Exception handling construct.
+        detail '''
+          In addition to the standard Javascript stuff, SAI's "try" uses the 
+          __error__ pronoun within the __catch__ clause to expose the caught error, 
+          as seen in the example below.
+          
+              set file to new File 'output.log'
+              try
+                file.Open
+                file.Write 'Hey, it's a log'
+              catch 
+                return error.message
+              finally
+                file.Close
+  
+          For details, see the Javacript exception documentation.
+          
+  
+      'throw':
+        subtitle 'generate an exception'
+        summary '''
+          Trigger exception handling.
+        detail '''
+          Example:
+          
+            try
+              throw new Error 'Oh no!'
+            catch 
+              return error.message
+
+          You should probably look at the Javascript documentation.
+
+        

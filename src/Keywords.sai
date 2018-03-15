@@ -6,31 +6,3866 @@ object Keywords
 inherit: Construct
 
 given:
-  boring: '{', '}', ']', '%%DEDENT%%', '%%INDENT%%', ','
+  boringlist: 
+    '{', '}', ']', '%%DEDENT%%', '%%INDENT%%', ',', ')'
+    '0x', '0o', '::', '\\\\\'', '{;', '};', '\\\\/', '\\\\;'
+    '\\', '\\\\', '__column', '__line', '__offset', '__source'
+    '^'
+    
+  goodlist:
+    'assert', 'debug', 'isa'
+
 
 instance:
   SAI undefined
 
 manifest get
   return introspect  
-      
+
 docs get
   return introspect
   
 introspect get
   
+  set boringkeywords to boringlist | enkey
   set parsefun from SAI.mainParser.parse.toString
+
   set matcher to /peg\$literalExpectation.\"([^"]+)\"./g
-  set matches to empty
+  set matches to empty  
   while from matcher.exec parsefun
     push'd matches it.1
 
-  set boring to /^[0-9a-zA-Z]$|\&\#/
-  set matches | has not (boring.exec(it)) and not boring\it
+  set simple to /^[0-9a-zA-Z]$|\&\#/  
+  set matches | has not ( simple.exec(it) or boringkeywords\it ) | enkey blank
+
+  set missing copy matches
+  set covered blank
   
-  set matches | enkey blank
+  each from Documentation as category
+    set missing | delete category
+    set covered | update category 
   
+  set extra to covered | delete goodlist | delete matches
+
+  each missing 
+    debug 'missing coverage for parser literal ${key}'
+    set sure '''
+      '${key}':
+        subtitle ''
+        summary '''
+        synref '''
+        detail '''
+  
+  each extra
+    debug 'excess documentation for ${key}'
+
+    
+  return from Documentation
+
+
+Documentation task
+
   return:
-    'keywords' matches
-      
   
+/////////////////////////////////////////////////// GLOBALS
+
+  
+    'globals':
+
+      'assert':
+        subtitle 'run-time error checking'
+        summary '''
+          If the first expression is _falsy_, throw an exception with the second expression as a message.
+          Otherwise, return the expression.
+        synref '''
+          assert [expr], [expr]
+        detail '''
+          For example:
+
+              assert everythingIsAwesome, 'I have some bad news...'
+  
+              > Error: SAI: failed assertion: I have some bad news...
+
+          You can use __assert__ in expression, because it returns the value passed.
+          
+              set sock from assert GetSocket, "Could not obtain socket resource"
+          
+          __Assert__, like __debug__, is functionality that can be redefined by passing a new handler 
+          to SAI's configuration facility.
+
+
+      'debug':
+        subtitle 'print diagnostics to the console'
+        summary '''
+          Prints the value of the expression to the console. 
+        synref '''
+          debug [expr]
+        detail '''
+          Compiles to a call to $AI.debug_op in `sai-library`, which you can hook to provide your own
+          implementation.
+
+          In the default implementation, just calls `console.log` with the provided value.
+
+              debug "this is a test"
+              
+              > this is a test
+
+
+
+
+// globals    
+/////////////////////////////////////////////////// PRONOUNS
+
+
+    'pronouns':
+
+      'counter':
+        subtitle 'pronount for integer-based loops'
+        summary '''
+          A partner to **count**, **counter** is a _pronoun_, populated by the **count** iterator, 
+          if no other variable is specified in an **as** clause. 
+        synref '''
+          .. counter
+        detail '''
+          Like all pronouns, **counter** is only visible in attached expressions or code blocks, not in 
+          any functions that may be called within those expressions.
+
+          An example:
+
+              count friends.length
+                debug counter
+
+          Similar to **it** in nested contexts, you are unable to access “outer” values of **counter** within 
+          inner contexts unless you assign them to a name other than **counter** using the **as** clause.
+
+              count 3
+                count 3
+                  debug counter
+                  // only the inner loop's 'counter' is visible here. 
+  
+              // prints 0 1 2 0 1 2 0 1 2
+  
+              count 3 as i
+                count 3
+                  debug i+','+counter
+                  // outer loop's 'counter' now available here as 'i'
+  
+              // prints 0,0  0,1  0,2  1,0  1,1  1,2  2,0  2,1  2,2
+  
+              count 3
+                count 3 as j
+                  debug counter+','+j
+                  // no, this doesn't work, you still can't access the outer 'counter'
+                  // 'counter' always has the value of the innermost context
+  
+              // prints 0,0  1,1  2,2  0,0  1,1  2,2  0,0  1,1  2,2
+              
+              
+      'error':
+        subtitle 'catch pronoun'
+        summary '''
+          summary
+        synref '''
+          .. error
+        detail '''
+          Valid only within the **catch** exception handler clause of a **try/catch/finally** construct. Receives the exception thrown.
+
+              try
+                noFunction
+              catch
+                debug error
+  
+              > [TypeError: undefined is not a function]
+
+          You can override this behaviour by using an **as** clause with the **catch** statement:
+
+              try
+                noFunction
+              catch as e
+                debug e
+  
+              > [TypeError: undefined is not a function]
+
+
+      'it':
+        subtitle 'context-sensitive pronoun'
+        summary '''
+          **It** is the most commonly used pronoun, populated by most iterators and comprehensions, as well as 
+          the **exists** conditional and **with** contextualizer.
+        synref '''
+          .. it
+        detail '''
+          _Pronouns_ have values when provided by the system during certain code events. 
+
+          The **it** variable is only available in attached expressions or code blocks -- not in any functions that 
+          may be called within those expressions, and not in code outside those blocks.
+
+          A partial list of **it** enabled events:
+
+              exists [expr] // it: expr
+              with [expr]   // it: expr
+  
+              iterate [iterable] // it: each iterated value
+              each [collection]  // it: each value in the collection
+              ply [list]         // it: each element in the array
+  
+              .. [collection] | thru // it: each value in the collection
+              .. [collection] | audit 
+              .. [collection] | into 
+              .. [collection] | has
+              .. [collection] | highest
+              .. [collection] | lowest
+
+          When nesting contexts that create a **it** context, you will be unable to access “outer” 
+          values of **it** within the inner contexts unless you assign them to a name other 
+          than **it** using the **as** clause.
+
+              ply: 1,2,3
+                ply: 4,5,6
+                  debug it 
+  
+              // prints 4 5 6 4 5 6 4 5 6
+  
+              ply: 1,2,3
+                ply: 4,5,6 as inner
+                  debug it
+  
+              // still prints 4 5 6 4 5 6 4 5 6
+  
+              ply: 1,2,3 as outer
+                ply: 4,5,6
+                  debug outer
+  
+              // prints 1 1 1 2 2 2 3 3 3
+
+          When **it** is populated, you can also use the “unrooted” **attribute** ( . dot) scoping 
+          prefix.  The following are all synonymous:
+
+              set field to 'province'
+              set quebeckers to friends has it.province='QC'
+              set quebeckers to friends has it[field]='QC'
+              set quebeckers to friends has .province='QC'
+ 
+          (There is no unrooted [] lookup available, you can't `[field]`.)
+
+
+      'key':
+        subtitle 'looping pronoun'
+        summary '''
+          Often a partner to **it**, **key** is the second most commonly used _pronoun_, populated by most 
+          iterators and comprehensions. 
+        synref '''
+          .. key
+        detail '''
+          Like all pronouns, **keys** is only visible in attached expressions or code blocks, not in any functions that may be called within those expressions.
+
+          A partial list of **keys** enabled events:
+
+              each [collection]   // key: the trait name of each value in the collection
+              ply [list]          // key: the array index of each element in the array
+              count [expr]        // key: the number being counted
+              iterate [generator] // key: the row number of the value being processed
+  
+              .. [collection] thru  // key: each trait name/array index of the collection
+              .. [collection] audit 
+              .. [collection] into 
+              .. [collection] has 
+
+          An example:
+
+              ply friends
+                debug key
+  
+              // prints: 0 1 2 3 4 5 6 7
+  
+              each friends[0]
+                debug key
+  
+              // prints: name age cat province
+
+          Similar to **it** and **counter** in nested contexts, you are unable to access “outer” 
+          values of **key** within inner contexts unless you assign them to a specific variable 
+          using the **as** clause. See **counter** for an example of this issue.
+
+
+      'self':
+        subtitle 'pronoun for set statements'
+        summary '''
+          A pronoun used only in a **set** statement that contains the original value of the variable 
+          that is being set/modified.
+        synref '''
+          set [var] .. self ..
+        detail '''
+          The following lines are equivalent; one of them is easier to read than the other.
+
+              set totals\key to totals\key ? 0 + amount
+              set totals\key to self ? 0 + amount
+
+
+      'sum':
+        subtitle 'reduction pronoun'
+        summary '''
+          A pronoun active only within a **into** clause or code block. 
+        synref '''
+          .. sum
+        detail '''
+          Represents the static value that accumulates changes during **into** iteration over a data set.
+
+              debug friends | into 0
+                set sum + .age
+  
+              > 185
+
+          **Sum** is initialized with the value following **into**.
+
+              debug friends | into blank
+                set sum[.province] to (self default 0)+1
+  
+              > { ON: 5, QC: 3 }
+
+
+
+// pronouns
+/////////////////////////////////////////////////// OPERATORS
+
+    
+    'operators':
+    
+      '!=':
+        subtitle 'inequality comparison'
+        synref '''
+          .. [expr] != [expr]
+        summary '''
+          Tests two values for value inequality.
+        detail '''
+          Compares two values for value equality; returns **true** if the values appear to be the 
+          same, **false** otherwise. 
+          
+          This is implemented with Javascript’s != operator and the behaviour is identical.
+
+          Contrast with **isnt**.
+
+
+      '%':
+        subtitle 'modulus operator'
+        summary '''
+          Calculates the mathematical **modulus**; returns the remainder of the left expression divided by the right.
+        synref '''
+          .. [expr] % [expr]
+        detail '''
+          Examples:
+          
+              debug 5 % 2
+              debug 6.2 % 1
+  
+              > 1
+              > 0.2
+
+
+      '*':
+        subtitle 'multiplication operator'
+        summary '''
+          Multiplies two expressions.
+        synref '''
+          .. [expr] * [expr]
+        detail '''
+          As in:
+
+              debug 2 * 3
+  
+              > 6
+
+
+      '**':
+        subtitle 'exponentiation operator'
+        summary '''
+          Raises one value to the power of another.
+        synref '''
+          .. [lexpr] ** [rexpr]
+        detail '''
+          Calculates an exponent; equivalent to `Math.pow([lexpr],[rexpr])`.
+
+              debug 2 ** 3
+  
+              > 8
+
+
+      '+':
+        title '+'
+        subtitle 'addition / string concatenation operator'
+        summary '''
+          summary
+        synref '''
+          .. [expr] + [expr]
+        
+        detail '''
+          Adds two numbers OR concatenates two strings.  If both expressions are numbers, adds them. 
+          Otherwise converts them both to strings and concatenates.
+
+              debug 1+2     
+              debug '1'+2   
+              debug 1+'2'   
+              debug '1'+'2' 
+
+              > 3
+              > 12
+              > 12
+              > 12
+
+
+      '-':
+        title '- (minus)'
+        subtitle 'subtraction/negation operator'
+        summary '''
+          summary
+        synref '''
+          .. [lexpr] - [rexpr]
+          .. - [expr]
+        detail '''
+          Used as a binary operator, subtracts the right expression from the left. 
+          
+              debug 3 - 5
+              > -2
+          
+          Used as a unary operator, negates the expression (subtracts it from 0).
+          
+              set b to 5
+              debug 3 + -b
+              > -2
+          
+          SAI will not let you write the following;
+          
+              set a - 3
+              
+          Because that could be parsed one of two ways:
+          
+           - place the value `-3` in the variable `a`
+           - subtract `3` from the variable `a`
+           
+          If you try to write code like this, a compiler error will result.  Choose one of these
+          formats instead:
+          
+              set a to -3    // store -3 in a
+              set a self - 3  // subtract 3 from a
+
+          Just a little gotcha.
+          
+
+      '/':
+        title '/ (forward slash)'
+        subtitle 'mathematical division operator'
+        summary '''
+          Divides the expression on the left by the expression on the right.
+        synref '''
+          .. [expr1] / [expr2]
+        detail '''
+          As in:
+
+              debug 22 / 7
+              debug 355 / 113
+  
+              > 3.142857142857143
+              > 3.1415929203539825
+
+
+      '<':
+        subtitle 'less comparison'
+        summary '''
+          Evaluates **true** if lexpr is numerically or lexically lower than rexpr, **false** otherwise.
+        synref '''
+          .. [lexpr] < [rexpr]
+        detail '''
+          For example:
+
+              debug 1 < 1 // false 
+              debug 1 < 2 // true
+              debug 'a' < 'b' // true
+              debug 'a' < 'B' // false, case matters
+
+          If you want a case insensitive comparison, you must ensure both expressions are of the same case.
+
+
+      '<<':
+        subtitle 'left-shift operator'
+        summary '''
+          Performs a binary left shift.
+        synref '''
+          .. [expr] << [bitcount]
+        detail '''
+          Convert the expression into a 32 bit signed integer and perform a binary left shift *bitcount* times.
+
+              debug 4 << 1   // 8
+              debug -8 << 2  // -32
+              debug 2.8 << 0 // 2
+  
+
+      '<=':
+        subtitle 'less or equal comparison'
+        summary '''
+          Evaluates to **true** if lexpr is numerically or lexically lower or equal to rexpr, **false** otherwise.
+        synref '''
+          .. [lexpr] <= [rexpr]
+        detail '''
+          You know how this works.
+
+
+      '<=>':
+        subtitle 'comparison operator'
+        summary '''
+          Evaluates to **-1** if lexpr is lower than rexpr, **1** if it is greater, and **0** if they are equal.
+        synref '''
+          .. [lexpr] <=> [rexpr]
+        detail '''
+          For example:
+          
+              debug 1 <=> 0      // returns 1
+              debug 1 <=> 1      // returns 0
+              debug 1 <=> 2      // returns -1
+              debug 'b' <=> 'a'  // returns 1
+              debug 'b' <=> 'b'  // returns 0
+              debug 'b' <=> 'c'  // returns -1
+
+          Useful in sorting operations!  
+          
+
+      '=':
+        subtitle 'equality comparison'
+        summary '''
+          Evaluates to **true** if the two expressions are equivalent. 
+        synref '''
+          .. [expr] = [expr]
+        detail '''
+          This compiles directly to Javascript’s `==` operator and has the same occasionally 
+          bizarre side effects. Basically, don’t use = except for comparing numeric, boolean or string values. 
+
+          Use **is** or **isnt** to compare objects or object types, except when dealing with **NaN** in which 
+          case the only reliable way to test for its existence is to use **isNaN**. That’s Javascript for you.
+
+
+      '>':
+        subtitle 'greater comparison'
+        summary '''
+          Evaluates **true** if lexpr is numerically or lexically greater than rexpr, **false** otherwise.
+        synref '''
+          .. [lexpr] > [rexpr]
+        detail '''
+          For example:
+
+              debug 1 > 1 // true 
+              debug 1 > 2 // false
+              debug 'a' > 'b' // false
+              debug 'a' > 'B' // true, case matters
+
+          If you want a case insensitive comparison, you must ensure both expressions are of the same case.
+
+
+      '>=':
+        subtitle 'greater or equal comparison'
+        summary '''
+          Evaluates **true** if lexpr is numerically or lexically greater than or equal to rexpr, **false** otherwise.
+        synref '''
+          .. [lexpr] >= [rexpr]
+        detail '''
+          You know the drill.
+        
+
+      '>>':
+        subtitle 'signed bitwise right shift operator'
+        summary '''
+          Convert the expression to a 32 bit signed integer, then shift it right bitcount times, 
+          maintaining the sign of the expression.
+        synref '''
+          .. [expr] >> [bitcount]
+        detail '''
+          As in:
+  
+              debug 8 >> 1   // 4
+              debug -32 >> 2 // -8
+
+          There's also an unsigned variant __>>>__.
+
+
+      '>>>':
+        subtitle 'unsigned bitwise right shift operator'
+        summary '''
+          Convert the expression to a 32 bit signed integer, then shift it right bitcount times, 
+          Zero bits are added on the left side (msb), which does not preserve negative sign.
+        synref '''
+          .. [expr] >> [bitcount]
+        detail '''
+          This is the difference:
+          
+              debug 8 >>> 1   // 4
+              debug -32 >>> 2 // 1073741816
+
+          You want this one if you're working with bitmap data, for example.
+
+
+      '?<':
+        subtitle 'minimum operator'
+        summary '''
+          Evaluates to whichever expression is numerically or lexically lower.
+        synref '''
+          .. [lexpr] ?< [rexpr]
+        detail '''
+          Kind of like Math.min except as an operator.
+
+              debug 1 ?< 2   // returns 1
+              debug 2 ?< 1   // returns 1
+
+          Handy when you need it.
+
+
+      '?>':
+        subtitle 'maximum operator'
+        summary '''
+          Evaluates to whichever expression is numerically or lexically higher.
+        synref '''
+          .. [lexpr] ?> [rexpr]
+        detail '''
+          Kind of like Math.max except as an operator.
+
+              debug 1 ?> 2   // returns 2
+              debug 2 ?> 1   // returns 2
+
+          Of course it only operates on two values at a time. But that's cool.
+
+
+      '??':
+        subtitle 'trinary operator'
+        summary '''
+          Evaluates to expr1 if the left expression is _truthy_, otherwise evaluates to expr2.
+        synref '''
+          .. [expr] ?? [expr1] :: [expr2]
+        detail '''
+          I get the grar about the ?: operator, it can make for unclear logic.  But I've found
+          with this _doubled up_ version that it's much easier to see when it's used, especially
+          if you keep spaces on either side of the operators.
+          
+              debug true ?? 'True' :: 'False'   // prints 'True'
+              debug false ?? 'True' :: 'False'  // prints 'False'
+
+          It's still kind of not great, but on the other hand there are times when five lines of code
+          could be reduced to one without losing much clarity. And those are the times for ??::.
+
+
+      'and':
+        subtitle 'logical and operator'
+        summary '''
+          If the left expression evaluates to **falsy**, returns it, otherwise returns the right expression.
+        synref '''
+          .. [expr] and [expr]
+        detail '''
+          For example:
+          
+              debug 1 and 0     // prints '0'
+              debug 1 and false // prints 'false'
+              debug 0 and 1     // prints '0'
+              debug false and 1 // prints 'false'
+              debug 1 and 1     // prints '1'
+  
+              debug true and 'Fred'
+              > Fred
+
+
+      'andb':
+        subtitle 'bitwise and operator'
+        summary '''
+          Bitwise and operator. Converts, if possible, both left and right expressions into 32 bit signed integers, and performs a bitwise AND operation on them.
+        synref '''
+          .. [expr] andb [expr]
+        detail '''
+          Examples:
+
+              debug 5 andb 11
+
+              > 1
+
+              //  5 in binary: 00000000000000000000000000000101
+              // 11 in binary: 00000000000000000000000000001011
+              //  1 in binary: 00000000000000000000000000000001
+
+
+      'bind':
+        subtitle 'function context binder'
+        summary '''
+          The __bind__ operator _binds_ a function reference to the current object context. 
+        synref '''
+          .. bind [function reference]
+        detail '''
+          This is useful when you need to pass in a member function to a callback, and need to ensure the 
+          execution context (specifically, the _this_ object) isn't lost.
+
+          Why is this important?
+
+              Object car
+              instance: plate '876 ACET'
+              CheckPlate task
+                DB.lookupPlate plate, PlateResults
+              PlateResults task given status
+                debug 'Status for \${plate}: \${status}'
+      
+          In the above function definition of `CheckPlate` the `DB.lookupPlate` function is an asynchronous 
+          call with a plate number and a callback function. As written, when the callback is invoked, 
+          `PlateResults` will have been unbound from its object; it is a function reference with no context. 
+
+          The code will produce this result:
+
+              Looking up 876 ACET
+              Status for undefined: Valid
+
+          Although the test was successful, we have _lost context_ on the callback because `PlateResults` 
+          is passed in as an unbound function. Referring to the member trait `plate` within an unbound context 
+          produces an undefined result. In order to make this function reference work, we need to bind it to 
+          the current object with the __bind__ operator, as follows:
+
+              DB.lookupPlate plate, bind PlateResults
+
+          Now when we run the asynchronous function, it works as expected, because the callback has its context; 
+          e.g. it knows where it is going (or, more accurately, where it is returning to).
+
+              Looking up 876 ACET
+              Status for 876 ACET: Valid
+
+          Note that __bind__ is only necessary when passing references to object member functions. 
+          Functions you define in-place won't have this issue, as they create their own context. 
+          This version of __bind__ only binds functions to the current object. If you want to bind a 
+          function on some other object, you'd write code something like this, making use of the Function 
+          object's bind ability:
+
+              ... from anObject.anyFunction.bind anObject 
+
+          SAI compiled objects do a runtime check on any member method invocation to verify that the
+          current execution context is, if not correct, at least not totally absent.
+
+
+      'copy':
+        subtitle 'shallow copy operator'
+        summary '''
+          Use the **copy** unary operator to create a _shallow copy_ of the expression it precedes.  
+        synref '''
+          .. copy [expr]
+        detail '''
+          You sometimes need this because ordinarily SAI and Javascript assign objects, rather than copies 
+          of object values. 
+
+              set plate to fruit       // i want some fruit
+              plate.push 'Ice cream'   // and also dessert
+              debug fruit              // but now fruit has changed
+  
+              > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
+  
+              fruit.pop                 // get rid of the ice cream
+              debug fruit
+  
+              > [ 'Apple', 'Banana', 'Citron' ]
+  
+              set plate to copy fruit  
+              plate.push 'Ice cream'
+              debug fruit
+  
+              > [ 'Apple', 'Banana', 'Citron' ]
+  
+              debug plate               // there we go
+  
+              > [ 'Apple', 'Banana', 'Citron', 'Ice Cream' ]
+
+          Note that **copy** only copies enumerable attributes. There's a rabbit hole for ya.
+
+
+      'create':
+        subtitle 'object creation operator'
+        summary '''
+          Creates a SAI object by name. 
+        synref '''
+          .. create [expr] [parameters]
+        detail '''
+          If we are running in dynamic mode (that is, with source that is being dynamically compiled from
+          .SAI files), __create__ will attempt to find the object’s source by using the `SAI.config.Loader` function, 
+          which defaults to `SAI.GetSourceFromPaths`, which tries to find a file named `[expr].sai` i
+          n the provided paths. 
+
+          In runtime mode (that is, when running from plain Javascript .js files that have been pre-compiled),
+          __create__ will call `require`, but do see the source in the `sai-library` that discusses this.
+
+              reference:
+                Tally 'Tally ^1.0.0'
+              .. 
+  
+              set inventory to create Tally
+
+          The example follows best practices of placing object names in a **reference** section, aliasing 
+          versioned names into literals.
+
+          See also __new__, which is a direct link to Javascript's `new`, and __singleton__, which works 
+          like __create__ except instantiates the object only once in the scope of the runtime library; subsequent 
+          calls will return that same object.
+
+
+      'dec':
+        subtitle 'decrement verb'
+        summary '''
+          Decrements (reduces by 1) the value in the given variable.
+        synref '''
+          dec [var]
+        detail '''
+          Example:
+
+            set a to 2
+            dec a
+            debug a
+  
+            > 1
+
+
+      'default':
+        subtitle 'variable initialization operator'
+        summary '''
+          Examines the expression on the left; if it has a value, returns it. Otherwise returns the value on the right.
+        synref '''
+          ... [lexpr] default [rexpr]
+          set [lexpr] default [rexpr]
+        detail '''
+          #### default in expressions
+
+          If and only if the left expression evaluates to `undefined`, returns the right expression, otherwise 
+          returns the left expression.
+
+          Like **or** except instead of checking for _truthy_ tests to see if a value is present. 
+          Most useful in expressions where you’re not sure if a variable is initialized.
+
+              set 
+                magnitude to undefined
+                angle to 60o
+              debug (magnitude default 1) * ~Math.cos(angle)
+  
+              > 0.5
+
+          #### default in **set** statements
+    
+          If the left expression is `undefined` then evaluate the right expression and assign it to the left 
+          expression. For example:
+
+              set calculationCache[key] default ExpensiveCalculation(key)
+
+          This checks to see if the calculation cache has a value for the given key, and if not, 
+          calculates the value and assigns it to the cache.
+    
+
+      'delete':
+        subtitle 'a verb that deletes variables'
+        summary '''
+          summary
+        synref '''
+          delete [variable]
+        detail '''
+          When called on a variable or traits, undefines the named variable or attribute(s) of a variable.
+
+              delete thisUnwantedValue
+              delete goodObject.unwantedAttribute
+
+          This just calls the underlying Javascript version of **delete**, with all the same rules and caveats.
+          
+          #### delete pipe operator
+          
+          The __delete__ pipe operator has advanced functionality, which see.
+          
+
+      'inc':
+        subtitle 'value increment operator'
+        summary '''
+          Increments (adds 1 to) the given variable.
+        synref '''
+          inc [var]
+        detail '''
+          As in:
+          
+              set a to 1
+              inc a
+              debug a
+  
+              > 2
+
+          The __inc__ statement has special behaviour around values that are _undefined_ or evaulate to _falsy_; when you increment one of these values, it becomes `1`.  For example:
+
+              set a to undefined
+              inc a
+              debug a
+    
+              > 1
+    
+          This is useful when tallying with an array, e.g. the following construct automatically initializes array elements the way the standard `++` operator does not, such that the `tally` object will contain a log of word usage.
+
+              set tally blank
+              every word
+                inc tally\it
+      
+          Note that __dec__ does not have similar initialization functionality.
+
+
+      'is':
+        subtitle 'equivalence test operator'
+        summary '''
+          Returns **true** if the two expressions are completely indistinguishable.  
+        synref '''
+          .. [expr] is [expr]
+        detail '''
+          More rigorous than **=** when objects differ in type.
+
+              debug 0 = false
+              debug 0 is false
+  
+              > true
+              > false
+
+          _Note: Do not use **is** or **isnt** to test values against **NaN**. You must use the 
+          specific **isNaN** operator for this._
+
+
+      'isNaN':
+        title 'isNaN (case matters)'
+        subtitle 'checks for NaN'
+        summary '''
+          Returns true if the expression is the **NaN** flag.  
+        synref '''
+          .. isNaN \[expr]
+        detail '''
+          Note there is no other way to test for NaN than by using **isNaN**. 
+          
+          Note also that capitalization matters.
+
+              set a from ~parseInt 'This is not a number.'
+              debug a           // NaN
+              debug a = 0       // false
+              debug a = false   // false
+              debug a = NaN     // false
+              debug isNaN a     // true
+
+          Right?  Seriously:
+          
+              debug NaN = NaN   // false
+              debug NaN is NaN  // false
+              
+          So that's why we need this keyword for this one little function.
+
+        
+      'isnt':
+        subtitle 'equivalence test operator'
+        summary '''
+          Returns **true** if the two expressions are in any way distinguishable. 
+        synref '''
+          .. [expr] isnt [expr]
+        detail '''
+          More rigorous than **!=** when objects are of differing types.
+
+              debug 1 != true
+              debug 1 isnt true
+  
+              > false
+              > true
+
+          _Note: Do not use **is** or **isnt** to test values against **NaN**. You must use the specific **isNaN** operator for this._
+
+
+      'isof':
+        subtitle 'object information trait/operator'
+        summary '''
+          All prototyped SAI objects have an **isof** trait that is a plain object that encapsulates detailed 
+          information about the SAI object and its heritage. 
+        synref '''
+          .. [object].isof
+           - or -
+            .. [object] isof [class name expr]
+        detail '''
+          Let's just see how this works:
+
+              object Fruit 1.0.0
+              Instantiate task
+                debug 'I am a \${isa}'
+  
+              set a to create 'Fruit'
+              > I am a Fruit
+  
+              object Pear 1.0.0
+              inherit: Fruit
+  
+              set b to create 'Pear'
+              > I am a Pear
+
+              debug a.isof
+  
+              > { Fruit: 
+              >   { version: '1.0.0',
+              >     isa: 'Fruit',
+              >     context: './sample/Keywords/Fruit.sai' } }
+  
+              debug b.isof
+  
+              > { Fruit: 
+              >   { version: '1.0.0',
+              >     isa: 'Fruit',
+              >     context: './sai/sample/Keywords/Fruit.sai' },
+              >  Pear: 
+              >   { version: '1.0.0',
+              >     isa: 'Pear',
+              >     context: './sai/sample/Keywords/Pear.sai',
+              >     inherit: [ 'Fruit' ] } }
+
+            You can trace an object’s creation in order recursively by starting at the **isof** entry for the 
+            present object — `isof[isa]` — and stepping through the **inherit** array.
+
+          #### isof operator
+
+            .. [object] isof [class name expr]
+
+          Returns true if the object is an instance of a class that is, or inherits from, the given class name.  
+
+              class Parent 1.0.0
+  
+              class Child 1.0.0
+              inherits: Parent
+  
+              set a to create 'Child'
+              debug a isof 'Child'   // true
+              debug a isof 'Parent'  // true
+
+
+      'nand':
+        subtitle 'not-and logical operator'
+        summary '''
+          Performs the logical not-and operation. 
+        synref '''
+          .. [expr] nand [expr]
+        detail '''
+          Returns **false** only if left or right expression are both _truthy_. Otherwise returns **true**.  
+
+          A semantic simplification of `not ([expr] and [expr])`.
+
+              debug 0 nand 0 // prints 'true'
+              debug 1 nand 0 // prints 'true'
+              debug 0 nand 1 // prints 'true'
+              debug 1 nand 1 // prints 'false'
+
+          These are logically the same
+          
+              debug a nand b
+              debug not ( a and b )
+
+          How useful!
+
+
+      'new':
+        subtitle 'object instantiation operator'
+        summary '''
+          Instantiates a new object with the given prototype. 
+        synref '''
+          .. new [prototype] [parameters]
+        detail '''
+          If parameters are supplied, passes them to the object’s constructor.
+
+          **New** is used for traditional Javascript objects; objects where you have in-hand the prototype 
+          used to fabricate an instance that object. **New** trusts that the code to create that object 
+          has already been located and compiled.
+
+          **Create** is used for SAI objects; objects where you have in-hand an object name (as a string). 
+          **Create** doesn't assume pre-compiled prototypes; if the prototype isn't cached, it will attempt 
+          to load it via the `SAI.config.Loader` function. 
+
+              reference:
+                express require('express')
+  
+              object HelloHTTP 1.0.0
+  
+              Instantiate task
+                set @app express()
+  
+                @app.get '/', task given req, res
+                  res.send 'Hello HTTP!'
+  
+                set @server from @app.listen 3000, 'localhost', task
+                  with @server.address()
+                    debug 'Example app listening at http://\${.address}:\${.port}'
+
+          You ordinarily need to use the **\~** global scope prefix when creating Javascript built-in objects 
+          however `Error` has been promoted to SAI global so you don't have to:
+
+              if crocodiles
+                throw new Error "Why do we even have that lever?"
+
+          Notice here that **new** is not expecting any parameters to be wrapped in parentheses; in this way it 
+          works like **from**.
+
+          See also __create__ which is used to instantiate SAI objects by name, and __singleton__ which is 
+          used to create singleton SAI objects by name.
+
+
+
+
+      'nor':
+        subtitle 'not-or logical operator'
+        summary '''
+          Performs the logical not-or operation. 
+        synref '''
+          .. [expr] nor [expr]
+        detail '''
+          Returns **true** only if left or right expression are both _falsy_. Otherwise returns **false**.
+
+          A semantic simplification of `not ([expr] or [expr])`.
+
+              debug 0 nor 0 // prints 'true'
+              debug 1 nor 0 // prints 'false'
+              debug 0 nor 1 // prints 'false'
+              debug 1 nor 1 // prints 'false'
+
+          These are the same:
+          
+              if not ( a or b )
+              if a nor b
+              unless a or b
+
+
+      'not':
+        subtitle 'logical not operator'
+        summary '''
+          Performs the logical not operation. 
+        synref '''
+          .. not [expr]
+        detail '''
+          Returns **false** if the right expression is _truthy_, otherwise returns **true**.
+
+              debug not false  // prints 'true'
+              debug not 0      // prints 'true'
+              debug not 'Sam' // prints 'false'
+              debug not empty  // prints 'false'
+
+          These are the same:
+          
+              if not a
+              unless a
+            
+
+      'notb':
+        subtitle 'binary not operator'
+        summary '''
+          Performs a bitwise logical not on a 32-bit signed integer.
+        synref '''
+          .. notb [expr]
+        detail '''
+          For example:
+          
+              debug notb -8  // prints '7'
+  
+               -8 in binary: 11111111111111111111111111111000
+               +7 in binary: 00000000000000000000000000000111
+
+
+      'number':
+        subtitle 'numeric coercion operator'
+        summary '''
+          Attempts to convert the following expression into a numeric value. 
+        synref '''
+          .. number [expr]
+        detail '''
+          If it cannot, the result is 0.
+
+              debug number '12'
+              debug number 'ralph'
+              > 12
+              > 0
+
+          It is always safe to use __number__ in that it will never return a non-number, and it will never
+          throw an error. It's sole failure mode is to return 0.
+
+
+      'or':
+        subtitle 'logical or operator'
+        summary '''
+          If the left expression is **truthy**, returns it without executing the right expression, 
+          otherwise returns the right expression.
+        synref '''
+          .. [expr] or [expr]
+        detail '''
+          Examples:
+          
+              debug 0 or 0  // prints '0'
+              debug 1 or 0  // prints '1'
+              debug 0 or 2  // prints '2'
+              debug 1 or 2  // prints '1'
+
+
+      'orb':
+        subtitle 'bitwise-or operator'
+        summary '''
+          Performs a bitwise or on two 32-bit integers.
+        synref '''
+          [expr] orb [expr]
+        detail '''
+          Example:
+          
+              debug 5 orb 11 // prints '15'
+  
+               5 in binary: 00000000000000000000000000000101
+              11 in binary: 00000000000000000000000000001011
+              15 in binary: 00000000000000000000000000001111
+
+
+      'singleton':
+        subtitle 'singleton object access operator'
+        summary '''
+          Creates one instance of SAI object by name. 
+        synref '''
+          .. singleton [expr] [parameters]
+        detail '''
+          Creates one instance of SAI object by name. If the object has already been created, returns a 
+          reference to it. The scope is that maintained by the runtime library. 
+
+          Like __create__, __singleton__ will attempt to find the object’s source by using the `SAI.config.Loader` 
+          function, which defaults to `SAI.GetSourceFromPaths`, which tries to find a file named `[expr].sai` 
+          in the provided paths. 
+
+              reference:
+                Tally 'Tally ^1.0.0'
+              .. 
+  
+              set inventory to singleton Tally
+
+          (The example follows best practices of placing object names in a **reference** section, aliasing 
+          versioned names into literals.)
+
+          Singleton objects are useful for library functions, APIs to external resources, tallies, caches, 
+          message managers and so on.
+
+          Since the reference to the singleton object is maintained by the library, singleton objects are 
+          never garbage collected (and cannot be destroyed) once created. If you might need to release resources 
+          held by a singleton before the end of the application, you must make allowances for that in your 
+          object's API; e.g. by crafting a `.Cleanup` task.
+
+          See also __new__, which is a direct link to Javascript's `new`, and __create__, which will make a new 
+          object each time.
+
+
+      'typeof':
+        subtitle 'javascript type disclosure operator'
+        summary '''
+          Returns the Javascript-native type of an expression.
+        synref '''
+          .. typeof [expr]
+        detail '''
+          See e.g. [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof][2] for details.
+
+
+      'xor':
+        subtitle 'logical exclusive-or operator'
+        summary '''
+          If both expressions are _truthy_, or both expressions are _falsy_, return `false`. Otherwise return the expression that is _truthy_.
+        synref '''
+          .. [expr] xor [expr]
+        detail '''
+          Example:
+
+              debug 'Fred' xor 'Daphne'
+              debug 'Shaggy' xor 0
+              debug 0 xor 'Scooby'
+              debug 0 xor 0
+  
+              > false
+              > Shaggy
+              > Scooby
+              > false
+
+          Maybe not too often used, but compared to:
+          
+              if (a and b) or not (a and b)
+ 
+
+
+      'xorb':
+        subtitle 'binary exclusive-or operator'
+        summary '''
+          Performs a bitwise XOR operation on two 32-bit integers.
+        synref '''
+          .. [expr] xorb [expr]
+        detail '''
+          Example:
+          
+              debug 3 xorb 6 // prints '5'
+  
+              3 binary: 00000000000000000000000000000011
+              6 binary: 00000000000000000000000000000110
+              5 binary: 00000000000000000000000000000101
+
+          Favourite of cryptographers everywhere. And data storage architects.
+
+
+
+// operators
+/////////////////////////////////////////////////// SYNTAX
+
+      
+    'syntax':
+
+      '!':
+        title '! (bang)'
+        subtitle 'function invocation operator'
+        summary '''
+          **!** (bang) invokes the following identifier as a function call that returns a value, 
+          passing in any parameters that follow.  
+        synref '''
+          ... ! [identifier] ([parameters]) (;)
+        detail '''
+          The following are synonymous:
+
+              set record !cursor.FetchRow
+              set record from cursor.FetchRow
+              set record to cursor.FetchRow()
+  
+              set cursor !db.Query 'select * from names'
+              set cursor to db.Query('select * from names')
+
+          Neither **!** nor parenthesis are needed when the verb begins the line as in 
+          the `cursor.Close` statement below. 
+
+              set cursor from db.Query 'select * from names'
+              set records from cursor.FetchAll
+              cursor.Close
+
+          If you wish to use **!** in a continuing expression, close the parameter 
+          clause with a semicolon (like you'd close a structural literal). 
+          
+          The following examples are equivalent.
+
+              set @x ~Math.sin($angle) * $magnitude
+              set @x !~Math.sin $angle; * $magnitude    
+              set @x from ~Math.sin $angle; * $magnitude    
+
+
+      '#':
+        title '# (hashtag)'
+        subtitle 'existence assertion'
+        summary '''
+          When defining fields or traits, using a hash in front of a trait _name_ will automatically assign 
+          a value of **true** to that trait. 
+        synref '''
+          .. traits #[tagname]
+          .. fields #[tagname]
+        detail '''
+          The following two definitions are identical:
+
+              set row1 to: name 'John', age 19, #cat, #dog
+              set row2 to: name 'John', age 19, cat true, dog true
+
+
+      '$':
+        subtitle 'function parameter scoping prefix'
+        summary '''
+          Easy access to the first parameter a function was called with (even if no parameters are declared
+          with __given__).
+        synref '''
+          .. $ 
+          .. $[attribute]
+        detail '''
+          When alone, **$** returns the first parameter a function was called with. 
+
+              set ShowParameter to task
+                debug $
+              ShowParameter 'Bianca'
+  
+              > Bianca
+
+          When followed immediately by an attribute name, that attribute of the first parameter in a 
+          function. (It is not necessary to include the dot.)
+
+              set ShowAttribute to task
+                debug $name
+                
+              ShowAttribute friends[0]
+  
+              > Sara
+
+          Even if you use **given** to name your parameters, **$** continues to refer to the first parameter. 
+
+              set ShowParameters to task given p1, p2
+                debug $
+                debug p1
+                debug p2
+                
+              ShowParameters 'First', 'Second'
+  
+              > First
+              > First
+              > Second
+
+
+      '$\{':
+        title '$\{ }'
+        subtitle 'string composition'
+        summary '''
+          Allows the insertion of any arbitrary expression in the middle of a string literal. 
+        synref '''
+          .. 'String \${ [expr] } continues.'    // single quote
+          .. "String \${ [expr] } continues."    // double quote
+          .. `String \${ [expr] } continues.     // backtick bareline
+          .. '''                                // here document
+            String \${ [expr] } continues.
+        detail '''
+          As shown above, this is supported in all four string literal formats.
+
+              set FriendSummary to task 
+                return 'Name: $\{$name}, age: $\{$age}'
+              ply friends limit 3 as friend
+                debug 'Subject $\{key+1}: $\{FriendSummary(friend)}'
+  
+              > Subject 1: Sara, age 23
+              > Subject 2: John, age 19
+              > Subject 3: Ellie, age 22
+
+          Use `\\\${` to represent `\$\{` in a string literal. 
+
+              debug 'But I really need to include \\\${} in my output!'
+  
+              > But I really need to include \${} in my output! 
+
+
+
+      "'":
+        b 'ready'
+        title '\' and "'
+        subtitle 'string literals'
+        summary '''
+          Declare a single line delimited literal string.
+        synref '''
+          .. 'Type your string literal here.'
+          .. 'Use a backslash to escape \' and \" and \\ in your strings.'
+        detail '''
+          String literals support embedded expressions (a.k.a. string compositions) using the 
+          syntax: `$\{expr}`. Any normal expression can be evaluated and will be concatenated in-place.
+
+          Use backslash as an escape for string delimiters `\\'` and `\\"`, dollar signs 
+          before braces `\\\${`, and the standard control characters `\\n \\r \\t \\b \\f`.
+
+              debug 'This here\'s $\{'a'} test using \\$\{} composition.'
+              > This here's is a test using ${} composition.
+
+          Double quote is semantically identical to single quote..
+
+
+      "'''":
+        subtitle 'multi-line string literal'
+        summary '''
+          Declare a multi-line string ideal for embedding longer passages of markup.
+        synref '''
+          .. \'\'\'
+            Many lines of text
+              Some Indented
+            Continuing until
+            Indent resets 
+              on the line below this.
+          ..
+        detail '''
+          This is also known as a _here document_ as in "here's a document!"
+
+              .. '''
+                Now you can type as much text as you want,
+                remembering that leading and trailing whitespace 
+                will be stripped, though newlines will be preserved.
+                So it's perfect for markup.
+                
+                It will even keep track of your indenting, assigning
+                column zero to the start of the first line.
+  
+                The string goes on as long as the indenting does.
+  
+                And you can include \\\${'compo'+'sitions'} as well.
+
+          That’s three single quotes in a row, then an indented block.
+
+          Blank lines, indentation and comments are preserved, unless the comment
+          is outside the left margin.
+
+
+      "'d":
+        title "'d (verb'd)"
+        subtitle 'conversational syntax'
+        summary '''
+          An alternate way of invoking a verb on an object.
+        synref '''
+          .. [verb]'d [object] (parameters)
+        detail '''
+          Here are some functionally identical ways of writing the same thing:
+          
+              biglist.push item
+              push'd biglist item
+              
+              debug name.toUpperCase()
+              debug from name.toUpperCase
+              debug toUpperCase'd name
+
+          The thing I find displeasing about the subject-first syntax is that it obscures the action taken. 
+          When the action (the verb) is not foremost on the line, program flow is more difficult to discern.
+          
+          You can use any number of indirections on the object to be verb'd:
+          
+              set index to join'd library\\reference\\category.titles '\n'
+
+          I find this much clearer than:
+          
+              set index from library\\reference\\category.titles.join '\n'
+          
+          Because as you're reading the code, you see WHAT action will take place first, then you learn
+          the subject and object and how they relate to each other.  Hey if you don't like it,
+          don't use it.
+          
+
+      "'s":
+        title "'s (attribute)"
+        subtitle 'conversational syntax'
+        summary '''
+          An alternate way of referencing the attributes of an object.
+        synref '''
+          .. [value]'s [attribute]
+          [object]'s verb
+        detail '''
+          Equivalent to the use of `.` when accessing named attributes.  
+        
+          Functionally equivalent examples:
+          
+              set mixer's colour to 'red'
+              set mixer.colour to 'red'
+              set mixer['colour'] to 'red'
+              
+              set index from library\\reference\\category.titles
+              set index from library\\reference\\category's titles
+
+              if config.options.speedometer
+              if config.options's speedometer
+              if config's options.speedometer
+              if config's options's speedometer
+              
+          In that last set of four, there was probably one that most accurately represented how you
+          would think about the way configuration data is organized. Using a coding style that reflects
+          that mental representation helps you write maintainable code.
+          
+          
+      '(':
+        title '( )'
+        subtitle 'parentheticals'
+        summary '''
+          Parenthesis are used for a couple of things, one of them actually quite confusing.
+        synref '''
+          .. verb(parameters)
+          .. ( expression )
+          .. ( expression [as identifier])
+        detail '''
+          
+          #### invoking functions with parenthesis
+          
+          Haver you ever stopped to think about how odd it is that most major computer languages
+          use parenthesis after a value as a way of using that value as a function reference that 
+          would accept the parameters within the parenthesis?
+          
+          Okay, it comes from math, where _f(x)_ is super classical notation. But still, it doesn't have
+          to be that way, and it behooves us to think about it.
+          
+          In SAI you can use parens this way, but in my opinion it should be reserved for situations
+          where other, more conversational styles, are just too clunky -- essentially when you feel a deep,
+          desperate need to chain a whole bunch of functionality together into one run-on sentence, like this one.
+          
+          These are all different ways of writing the same functionally:
+          
+              set angle Math.atan2( y, x )      // 1
+              set angle atan2'd Math y, x       // 2
+              set angle from Math.atan2 y, x    // 3
+              set angle from Math's atan2 y, x  // 4
+              
+          My personal preference would be 3, unless there were more math operations needed in one statement, in which
+          case 1 would be clearer. Option 2 doesn't make much sense because the Math object is here 
+          a static entity that is meaningless except as a scoping prefix. This also lets form 4 out as
+          calling too much attention to Math.  
+          
+          #### controlling precedence with parenthesis 
+          
+          The much more useful way that parens are used is to control the precedence of operations.  
+          For example, what the heck is the result of this statement:
+          
+              set f to 3 * 8 - 2 / 2 + 5
+          
+          There are certainly RULES about how this would be evaluated; multiplication and division would be done first,
+          then addition and subtraction.  But who wants to have to think about that all the damn time?  And what if
+          your assumptions are wrong, or you are just too tired or rushed to get it right?
+          
+              set f to ( ( 3 * 8 ) - 2 ) / (2 + 5)
+          
+          That's what parenthesis are for. My advice is: use them any time you have more than one operator in an
+          expression, unless the operators are all the same. And maybe even then. Always use them when you're 
+          altering values in parameters. 
+          
+          #### using __as__ with parenthesis
+
+          The parenthetic **as** assigns the value of the parenthesised expression to a named identifier. 
+          The assignment happens as soon as the parethesis is evaluated, so you can use the identifier 
+          in the same expression as the parenthetical, as long as the parenthetical is evaluated first.  
+          _This is not a good style of coding_.
+
+              set six to (1+2 as three)+three
+              debug array three, six
+  
+              > [ 3, 6 ]
+
+          Parenthetic __as__ seems like it might be evil but I believe its use can be justified if 
+          done with care and caution.
+          
+
+      '.':
+        subtitle 'attribute lookup'
+        summary '''
+          Looks up the object trait named _attribute_ in the expression. 
+        synref '''
+          .. [expression].[attribute]
+          .. .[attribute]
+          .. .[numeric array index]
+        detail '''
+          This is a _literal_ dereferencing; the text of the attribute is used as the lookup.
+
+              set friend to friends.0
+              
+              debug friend.name
+              debug friend['name']
+              with friend 
+                debug it.name
+                debug .name
+  
+              // prints 'Sara' four times
+
+          When used without a leading value, 
+          references the named attribute in the **it** pronoun.
+
+          Named attributes can also be referenced with `'s` because why not.
+
+
+      '..':
+        title '.. (caboose)'
+        subtitle 'pastes two related lines together'
+        summary '''
+          You can use the two-dot caboose to stitch a *single line* child code block onto the end of the
+          statement that requires it. 
+        synref '''
+          line 1 .. line 2
+        detail '''
+          The following are functionally identical:
+
+            if error 
+              return -1
+  
+            if error .. return -1
+          
+          Don't use the caboose unless it will help make your code clearer.
+
+
+      '...':
+        title '... (continue)'
+        subtitle 'statement pasting operator'
+        summary '''
+          You can use the three-dot continue syntax to insert line breaks, or multiple child code blocks, 
+          into a single statement. 
+        synref '''
+          first part of statement
+            maybe other stuff
+          ... continuing statement
+            perhaps additional stuff
+          ... and more of the statement.
+        detail '''
+          This is not considered good practice (period), as most overly complex statements should be 
+          broken down into multiple statements (period), just like a run-on sentence should be 
+          clarified by a good editor.
+
+          But should you really need it, it is there.
+
+          The three dot continuation must start at the same indent as the line it continues.
+
+              debug traits
+                name Sally
+                age 32
+                province QC
+              ... update traits
+                #cat
+                province ON
+  
+              > { name: 'Sally', age: 32, province: 'ON', cat: true }
+
+          Or even:
+
+              debug 1
+              ... +
+              ... 2
+              ... +
+              ... 3
+  
+              > 6
+  
+          Syntactically, the continue is equivalent to a whitespace character with a bonus ability 
+          to reset level of indent.
+  
+          One more time; if you find yourself tempted to use a continue, take a hard look at the code you're
+          writing and see if it can't be written more clearly. It's okay to use more lines of code.
+          It's okay to use temporary variable names for clarity. It's okay to create clear and simple
+          subroutines. All of these things make for more maintainable code.
+
+
+      '//':
+        title '//'
+        subtitle 'source code comment indicator'
+        summary '''
+          Two forward slashes indicate the start of a comment. 
+        synref '''
+          \/\/ any text goes here, is ignored through the end of line.
+        detail '''
+          Judicious comments that indicate _intent_ are a good idea. Commenting how everything works
+          minutely is not so good. If code function isn't clear, the code has a problem.
+          
+          One gotcha with comments and ''' here documents:
+          
+              debug '''
+                This is a here document
+                  // this is a comment line in the here document
+                // and so is this
+              // but this one is not in the document.
+                and it ends here.
+              
+              > This is a here document
+              >   // this is a comment line in the here document
+              > // and so is this
+              > and it ends here.
+              
+          Comments WITHIN the indentation bounds of a here document are included in the document as text.
+          
+          Comments OUTSIDE the indentation bounds are treated as true comments.
+
+
+      '0b':
+        title '0b, 0o, 0x, and o'
+        subtitle 'binary, octal, hexadecimal and radian numeric literals'
+        summary '''
+          Numeric literals in different formats.
+        synref '''
+          binary: 0b0101010101
+          octal: 0o01234567
+          hexadecimal: 0x0123456789abcdef
+          radians: 360o
+        detail '''
+          Numeric literals in a variety of formats are to be encouraged as a way of more clearly showing
+          data values.
+          
+              debug 0b01011101
+              debug 0o777
+              debug 0xdeadbeef
+              debug 180o
+              
+              > 93
+              > 511
+              > 3735928559
+              > 3.141592653589793
+
+
+      ':':
+        title ': (colon)'
+        subtitle 'create an array or object literal'
+        summary '''
+          The colon __:__ is used to begin the declaration of a data structure.
+        synref '''
+          .. : [expr] (, [expr], [expr], ...) (;)          // array
+
+          .. : 
+            [expr] ( , [expr], ... )                       // array
+           ( [expr], [expr], ...
+             [expr]
+             ... )
+
+          .. : [name] [expr], [name] [expr], ... (;)       // object
+
+          .. :
+            [name] [expr] (, [name] [expr], ...)           // object
+           ( [name] [expr], [name] [expr], ...
+             [name] [expr]
+             ... )
+
+        detail '''
+          The **:** structure definition parser determines whether to create an array or fields by 
+          whether or not a field name is included before the first expression.
+          
+              debug :1, 2, 3;
+  
+              debug:
+                1, 2
+                3
+  
+              debug :a 1, b 2, c 3;
+
+              debug:
+                a 1
+                b 2
+                c 3
+
+              > [ 1, 2, 3 ]
+              > [ 1, 2, 3 ]
+              > { a: 1, b: 2, c: 3 }
+              > { a: 1, b: 2, c: 3 }
+
+          The semicolon at the end of the inline variety is not required except for clarity. Which means
+          it's a _really good idea_ to use it if the structure isn't the only thing on the line.
+          
+          Give the documentation entry for __;__ a read to understand why!
+          
+
+      ';':
+        title '; (semicolon)'
+        subtitle 'structure definition closer'
+        summary '''
+          Optional, closes the current structure definition when needed for clarity. 
+        synref '''
+          .. list a, b, c;
+          .. array 1, 2, 3;
+          .. traits a Apple, b Banana, c Cabbage;
+          .. fields r colour.red, g colour.green, b colour.blue;
+          .. :1, 1, 2, 3, 5, 8;
+          .. :name 'Jane, age 45, city 'Halifax';
+        detail '''
+          Only needed when there is additional code on the same line that might mistakenly 
+          bind too tightly to the final value in the structure.
+
+              debug list 3, 2, 1 | by it
+              debug array 3, 2, 1 | by it
+              debug array 3, 2, 1; | by it  
+  
+              > [ 1, 2, 3 ]
+              > [ 3, 2, 1 ] // undesired result
+              > [ 1, 2, 3 ]
+
+          In the example above, the **list** literal sorts properly because **list** elements 
+          are not allowed to be mathematical expressions, so the parser can correctly 
+          bind `by it` to the entire list.
+
+          However, the first **array** literal _doesn’t_ sort correctly because array elements 
+          can be expressions, and `by it` is binding to the final term in the literal. Thus, the 
+          definition is parsed as `array (3), (2), (1 by it)`.
+
+          One can force **list** to parse incorrectly by using the **=** list element expression 
+          evaluation flag, but that’s ridiculous.
+
+              debug list =3, =2, =1 | by it   // don't write code like this
+              debug list =3, =2, =1; | by it  // just don't
+  
+              > [ 3, 2, 1 ]
+              > [ 1, 2, 3 ]
+
+          The semicolon can also close parameter lists if using the **from** form of function invocation. The following examples are identical:
+
+              set x to ~Math.sin(angle) * magnitude
+              set x from ~Math.sin angle; * magnitude
+
+
+      '<-':
+        title '<- (after)'
+        subtitle 'calculation precedence modifier'
+        summary '''
+          Ensures the expression on the right is calculated before the expression on the left.
+        synref '''
+          .. [expr] [operator1] <- [expr] [operator2] [expr]
+        detail '''
+          Useful when chaining operators of identical precedence, the after operator changes the order
+          of operations from left->right to right->left.  Effectively, the right side of the after operator
+          is wrapped in parenthesis.
+          
+              debug 1 - 2 - 3
+              
+          More to write...
+
+
+      '?':
+        subtitle 'safe fetch'
+        summary '''
+          Adds extra type-checking to an expression ensuring that it will not throw an exception if roots are 
+          undefined; instead just returning **undefined**.
+        synref '''
+          .. ? [expr]
+        detail '''
+          Here's why you want this sometimes:
+
+              set a to undefined
+              debug a.a
+              // throws an exception
+  
+              debug ?a.a
+              > undefined
+
+          Super helpful when building caches, for example.
+          
+
+      '@':
+        subtitle 'context-aware scoping prefix'
+        summary '''
+          Reference a trait or method attached to the current object. Equivalent to Javascript’s `this.`.
+        synref '''
+          .. @ 
+          .. @attribute 
+          @Task [parameters]
+        detail '''
+          Here's the thing. In SAI you almost never need to use @ (this). That is because the compiler
+          knows what your instance variables are. So it just assumes when you use the name of an instance
+          variable, that you mean _this_ instance.  If you want it to reference some other instance, use
+          the the dot accessor in the usual way.  
+          
+          Here’s a short implementation of a 2D vector by way of illustration.
+
+              object Vector2 1.0.0
+  
+              instance:         // declare some member variables up front so the compiler knows what 
+                x 0             // we are doing. Also so that other programmers, like future you,
+                y 0             // know what we are did.
+  
+              angle set given radians 
+                SetPolar radians, magnitude  // SetPolar is an instance method. No need for "@"
+              get 
+                return from Math.atan2 y, x
+  
+              magnitude set given units
+                SetPolar angle, units
+              get
+                return from Math.sqrt x*x + y*y
+  
+              Instantiate task given x, y
+                // OH NO THIS IS A COMPILER ERROR because x and y are instance variables
+                // and you can't use instance variable names as parameters.  Try again!
+                // You also can't use them as renames for pronouns. The compiler tries very
+                // hard to keep you from stepping on yourself.
+                
+              Instantiate task given px, py
+                if px isof 'Vector2' // if we were passed an object
+                  set x to px.x     // copy its values.
+                  set y to px.y     // no "@" for our object, "px." for the other one.
+                else
+                  set x to px
+                  set y to py
+  
+              SetXY task given px, py
+                set x to px
+                set y to py
+  
+              SetPolar task given radians, units
+                set x to units * Math.cos(radians)
+                set y to units * Math.sin(radians)
+
+          #### You need @ for inherited attributes
+        
+          It's worth noting that you can use @ if you want to. And sometimes, you must.
+          You can avoid the user of @ for member variables/methods only on variables/methods defined
+          in the same source file. Inherited members must be referenced with @.
+        
+          This was borne of laziness in writing the compiler BUT ALSO it has the interesting property
+          of making it explicit in the source code where the use of an object member is _inherited_ vs 
+          when it is not.  So for the moment I'm happy that it's like this.
+
+          #### Advanced information
+          
+          Internally, @ always points to a variable that has been _assigned_ from the JS value
+          of `this`. It doesn't reference `this.` directly. In ever member function definition of the compiled 
+          JS object code, you'll see this bit of code in the local variable declarations:
+          
+              $ = this['Dedenter'] ? this : $bindfail('Dedenter')
+
+          This does a couple things -- first, it verifies the `this` object is actually a kind of object 
+          we're expecting, that is, that the object has a member attribute that matches the function name.
+          (If not, it throws a "binding fail" message.) 
+          
+          But if the test is successful, the `this` value is 
+          assigned to our work variable `$`. Whenever you use reference member attributes in your code,
+          you're actually referencing the attributes of the `$` variable, not of `this`.
+          
+          This captures the instance that was active at the start of the function call. If we
+          did not do this, and just used `this.` then it is very likely that asynchronous callbacks to functions 
+          defined in the method would lose their object context -- because _callbacks are almost always unbound_ from
+          an object.
+          
+          So, instead of forcing you to use that ugly-ass `self` workaround, SAI just does the work for you and
+          always captures the `this` value, because it's really unlikely that you wouldn't want it to work this 
+          way anyhow.
+          
+          And if, in case, you did, you could use the __@@__ prefix, or the __orphan__ keyword.
+          
+
+      '@@':
+        subtitle 'context-ignoring scoping prefix'
+        summary '''
+          Maps directly to Javascript's `this`, the context-ignorant object scope.
+        synref '''
+          .. @@
+          .. @@attribute 
+          @@Task [parameters]
+        detail '''
+          Used inside called functions to refer to the "this" object in the scope of the call, 
+          rather than the scope of the function definition. 
+          
+          You can use the __orphan__ statement to force decontextualization of the usual
+          "this" scope. Have a look at that entry for info.
+
+
+      '[':
+        title '[ ]'
+        subtitle 'attribute lookup'
+        summary '''
+          Performs an indirect lookup of a trait/element in the given value.
+        synref '''
+          .. [value] '[' [expr] ']'
+        detail '''
+          The following debug statements print identical results.
+
+              set field to 'name'
+              set friend to friends[0]
+
+              debug friend.name
+              debug friend['name']
+              debug friend['na'+'me']
+              debug friend[field]
+              debug friend\field
+  
+              // prints 'Sara' five times.
+
+
+      'from':
+        subtitle 'function invocation'
+        summary '''
+          **From** invokes the identifier as a function call that returns a value, passing in any parameters that follow.  
+  
+        synref '''
+          .. from [identifier] ([parameters]) (;)
+        detail '''
+          It is the preferred syntax for function calls that include indents, as it is difficult to close a parenthesis.
+
+          The following calls are synonymous:
+
+              set record !cursor.FetchRow
+              set record from cursor.FetchRow
+              set record to cursor.FetchRow()
+  
+              set cursor !db.Query 'select * from names'
+              set cursor from db.Query 'select * from names'
+              set cursor to db.Query('select * from names')
+
+          **From** is the encouraged form for **set** statements because it allows a more natural reading of source code. __From__ indicates that the identifier that follows will be used as a verb and returning a value. 
+
+          Neither **From** nor parenthesis are needed when the verb begins the line as in the `cursor.Close` statement below.
+
+              set cursor from db.Query 'select * from names'
+              set records from cursor.FetchAll
+              cursor.Close
+
+          If you wish to use **from** in a continuing expression, close the parameter clause with a semicolon (like you'd close a structural literal). The following two examples are equivalent.
+
+              set @x to Math.sin($angle) * $magnitude
+              set @x from Math.sin $angle; * $magnitude    
+
+          Both __from__ and __!__ (bang) do the same thing.
+
+
+
+// syntax
+/////////////////////////////////////////////////// KEYWORDS
+      
+    'keywords':
+
+      '$$':
+        subtitle 'function arguments pseudo-array'
+        summary '''
+          Equivalent to Javascript’s `arguments` and can be used the same way.
+        synref '''
+          .. $$
+        detail '''
+          Best to refer to good documentation on this elsewhere.
+
+
+      'adopt':
+        subtitle 'part of the promise keyword'
+        summary '''
+          Please read __promise__ for more.
+        synref '''
+          .. promise (given [parameters]) adopt [expression]
+        
+        detail '''
+          Intentionally left blank.
+
+
+      'all':
+        subtitle 'part of the promise keyword'
+        summary '''
+          Please read __promise__ for more.
+        synref '''
+          .. promise (given [parameters]) all [array-expression]
+        detail '''
+          Intentionally left blank.
+
+
+      'any':
+        subtitle 'part of the promise keyword'
+        summary '''
+          Please read __promise__ for more.
+        synref '''
+          .. promise (given [parameters]) any [array-expression]
+        detail '''
+          Intentionally left blank.
+
+
+      'array':
+        subtitle 'expression-oriented list literal'
+        summary '''
+          Used to specify the creation of a plain array of mathematical values; e.g. the result of a series 
+          of expressions. As opposed to **list**, which is a plain array of bare literals. 
+        synref '''
+          .. array [expr], [expr], ... (;)
+          .. array
+            [expr], [expr], ...
+            [expr]
+            ...
+        detail '''
+          In general, the **colon** structure constructor will figure out what you want, but when you want 
+          to be specific about creating an array of expressions, use **array**. Compare with **list**, 
+          **fields** and **traits**.
+
+          Arrays may be specified on one line:
+
+              debug array 1+1, 2*3, 'Fred'
+  
+              > [ 2, 6, ‘Fred’ ]
+
+          Or multiple lines in the form of an indented block:
+
+              debug array
+                width * ~Math.cos(angle)
+                height * ~Math.sin(angle)
+  
+              > [  7.0710678118654755, 3.5355339059327373 ]
+
+          Or a combination of both:
+
+              debug array
+                1, 1, 2, 5
+                14, 42, 132, 429
+                1430, 4862
+
+          When using an array literal in an expression that might make the end of the array a matter of question, use a **semicolon** to close the array literal:
+
+              debug array 5, 3, 2, 7, 4; has it%2
+  
+              > [ 5, 3, 7 ]
+
+          Or enclose the array in parenthesis:
+
+              debug (array  4, 3, 2, 1) by it
+  
+              > [ 1, 2, 3, 4 ]
+
+          Arrays can be nested by use of either parenthesis or semicolons, or by using multiple levels of indent. Note that commas separate expressions on one line but are not included at the end of a line.
+
+              debug array
+                array 1, 2, 3;, array 4, 5, 6
+                array
+                  7, 8, 9
+  
+              > [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+
+
+      'as':
+        subtitle 'pronoun renaming clause'
+        summary '''
+          As declares named locally scoped variables within a code block based on values passed into the block.  
+          (In general, **as** is optional because one can usually access such passed-in values through pronouns.)
+        synref '''
+          .. [pipe operator] as var1, var2, etc...
+          .. [construct] as var1, var2, etc...
+          .. ( [expression] as var 1)
+        detail '''
+          **As** can be used in conjunction with almost any SAI function that creates pronouns.  You use __as__ to
+          give those pronouns specific names, rather than the generic ones. Named pronouns are generally ephemeral.
+          
+              // incomplete list
+              switch [expr] (as [trial var]) 
+              catch (as [error var])
+              if [expression] (as [trial var])
+              exists [expression] (as [it var])
+              with [expression] (as [it var]) 
+
+          An example of **if** value reclamation with **as**:
+
+              if @keydown as charcode
+                switch charcode
+                  case 27
+                    @Escape
+                  case 32
+                    @Continue
+  
+          Every construct that can accept __as__ pronoun renaming will indicate this in the documentation.
+
+          #### as with iterators
+ 
+              // incomplete list
+              iterate [expr] (as [it var])
+              each [expr] (as [it var] (, [key var] ) )
+              ply [expr] (as [it ident] (, [key var] ) )
+              count [expr] (as [counter var])
+
+          An example, renaming **it** and **key** in an each iterator:
+
+              each friends first as value, field
+                debug `\${field}: \${value}
+  
+              > name: Sara
+              > age: 23
+              > cat: true
+              > province: ON
+
+          #### as with comprehensions
+
+              // incomplete list
+              .. | by (as [a var], [b var] )
+              .. | thru (as [it var] (, [key var] ) )
+              .. | audit (as [it ident] (, [key var] ) )
+              .. | into [expr] (as [sum var] (, [it var] (, [key var] ) ) )
+
+          An example, renaming **it** and **key** in the block handler of a **thru** comprehension:
+
+              debug friends | thru as friend, index
+                return `\${index}) \${friend.name} lives in \${friend.province}
+  
+              > [ '0) Sara lives in ON',
+                  '1) Jon lives in QC',
+                  '2) Ellie lives in QC',
+                  '3) Marshal lives in ON',
+                  '4) Doug lives in ON',
+                  '5) Ann lives in QC',
+                  '6) Harry lives in QC',
+                  '7) Jenna lives in ON' ]
+
+          #### as parenthetic
+
+              .. ( [expr] as [var] )
+
+          The parenthetic **as** assigns the value of the parenthesised expression to a named identifier. The assignment happens as soon as the parethesis is evaluated, so you can use the identifier in the same expression as the parenthetical, as long as the parenthetical is evaluated first.  _This is not a good style of coding_.
+
+              set six to (1+2 as three)+three
+              debug array three, six
+  
+              > [ 3, 6 ]
+
+
+      'blank':
+        subtitle 'an object with no traits'
+        summary '''
+          The keyword **blank** creates a plain object with no traits. 
+        synref '''
+          .. blank
+        detail '''
+          It is the SAI equivalent of Javascript’s `{}`.
+
+              set player to blank
+              set player.age to 21
+              debug player
+  
+              > { age: 21 }
+
+          Contrast __blank__ with __empty__.  A whiteboard can be blank; having nothing written on it.
+          You would not usually say it was empty.  While an array or a list is usually thought of as empty,
+          rather than blank.
+
+
+      'chain':
+        subtitle 'verb chain initiation'
+        summary '''
+          summary
+        synref '''
+          .. chain [expr]             // in an expression
+            [comprehension/method] 
+            [comprehension/method]
+            ...
+            
+          chain [expr]                // as a verb
+            [comprehension/method]
+            ...
+        
+        detail '''
+          The **chain** clause allows you to compose (string together) a series of operations that will 
+          each be applied in turn to a value, object, collection or iterator.
+
+          **Chain** is another way of writing `value.method().method().method().method()` that offers cleaner 
+          code and more possibilities. You start with an object, then apply a sequence of verbs to it. Each verb 
+          is a new link in the chain.
+
+              set mirror to task 
+                return chain $
+                  split ''
+                  reverse
+                  join ''
+              debug mirror('A man, a plan, a canal, Panama!')
+  
+              > !amanaP ,lanac a ,nalp a ,nam A  
+
+          In the previous case, each verb was a trait (a method) of the string itself. 
+
+          You can also chain pipe operators:
+
+                debug chain friends
+                  | has .cat
+                  | by .name
+                  | thru 'My friend \${.name} likes cats.'
+  
+                > [ 'My friend Ann likes cats.',
+                >   'My friend Jon likes cats.',
+                >   'My friend Sara likes cats.' ]
+
+          And because one of the pipers is **set**, you can actually chain any function at all.
+
+              set double to task
+                return chain empty
+                  concat $
+                  concat $
+  
+              debug chain fruit
+                | set double(it)
+  
+              > [ 'Apple',
+                  'Banana',
+                  'Citron',
+                  'Apple',
+                  'Banana',
+                  'Citron' ]
+
+          Functions you use in **chain** typically return a value; this is used as the object to pass to 
+          the next link in the chain. However, some methods and functions don't return a value, instead 
+          modifying their context in-place. If a function returns **undefined**, **chain** will reuse the 
+          previous object for the next call.
+
+          _Be careful: some built-in methods return unexpected values that can foil **chain**. 
+          For example, **Array.push** is very irritating for this; you cannot chain **.push** because it 
+          returns the new array length instead of either the array or **undefined**._
+
+          #### chain as a verb
+
+          You can also use `chain` as a verb, that is, at the beginning of a line. This is useful when the 
+          end result of the chain isn't useful but the intermediate results are, which can often be the case 
+          when parsing data.
+
+              set population empty
+              chain friends
+                audit 
+                  inc population[.province] to (self default 0) + 1
+              debug population
+    
+              > [ ON: 4, QC: 4 ]
+    
+          Arguably it might be better to code this particular example with a discrete iterator statement 
+          like `ply`, but not every use case is as trivial as this example.
+
+          _Note: If you use chain as a verb in this way, and the final result of the chain is a generator, 
+          it will be drained automatically._ Otherwise, the code within the chain may never be executed, 
+          because without a drain, generators do nothing.
+
+
+      'contract':
+        subtitle 'requirements for child objects'
+        summary '''
+          When defining an object, **contract** is used to specify tasks or traits that _children_ inheriting 
+          from this object are intended to implement. 
+        synref '''
+          contract:
+            [task/trait name]
+            [task/trait name]
+            ...
+        detail '''
+          Inheriting from an object that has contracts, and then not providing implementations for those contracts, 
+          will result in a SAI exception.
+
+              object fruit
+              contract:
+                Consume
+  
+              object apple
+              inherit:
+               fruit
+              Consume task
+                debug 'You ate an apple.'
+  
+              object pear
+              inherit:
+                fruit
+  
+              > exception thrown: “SAI: Contractually required task ‘Consume’ does not exist in object ‘pear’.”
+ 
+
+      'empty':
+        subtitle 'an array with no items'
+        summary '''
+          A literal value indicating an empty list/array.
+        synref '''
+          .. empty
+        detail '''
+          The equivalent of Javascript’s `[]`, **empty** creates an Array with no elements.
+
+              debug empty
+              debug empty.length
+              
+              > []
+              > 0
+
+
+      'enum':
+        subtitle 'literal number enumeration'
+        summary '''
+          A convenience tool for initializing objects with sequential values.
+        synref '''
+          fields [identifier] enum, ( [identifier] enum, ... )
+        detail '''
+          When declaring a set of fields, specifies a value 1 higher than the value of the previous 
+          definition. If there is no previous definition, 1.
+
+            debug fields a enum, b enum, c 10, d enum
+            
+            > { a: 1, b: 2, c:10, d: 11}
+
+
+      'exists':
+        title: 'exists (unary operator)'
+        subtitle 'check for undefined'
+        summary '''
+          Returns true if the following expression is _not_ `undefined`.
+        synref '''
+          .. exists [expr]
+        detail '''
+          These three comparisons test the same thing and have the same effect:
+          
+              if undefined isnt var
+                ...
+              if exists var    // unary operator
+                ...
+              exists var       // flow control construct
+                ...
+
+          The unary operator can be used in expressions, e.g.
+          
+              unless exists .name and exists .age
+                return: error "Name and age are required."
+
+
+      'expects':
+        title 'expects (keyword)'
+        subtitle 'runtime paramater type validation'
+        summary '''
+          Used to check whether a function’s named parameters (or any arbitrary object) has certain 
+          traits, and optionally if those traits are of a particular type.
+        synref '''
+          ... task/promise/process expects [rules definition]
+        detail '''
+          When used as the clause in a **task**, **promise** or **process** function definition. **expects** 
+          adds run-time parameter checking to the function, passing the first argument (the one that holds 
+          named parameters) through an *expects check* based on the rules that follow. If any expectations 
+          are not met, a runtime error is thrown.
+
+          Names appearing in **expects** clauses, and thus being used to check parameters, _must_ be 
+          preceeded by **$**. This is intended as a reminder that *named parameters are always 
+          referenced with the $ scoping operator*.
+
+          #### expects rules
+
+          Rules for **expects** take the form of a set of traits. Their names correspond to names of 
+          traits that must be found in the expression under test. The value, if not _true_, is interpreted 
+          as an object type; the trait must be of that type (or a child of that type).
+ 
+          Any violations to the rules in a function call results in an error being thrown describing the problem.
+
+          Here's an example:
+
+              AddStudent task expects $name string, $age number
+                @students.push copy $ 
+              ..
+              @AddStudent name 'Sally', age '12'
+  
+              > Error: SAI: parameter exception in AddStudent
+              > age should be number, but it's string
+
+          Expects adds a small amount of overhead at runtime. My thinking is that it would be good for integration
+          testing but during a production build the checks would be commented out, like one might do with assertions.
+          This would be a nice option to add to the SAI compiler someday.
+
+
+      'false':
+        subtitle 'boolean value false'
+        summary '''
+          This is the `false` value.
+        synref '''
+          .. false
+        detail '''
+          The opposite of __true__.
+
+
+      'fields':
+        subtitle 'structure literal'
+        summary '''
+          Used to specify the creation of a plain object with a set of key/value pairs. (Contrast with **traits**.)  
+        synref '''
+          .. fields [key] [expr], [key] [expr], ... (;)
+          .. fields 
+            [key] [expr], [key] [expr], ...
+            [key] [expr]
+            ...
+        detail '''
+          In general, the **colon** structure constructor will figure out what you want, but when you want to be 
+          specific about creating a plain object with of keyed values & expressions, use **fields**. Compare 
+          with **list**, **array** and **traits**.
+
+          The **key** is an identifying word or other string, specified without quotes (although quotes may be used 
+          if desired/necessary). If a **#** preceeds the key (a hashtag), the key will be assigned a 
+          value of **true**. The **expr** is any valid literal, variable, object or expression.
+
+          Fields may be specified on one line:
+
+              fields name 'Sera', class 'Rogue', level 21, #focus
+  
+              > { class: 'Rogue', level: 21, name: 'Sera', focus: true }
+
+          Or multiple lines in the form of an indented block:
+
+              fields
+                x width * ~Math.cos(angle)
+                y height * ~Math.sin(angle)
+  
+              > { x: 0.5, y: 0.866 }
+
+          Or a combination of both:
+
+              fields
+                str 16, dex 34, mag 14   // no comma at end of line
+                con 42, wil 21, cun 45
+  
+              > { str: 16, dex: 34, mag: 14, con: 42, wil: 21, cun: 45 }
+
+          When using a fields literal in an expression that might make the end of the literal a matter of question, 
+          use a **semicolon** to close the literal, or enclose it in parenthesis:
+
+              fields x 5, y 4, z 3; thru it*2
+              (fields x 5, y 4, z 3) thru it *2
+  
+              > { x: 10, y: 8, z: 6 }
+
+          Fields initializers can be nested by use of either parenthesis or semicolons, or by using multiple 
+          levels of indent.
+
+
+      'get':
+        subtitle 'dynamic object attribute'
+        summary '''
+          Declares a _getter_ for a dynamic object trait; that is, a trait that has a value that is only 
+          calculated upon request. 
+        synref '''
+          object [name] [version]
+
+          [ident] get 
+            [code]
+            return [value]
+          ( set ( given [ident] )
+            [code]
+        detail '''
+          A brief example:
+          
+              object Vector2 1.0.0
+  
+              magnitude get     // dynamic getter for 'magnitude' trait
+                return Math.sqrt(x*x + y*y)
+              set given m       // dynamic setter for 'magnitude' trait
+                set a to angle
+                set x to m * Math.cos(a)
+                set y to m * Math.sin(a)
+
+          You can have a getter without a setter, and a setter without a getter.
+          
+              documentation get  
+                return '''
+                  Lots of information about this object.
+
+              tally set given token
+                inc _tally\token
+
+
+      'given':
+        subtitle 'parameter declaration and static values'
+        summary '''
+          Use __given__ to name the parameters to a function, and to define immutable traits.
+        synref '''
+          .. given p1, p2, p3 ...
+           
+            - or - 
+            
+          [ object declaration ]
+          given [definition of values]
+        detail '''
+          To declare parameters:
+          
+              set [ident] (given [$ var]) // dynamic trait
+              .. task (given [parameter1], [parameter2], ...)
+              .. process (given [parameter1], [parameter2], ...)
+              .. promise (given [parameter1], [parameter2], ...)
+
+          An example of parameter naming:
+
+              set tally to blank
+              set AddRow to task given item, quantity
+                set tally[item] to (self default 0) + quantity
+  
+              AddRow 'socks', 3
+              AddRow 'pants', 6
+              debug tally 
+  
+              > { socks: 3, pants: 6 }
+
+          #### given object constants
+
+          Defines immutable traits when declaring an object. These traits are assigned to the object prototype 
+          itself and locked/frozen; they cannot be changed and yet are available in every instance of an 
+          object. Givens are useful for static data. 
+
+              object Apple
+              instance: varietal 'unknown'
+              given: species 'M. domestica'
+              Describe task
+                return '${@species} var ${@varietal}
+              ..
+              set apple to create 'Apple'
+              set apple.varietal to 'Macintosh'
+              debug from apple.Describe
+              > M. domestica var Macintosh
+  
+          **Given** traits can only be changed/overridden through inheritance.
+ 
+              object Crabapple
+              inherit: Apple
+              given: species 'M. coronaria'
+              ..
+              set specimen to create 'Crabapple'
+              debug from specimen.Describe
+              > 'M. coronaria var unknown'
+
+
+      'Infinity':
+        title 'Infinity (note case)'
+        subtitle 'constant representing infinity'
+        summary '''
+          Represents an infinitely large value. 
+        spnref '''
+          .. Infinity
+        detail '''
+          Generally obtained by attempting to evaluate an expression with a divisor of zero.
+
+              debug 1/0
+  
+              > Infinity
+
+
+      'inherit':
+        subtitle 'class heritage specification'
+        summary '''
+          Specify inheritance during object definition. 
+        synref '''
+          inherit:
+            [classname]
+            ...
+        detail '''
+          An object can have multiple parents at each level of inheritance, as in the following example.
+
+              object Licensed
+              instance: licenseTag false
+              ..
+              object Passengers
+              instance: paxCount 0
+              contract: paxMaximum
+              ..
+              object Automobile
+              inherit: Licensed, Passengers
+              .. 
+              object Sedan
+              inherit: Automobile
+              instance: paxMaximum 6
+              ..
+              set myCar to create 'Sedan'
+              debug myCar 
+              > { licenseTag: false, paxCount: 0, paxMaximum: 6 }
+  
+              debug myCar.isa
+              > Sedan
+  
+              debug myCar.isof
+              > { Licensed: 
+                 { version: '0.0.0-unspecified',
+                   isa: 'Licensed',
+                   load: './sample/Keywords/Licensed.sai' },
+                Passengers: 
+                 { version: '0.0.0-unspecified',
+                   isa: 'Passengers',
+                   load: './sample/Keywords/Passengers.sai' },
+                Automobile: 
+                 { version: '0.0.0-unspecified',
+                   isa: 'Automobile',
+                   load: './sample/Keywords/Automobile.sai',
+                   inherit: [ 'Licensed', 'Passengers' ] },
+                Sedan: 
+                 { version: '0.0.0-unspecified',
+                   isa: 'Sedan',
+                   load: './sample/Keywords/Sedan.sai',
+                   inherit: [ 'Automobile' ] } }
+
+          Note the use of **contract** in the _Passengers_ object; this requires any child object to offer 
+          a `paxMaximum` trait. Contracts can be fulfilled by class functions (**task**/**process**/**promise**), 
+          class traits (**given**) or **instance** traits.
+
+
+      'instance':
+        subtitle 'object instance variable declaration'
+        summary '''
+          Define initial values for an object’s traits. 
+        synref '''
+          instance:
+            [varname] [initial value]
+            ...
+        detail '''
+          When an object is created, instance traits are assigned the given values before the 
+          object’s **Instantiate** task is called.
+
+              object Sock 1.0.0
+  
+              instance:
+                colour 'Brown'
+                pattern 'Argyle'
+                size 'M'
+                kind 'dress'
+  
+              Instantiate task
+                debug @ select list colour, pattern, size, kind
+  
+              ....
+  
+              set aSock to create 'Sock'
+              > { colour: 'Brown', pattern: 'Argyle', size: 'M', kind: 'dress' }
+
+          Instance traits, when declared with __instance__ or __given__, do not need to have their scope 
+          indicated with `@` when used in their own object. Said another way, declared instance variables 
+          are automatically scoped to the object. This is similar to the way that __reference__ values 
+          don't need to use the `~` global scoping prefix.
+
+          The following are equivalent:
+
+              instance:
+                x 0
+                y 0
+      
+              ...
+    
+              set x 34
+              set @x 34          // this is not necessary
+              set @'s x 34       // sweet jesus don't do this
+    
+          When referring to another object's instance variables, you will need to properly scope them:
+
+              CopyPoint given point
+                set x to point.x
+                set y to point.y
+    
+          Instance variables cannot be initialized with functions or "complex" expressions. The compiler will
+          warn you about it. Nevertheless, you should still declare all instance variables, even if you must start 
+          them with `undefined`. That's because the compiler looks at the instance variables you've declared to
+          know what your instance variables are.
+          
+              object AppleCrate
+              
+              instance:
+                sku '448893003'
+                label ~GetLabel(.sku)  /// this won't work, instead:
+  
+                
+              instance:
+                sku '448893003'
+                label undefined
+                
+              Instantiate task
+                set label ~GetLabel(.sku)
+
+
+      'isa':
+        title '.isa'
+        subtitle 'object name attribute'
+        summary '''
+          All prototyped SAI objects have an **isa** trait that identifies the object name. 
+        synref '''
+          .. [object].isa
+        detail '''
+          Further details about the object and its inheritance are found in the **isof** trait.
+
+              object Fruit 1.0.0
+              Instantiate task
+                debug 'I am a \${isa}'
+  
+              set a to create 'Fruit'
+              > I am a Fruit
+  
+              object Pear 1.0.0
+              inherit: Fruit
+  
+              set b to create 'Pear'
+              > I am a Pear
+
+
+      'Iterator':
+        title 'Iterator (case matters)'
+        subtitle 'name-of-the-Iterator method'
+        summary '''
+          When creating an object you want to provide an invisible iterator for, use this keyword as the name of the
+          process. 
+        synref '''
+            Iterator process (as [parameter list])
+              [block]
+        detail '''
+          This will be a little gritty, because ES6 is gritty. When you name an object process **Iterator** (note 
+          the specific uppercase initial), the function won't be assigned to the object trait `object.Iterator`. Instead, 
+          it will be assigned to `object[Symbol.iterator]`. 
+
+          The bad news is that this means you can't specifically refer to that trait by name in SAI without 
+          using the convoluted approach of `object[~Symbol.iterator]` (because **Symbol** is a global and globals 
+          must use the global scoping prefix).
+
+          The good news is this means you probably won't ever *have to* refer to it by name, because all of SAI's 
+          comprehensions, as well as the **iterate** statement, and ES6's `for-of` loop, all implicitly check for 
+          the existence of the `Symbol.iterator` function and will use it if present.
+
+              object Tally 1.0.0
+              instance:
+                bag empty
+              Count task 
+                set bag[$] to (self default 0) + 1
+              Iterator process
+                each bag
+                  yield: key, it
+  
+              set inventory to create 'Tally'
+              inventory.Count 'apple'
+              inventory.Count 'banana'
+              inventory.Count 'apple'
+              iterate inventory
+                debug it
+  
+              > [ 'apple', 2 ]
+              > [ 'banana', 1 ]
+
+          In the example, when we **iterate** over `inventory`, a check is made to see if the object to iterate 
+          has an **Iterator** process, which in this case it does, so it is called, and then iteration takes place 
+          over the result. See the **iterate** construct for more on this.
+
+          Note that this sleight-of-hand doesn't apply to an object **task** (as opposed to **process**) 
+          named "Iterator"; in fact SAI will not let you use that name for an object task, because doing so would 
+          break expectations of what an iterator is supposed to do (e.g. yield things).  Gah, the cruft, it burns.
+
+
+      'list':
+        subtitle ''
+        summary '''
+          Used to specify the creation of a plain array of literal values. 
+        synref '''
+          .. list [term], [term], ... (;)
+          .. list
+            [term], [term], ...
+            [term]
+            ...
+        detail '''
+          As opposed to **array**, which is an array of mathematical expressions. 
+
+          The following are acceptable terms:
+
+              true or false
+              number literal
+              string literal quoted with ' or " or ` or '''
+              unquoted bare string literal
+                 all characters available except } , ) ; | [cr]
+                 (note the comma, that will trip you up; comma separates terms)
+              an equal sign (=) followed by an expression
+              a nested definition starting with :, list, array, traits, or fields
+
+          Lists may be specified on one line:
+
+              debug list Apple, Banana, Citron
+  
+              > [ 'Apple', 'Banana', 'Citron' ]
+
+          Or multiple lines in the form of an indented block, or a combination:
+
+              debug list
+                Vladimir, Estragon
+                Pozzo, Lucky, The Boy
+  
+              > [  'Vladimir', 'Estragon', 'Pozzo', 'Lucky', 'The Boy' ]
+
+          When using a list literal in an expression that might make the end of the array a matter of 
+          question, use a **semicolon** to close the array literal:
+
+              debug list Vash, Spike, Jack, Cat thru '\${it} the cat'
+              > { 'Vash', 'Spike', 'Jack', 'Cat the cat' ] // undesired result
+  
+              debug list Vash, Spike, Jack, Cat; thru '\${it} the cat' // with semicolon
+              > [ 'Vash the cat', 'Spike the cat', 'Jack the cat', 'Cat the cat' ]
+
+          Or enclose the array in parenthesis:
+
+              debug (list Vash, Spike, Jack, Cat).length 
+              > 4
+
+          Arrays can be nested by use of either parenthesis or semicolons, or by using multiple 
+          levels of indent. Note that commas separate expressions on one line but are not 
+          included at the end of a line.
+
+
+      'local':
+        subtitle 'locally scoped variable declaration'
+        summary '''
+          Create a local variable that exists only within the current level of indent (or deeper).
+          Uses Javascript's `let` declaration. (And this is the only construct in SAI that does so.)
+        synref '''
+          local [varname] to [expr]
+        detail '''
+          Syntax identical to **set** however the variable created is limited to the current block in 
+          scope. (Normally, variables are scoped to the object method they’re used in.) **Local** causes the 
+          generated Javascript to declare variables with the `let` keyword.
+
+          Javascript's scoping around global/local variables can be tricky and has caught even experienced 
+          programmers multiple times. 
+
+          **Local** allows you to do dumb things like this:
+
+              set a 1
+              if a is 1
+                local a 2
+                debug a
+              debug a
+  
+              > 2
+              > 1
+
+          In general, SAI is designed such that you should only very rarely need __local__ variables. 
+
+
+      'main':
+        subtitle 'indicates object should be instantiated at runtime'
+        summary '''
+          When using the compiler, native Javascript files of objects created with **main** will automatically 
+          instantiate a single copy of the object when the file is required. 
+        synref '''
+          object [objectname] main [objectversion]
+        detail '''
+          In other words, when the `.js` file is required, in addition to defining a prototype, an object is 
+          also instantiated (which causes any **Instantiate** task to run, thus conceivably launching a program).
+
+          Main also sets a flag in the **isof** property of the object, indicating it is the main object.
+
+          Have a look at the `bin` folder for `runner.sai` which uses the __main__ keyword to indicate it is
+          a program that should be run rather than just an object prototype.
+
+
+      'NaN':
+        title 'NaN (case matters)'
+        subtitle 'not-a-number'
+        summary '''
+          **NaN** (capitalization matters) means Not a Number.  
+        synref '''
+          .. NaN
+        detail '''
+          **NaN** is returned from some library calls on failure to convert a value into a 
+          number.  (The **number** operator returns 0 instead.)
+
+              debug ~parseInt('The one ring.')
+              > NaN
+  
+              debug number 'The one ring.'
+              > 0
+
+          The _only_ way to test for **NaN** is to use the **isNaN** operator. 
+
+              debug NaN = ~parseInt('The one ring.')
+              > false  // !
+  
+              debug NaN is ~parseInt('The one ring.')
+              > false  // !!!!
+  
+              debug isNan ~parseInt('The one ring.')
+              > true
+
+
+      'nop':
+        subtitle 'no-operation statement'
+        summary '''
+          No operation; no data; do nothing. 
+        synref '''
+          nop
+        detail '''
+          This statement (or one like it) is necessary as a syntactical placeholder when a white-space 
+          indent is expected but you do not wish to put code in it.
+
+              if x>26
+                nop
+              elsif x>13
+                set x - 13
+              elsif x>0
+                set x + 13
+
+
+      'null':
+        subtitle 'a value that is no value'
+        summary '''
+          An empty value. 
+        synref '''
+          .. null
+        detail '''
+          Null is:
+          
+            - _falsy_
+            - not `undefined`
+
+          I don’t have any example code for this.
+
+
+      'object':
+        subtitle 'object declaration'
+        summary '''
+          Begins the definition of an object. 
+        synref '''
+          object [identifier] (main) [version]
+          ...
+        detail '''
+          Only one object definition is permitted per file.
+
+          In an object definition, the following sections are supported. See each keyword for more details. 
+          Also review the _Defining an Object_ document.
+
+              reference:
+                [globally defined references]
+  
+              object [identifier] (main) [version]
+  
+              inherit:
+                [list of objects to inherit from]
+  
+              contract:
+                [list of traits that child objects must provide]
+  
+              given:
+                [declaration of immutable object traits]
+  
+              instance:
+                [declaration of initial trait values for each instance]
+  
+              get [trait name to implement dynamically]
+                [code]
+              set given [value]
+                [code] 
+  
+              [name] task/process/promise
+                [code that implements this task/process/promise] 
+
+          When a SAI object is created, the **Instantiate** task is executed on that obejct, allowing you to 
+          perform instance-level initialization code. Notice the caps; by convention SAI methods are 
+          capitalized, while attributes are lowercase.
+
+          If the **main** clause is included, the object is marked to be instantiated automatically when a 
+          compiled `.js` version of the object is required. See **main** for slightly more detail.
+
+
+      'process':
+        subtitle 'generative function definition'
+        summary '''
+          Creates a function that is expected to **yield** one or more values. 
+        synref '''
+          [identifier] process ( as [parameter list] )
+            [yielding code block]
+
+          .. process ( as [parameter list] )
+            [yielding code block]
+        detail '''
+          This is an ES6 feature. **Process** does exactly the same thing as **task** except the generated code 
+          uses `function*` instead of `function`. 
+
+          If you're not familiar with generators/yielding, here is a very simplified overview.
+
+            set Candidates to process
+              count 1 to 100 as x
+                count 1 to 100 as y
+                  if 1<x and x<y and x+y<100
+                    yield: x x, y y, s x+y, p x*y
+
+          The Candidates process, when invoked, runs all of the code in the process up until the 
+          first **yield**, then returns, handing you a process object, here stored in the variable `iter`:
+
+            set iter Candidates()
+
+          That object is an _iterator_; it is a stateful representation of a `Candidates` process. 
+          Each time you call a process, you get a new iterator. Once you have an iterator, you can _iterate_ 
+          through it. Each iteration returns the next value _yielded_ by the process.
+
+          Iteration takes place by calling the **.next** task on the iterator.
+
+              debug iter.next()
+  
+              > { value: { x: 2, y: 3, s: 5, p: 6 }, done: false }
+
+          You can see that **.next** returns a simple object with two fields, **.value** and **.done**.  
+          (In our iterator, the value is the first qualified candidate represented by a simple object with 
+          four fields: x, y, s and p.)
+
+          **.value** holds whatever was **yield**ed. **.done** is a boolean flag that indicates whether the 
+          iteration is complete; that is, whether another call to **.next** would result in a newly generated value.
+
+          Each time you call **.next** you will get a new value.
+
+              debug iter.next()
+              debug iter.next()
+              debug iter.next()
+  
+              > { value: { x: 2, y: 4, s: 6, p: 8 }, done: false }
+              > { value: { x: 2, y: 5, s: 7, p: 10 }, done: false }
+              > { value: { x: 2, y: 6, s: 8, p: 12 }, done: false }
+
+          Here is a bit of code that will keep calling **.next** until the **.done** flag is set, saving 
+          the result in a four item list.
+
+              set cache to empty            // empty array
+              dountil result.done           // check .done at the end of each loop
+                set result iter.next()      // next iteration to result
+                cache.push result           // save result in cache
+              debug cache | limit -4        // print last four rows
+  
+              > [ { value: { x: 48, y: 50, s: 98, p: 2400 }, done: false },
+                  { value: { x: 48, y: 51, s: 99, p: 2448 }, done: false },
+                  { value: { x: 49, y: 50, s: 99, p: 2450 }, done: false },
+                  { value: undefined, done: true } ]
+ 
+          Once the **.done** flag is set, the iterator is said to be _exhausted_. Notice that **.value** is 
+          *undefined* when the **.done** flag is set.
+
+          Processes, generators and iterators are very powerful tools because they allow computations to be 
+          *lazy*, that is, for data to be generated only as it is needed, thus vastly reducing memory 
+          requirements. (The Python language is very useful for scientific computing because it is a primarily 
+          lazy language because large data sets can be manipulated with modest resources.)
+
+          SAI has many affordances for processes and iterators, including native support with all 
+          comprehensions. As a very simple example, all of the above code could be replaced with this 
+          simple expression:
+
+              debug Candidates() | limit -4
+  
+              > [ { x: 48, y: 49, s: 97, p: 2352 },
+                  { x: 48, y: 50, s: 98, p: 2400 },
+                  { x: 48, y: 51, s: 99, p: 2448 },
+                  { x: 49, y: 50, s: 99, p: 2450 } ]
+ 
+           (Notice how the limit comprehension itself deals silently with **.next** and **.done**, and 
+           automatically gives you just a list with only the **.value** of each iteration.)
+
+
+
+      'promise':
+        subtitle 'declare a Promise-producing function'
+        summary '''
+          Wraps the code block in a Promise-like function shell. 
+        synref '''
+          [identifier] promise ( as [parameter list] )
+            [code block]
+
+          .. promise ( as [parameter list] )
+            [code block]
+          .. promise (given [parameters]) any [array-expression]
+          .. promise (given [parameters]) all [array-expression]
+          .. promise (given [parameters]) adopt [expression]
+        detail '''
+          Along with **resolve** and **reject**, forms a convenient bit of syntactic sugar for making 
+          Promise-like functionality.
+
+          Here is some sample code:
+
+              set 
+                willIGetNewPhone promise given isMomHappy
+                  if isMomHappy
+                    resolve:
+                      brand 'Wangdoodle'
+                      colour 'paisley'
+                  else
+                    reject new ~Error 'Mom is not happy.'
+    
+                showOff promise given phone
+                  with phone
+                    debug 'Hey friend, I have a new \${.colour} \${.brand} phone'
+  
+                askMom task given happiness
+                  chain willIGetNewPhone(happiness)
+                    then showOff
+                    catch promise given e
+                      debug '\${e} -- No phone for you.'
+      
+              askMom true
+              askMom false
+    
+              > Hey friend, I have a new paisley Wangdoodle phone
+              > Error: Mom is not happy. -- No phone for you.
+
+          The way **promise** works is best explained by just showing you what happens when you use it. We 
+          wrap the code block in a Promise constructor, as follows:
+
+              set doThing to promise given url
+                HeyServer url, task given request, result
+                  if result.success
+                    resolve result
+                  else
+                    reject result
+              ..
+              debug doThing.toString()
+  
+              > function (p) {
+              >   return new Promise(function($_resolve, $_reject) {
+              >     var $url = p;
+              >     $HeyServer($url, function(p, $result) {
+              >       var $request = p;
+              >       if (($56 = ($result.success))) {
+              >         $_resolve($result);
+              >       } else {
+              >         $_reject($result);
+              >       }
+              >     });
+              >   });
+              > }
+
+          So basically it throws a **Promise** wrapper around the function and allows you to use 
+          **resolve** and **reject** as statements. (The $56 in there is housekeeping for the **trial** pronoun; 
+          V8 optimizes unused assignments like this away.)
+
+          #### promise any
+
+              ..
+              then promise any urls into empty get(it) 
+              then promise given a, b any Timers
+              ..
+
+          Creates a promise that, given an array, resolves/rejects based on the results of first promise in the 
+          array to fulfill itself. That is, an __any__ promise is considered complete when _any_ of its 
+          components completes.
+
+          #### promse all
+
+              ..
+              then promise all urls into empty get(it) 
+              ..
+
+          Creates a promise that, given an array, waits until all of the promises in the array have resolved, 
+          or the first one rejects. That is, an __all__ promise will not resolve until all of its components 
+          have done so, or any of them have rejected.
+
+          #### promise adopt
+
+              ..
+              then promise adopt promisify(timer(500))
+              ..
+
+          Adopt creates a promise based on a single other promise and will not resolve/reject until that 
+          adopted promise does so. This is useful when chaining generated promises; something that is 
+          otherwise fairly difficult syntactically.
+
+
+      'reference':
+        subtitle 'declare global values'
+        summary '''
+          Import/declare global variables at the top of a **.SAI** source file. 
+        synref '''
+          reference:
+            [name] [expr]
+            ...
+        detail '''
+          This is the only way to make global variables; inside a reference declaration. The syntax 
+          is the same as a **fields** structure definition, with name/value pairs separated by commas or newlines.
+
+              reference:
+                MIN 0, MAX 100
+                express require('express')
+                Vector2D 'Vector2D ^1.0.0'
+
+              count to MAX
+                debug key
+              ..  
+              set @app express()
+              ..
+              set origin to create Vector2D 0, 0
+              ..
+
+          Note: you cannot assign to reference variables or re-use them as locals. The following lines would 
+          produce compile errors given the above references:
+
+              local Vector2D
+              set MIN -50
+
+
+      'set':
+        subtitle 'variable assignment'
+        summary '''
+          Set is a busy keyword used in many situations where a result is calculated and then stored.
+        synref '''
+          see below for syntax reference
+        detail '''
+          #### set dynamic trait declaration
+
+              [identifier] set ( as [ident] )
+                [code block]
+              ( get 
+                [code block] )
+
+          Declare a _setter_ for a dynamic object trait. Cannot be used inside a function body.
+
+          This example object implements *Distance*, storing the value normalized to meters. You can get and set the value in centimeters and miles through the use of dynamic traits.
+
+              object Distance 1.0.0
+              instance: meters 0
+  
+              centimeters set given val
+                set meters to val/100
+              get
+                return meters * 100
+  
+              miles set given val
+                set meters to val * 1609.344
+              get
+                return meters / 1609.344
+ 
+           And in use:
+ 
+              set trip to create 'Distance'
+              set trip.meters to 500
+              debug trip.meters       // > 500
+              debug trip.centimeters  // > 50000
+              debug trip.miles        // > 0.31068559611867
+              set trip.miles to 10
+              debug trip.meters       // > 16093.44
+
+          #### set value assignment
+
+              set [ident] to [expr]
+              set [ident] [expr]  // the TO keyword is generally optional but it's a good idea to use it
+              set [ident] ![function] ( [parameters] )
+              set [ident] from [function] ( [parameters] )
+              set [ident] [operator] [expr]  
+              set [ident] [unary operator]
+
+          Assign a value to an identifier. That's right, you don't use the equals sign for assignment. 
+          Ugh, whose idea was that anyway? 
+
+              set a to 2
+              set a from Math.pow self, 2
+              set a Math.sqrt(a)
+              set a * 4
+              set a -
+              debug a
+  
+              > -8    
+
+          #### set multiple array value assignment
+
+          If you separate multiple identifiers with commas on the left, the assignment will assign each array 
+          element on the right, starting at 0, to each identifier. As example:
+
+              set a, b, c to: 1, 3, 5
+
+          For a fruity example:
+
+              set a, b, c to fruit
+              debug b
+              > Banana
+    
+          This is useful when dealing with small tuples or parsed data:
+
+              GetPixel task given x,y
+                return buffer.slice( (x+y*width)*4, 4 )
+
+              set r, g, b, a to GetPixel(x,y)
+
+          This compiles to a Javascript construct similar to the following:
+
+              var $_=GetPixel(x,y);
+              $r=$_[0]; $g=$_[1]; $b=$_[2]; $a=$_[3];
+
+          #### Scoping and Set
+
+          All un-decorated, e.g. bare (`a` as opposed to `$a`), variables are scoped to the object method they're **set** in. For tighter scoping, you can use **local** in place of **set**, this causes the variable to be declared in-place using the Javascript keyword `let`.  _Be careful with variable scoping._
+
+              set a 1
+              if a is 1
+                local a 2
+                debug a
+              debug a
+    
+              > 2
+              > 1
+
+          #### set pipe operator
+          
+          Documentation under separate cover.
+          
+
+      'super':
+        subtitle 'superclass function invocation'
+        summary '''
+          Call the previous ancestral version of the current object method. 
+        synref '''
+          super ( [ parameters ] )
+          .. super ( [ parameters ] )
+        detail '''
+          This doesn't happen by default; if you want to chain backwards up the inheritance tree you must do it 
+          with **super**.
+
+          Note there is *no other way* to access an overridden ancestral object method than by 
+          using **super** within that specific overriding method itself. SAI is very strict about inheritance 
+          that way. Don't even bother exploring the prototype chain.
+
+              object Parent 
+              instance: name 'unknown'
+              Instantiate task given name
+                set @name to name
+  
+              object Child
+              inherit: 'Parent'
+              instance: age 'unknown'
+              Instantiate task given name, age
+                super name
+                set @age to age
+  
+              set billy to create 'Child' 'Billy', 12
+              debug billy
+  
+              > { name: 'Billy', age: 12 }    
+
+          Contrary to what you might expect, **super** _does not_ use the **@** scoping prefix; that's 
+          because super _always and only_ refers to the current object. You cannot call **super** on any other object.
+
+          If you want to pass arguments to a **super** method without specifying them discretely, the following 
+          really ugly idiom gets the job done.
+
+            super.apply @ $$
+
+
+      'swap':
+        subtitle 'value swapper'
+        summary '''
+          Exchanges the values. 
+        synref '''
+          swap [lvalue1] [lvalue2]
+        detail '''
+          Intended as syntactic sugar, collapsing three ugly lines into one simple line. 
+          
+              swap a b
+
+          This is functionally equivalent to the following Javascript:
+
+              var temp1=a;
+              var temp2=b;
+              b=temp1;
+              a=temp2;
+  
+
+      'task':
+        subtitle 'define a function'
+        summary '''
+          Define a block of code as an object trait or anonymous function. 
+        synref '''
+          [identifier] task ( given [parameters] ) / ( expects [parameters] )
+            [code]
+
+          .. [task] ( given [parameters] ) / ( expects [parameters] )
+            [code]
+        detail '''
+          It’s probably best to explain this by showing what Javascript is made.
+
+          #### task trait
+
+          The first example is a task trait on an object. It takes two standard parameters, name and value.
+
+              Instrument task given name, value
+                debug `\${@context} \${name}: \${value}
+
+          Generated code:
+
+              function (p, $value) {
+                var $name = p,
+                  $ = this;
+                console.log('' + $.context + ' ' + $name + ': ' + $value);
+              }
+ 
+
+          You’ll note that the first parameter in a SAI-generated function is always `p`, which 
+          is explained below. More importantly, however, note the assignation `$ = this`.
+
+          In SAI-generated code, the `$` variable is used as a buffer for the _this_ context. 
+          When executing a task trait, SAI captures the current _this_ with `$=this` to 
+          provide a reliable context for anonymous functions.
+
+          #### anonymous task
+
+          Here’s the same task but for anonymous use:
+
+              set anon to task given name, value
+                debug `\${@context} \${name}: \${value}
+
+          Generated code:
+
+              function (p, $value) {
+                var $name = p;
+                console.log('' + $.context + ' ' + $name + ': ' + $value);
+              }
+
+          Notice how the anonymous task doesn’t capture `this.` into the `$` variable the 
+          way the trait task does. 
+
+          Thus, anonymous tasks automatically bind to the context that created them. This is usually 
+          what you want when creating anonymous tasks, and is why the `var self=this` idiom has so 
+          much traction in Javascript. SAI builds this idiom into the language.
+
+          However, if you don’t want this behaviour for a particular anonymous task, include 
+          the **orphan** statement in it.
+
+              set anon to task given name, value
+                orphan
+                debug `\${@context} \${name}: \${value}
+
+          Generated code:
+
+              function (p, $value) {
+                var $name = p;
+                var $ = this;
+                console.log('' + $.context + ' ' + $name + ': ' + $value);
+              }
+
+          Orphan anonymous tasks bind to the _calling_ context, rather than to the context that created them.
+
+          #### positional vs. named parameters
+
+          The second example is a task which expects two named parameters, $angle and $magnitude. As shown above, the first parameter in generated code is always `p`. Named parameters are passed as traits within `p`.
+
+              SetPolar task expects $angle, $magnitude
+                set x to $magnitude * Math.cos($angle)
+                set y to $magnitude * Math.sin($angle)
+
+          Generated code:
+
+              function (p) {
+                var $ = this;
+                _$AI.expectsThrow(p, {
+                  "angle": true,
+                  "magnitude": true
+                }, 'SetPolar');
+                $.x = (p.magnitude * Math.cos(p.angle));
+                $.y = (p.magnitude * Math.sin(p.angle));
+              } 
+
+          When you use **expects**, a call to _expectsThrow_ is included to validate your assumptions. 
+
+          This task is called by naming the parameters:
+
+              SetPolar angle 45o, magnitude 3
+
+          Which generates this code:
+
+              $.SetPolar({
+                angle: 0.7853981633974483,
+                magnitude: 3
+              });
+
+          Notice how named parameters are encapsulated in a plain JS object and 
+          passed in the first function call argument (which is always named `p`). 
+
+          It is not necessary to use the **expects** clause to used named parameters. All **expects** does 
+          for you is check to see if the names (and types) are as expected. Here is the function without it:
+
+              SetPolar task
+                set x to $magnitude * Math.cos($angle)
+                set y to $magnitude * Math.sin($angle)
+
+          Generating this:
+
+              function (p) {
+                var $ = this;
+                $.x = (p.magnitude * Math.cos(p.angle));
+                $.y = (p.magnitude * Math.sin(p.angle));
+              }
+
+          The use of named parameters with the **$** scoping prefix generates code that assumes the 
+          first argument `p` will have the expected named traits.
+
+          Refer to the entry on **expects** for more on what it does.
+
+
+      'to':
+        subtitle 'set clause syntax'
+        summary '''
+          __To__ is used in __set__ statements to separate the value being set from the value itself.
+        synref '''
+          set [lexpr] to [rexpr]
+        detail '''
+          It is almost never necessary to actually use __to__ because the parser can almayst always figure
+          out what's going on.  Still, it looks clearer, so you should use it.
+          
+              set a to 5
+              set a 5
+              
+          Here's the only common case where there is confusion in the parser:
+          
+              set a - 5
+              
+          What does that mean?  
+          
+              set a to -5
+              set a self - 5
+
+          The compiler complains about this construct specifically, and makes you specify.
+          
+
+      'traits':
+        subtitle 'declare a structure of literal strings'
+        summary '''
+          Used to specify the creation of a plain object with a set of key/term pairs. 
+        synref '''
+          .. traits [key] [term], [key] [term], ... (;)
+          .. traits 
+            [key] [term], [key] [term], ...
+            [key] [term]
+            ...
+        detail '''
+          (Contrast with **fields**.)  When you want to be specific about creating a plain object 
+          from a set of of keyed values & literal terms, use **traits**. 
+
+          The **key** is an identifying word or other string, specified without quotes (although 
+          quotes may be used if desired/necessary). If a **#** preceeds the key (a hashtag), 
+          the key will be assigned a value of **true**. The **term** is any valid 
+          term (see **list** for a description of valid terms).
+
+          See **fields** for examples.
+
+
+      'trial':
+        subtitle 'pronoun for conditionals and switch'
+        summary '''
+          A pronoun set to the value tested in an **if/exists** or **switch** statement. 
+        synref '''
+          if [expr] 
+            .. trial ..
+
+          switch [expr] 
+            case [match] 
+              .. trial ..
+            default
+              .. trial ..
+        detail '''
+          In an **if/exists** statement, **trial** is only valid in the body of the first code block.
+
+              exists readline()
+                // trial is available here 
+              else
+                // trial is undefined here
+
+          In a **switch** statement, **trial** is available through all **case**s and the **default**.
+
+              switch Keypress.toUpperCase()
+                case 'N'
+                  Move 0,-1
+                case 'S'
+                  Move 0,1
+                default
+                  debug 'I don't know what \${trial} means.'
+              ...
+
+          You can grant a specific name to the tested value with the **as** clause:
+
+              if Keypress as key
+                switch key.toUpperCase()
+              ...
+
+          Note that **trial** receives the tested value; the final result of the **if** or **switch** expression, not the value of any component:
+
+              if Keypress>0
+                debug trial
+  
+              // the debug statement can only ever print 'true'
+
+          Using the parenthetical **as** is one solution to this problem:
+
+              if ( Keypress as key) > 0
+                debug key
+  
+              // reports the actual value of key
+
+
+
+      'true':
+        subtitle 'boolean value true'
+        summary '''
+          The value TRUE, as in truthy, or not false.
+        synref '''
+          .. true
+        detail '''
+          This is what all those __if__ statements test for, the holy grail itself.
+
+
+      'unbound':
+        subtitle 'mark a method as context-free'
+        summary '''
+          An __unbound__ function does no runtime checks to ensure it has not become unmoored from context.
+        synref '''
+          object ObjectName
+    
+          [name] unbound task
+          [name] unbound process
+          [name] unbound promise
+        detail '''
+          When you declare an object function as __unbound__ the function no longer checks to see if it 
+          has become orphaned in execution -- that is, if it's _this_ object is no longer 
+          what it is supposed to be -- on a call to that function.
+
+          It is very easy to lose binding on object methods when you are using them as callbacks 
+          or promises. Use the __bind__ keyword when referencing object methods to ensure they 
+          stay in the context you expect. 
+
+          Sometimes you do want methods to be unbound, for example, utility functions that don't need 
+          to reference their own object. In that case, you can mark the function as __unbound__ to get 
+          around the error message.
+
+
+      'undefined':
+        subtitle 'the absence of a place'
+        summary '''
+          A literal indicating there is no variable, or no place for one.
+        synref '''
+          .. undefined
+        detail '''
+          This compiles directly to Javascript’s `undefined`.
+
+
+      'using':
+        subtitle 'function reference clause'
+        summary '''
+          Indicates in many looping constructs that logic is to be provided by a separate callback function.
+        synref '''
+          .. using [function reference]
+        detail '''
+          Many pipe operators and loops provide a __using__ variant.  
+          
+          Have a look on the specific constructs to see how it's used.
+
+
+      'via':
+        subtitle 'pseudo-operator'
+        summary '''
+          Calls the given function with `lexpr` as the first parameter. The expression on the right is sent in as the second parameter, if supplied, otherwise `undefined` is passed. 
+        synref '''
+          ... [lexpr] via [function] ([expr]) (; ...)
+        detail '''
+          You can use __via__ to create your own comprehensions or operators, as in the following, which 
+          returns as many copies of the left expression as you tell it to:
+
+              set Replicate task given l, repeat
+                local result empty
+                count repeat
+                  set result[counter] l
+                return result.join('')
+  
+              set a "Hip"
+              debug a via Replicate 2; + "Hurrah"
+    
+              > HipHipHurrah
+
+          If continuing the expression after the parameters, use a semicolon as a delimiter.
+
+              set MySort task given subject, rules
+                if rules.order is 1
+                  set result subject by asc
+                else
+                  set result subject by desc
+                exists rules.count 
+                  set result self limit it
+                return result
+    
+              debug fruit via MySort: order 1
+              debug fruit via MySort: order -1, count 2
+
+              > [ 'apple', 'banana', 'citron', 'durian' ]
+              > [ 'durian', 'citron' ]
+
+          All of the following do the same thing.
+
+              debug from MySort fruit, fields order -1, count 2
+              debug !MySort fruit, fields order -1, count 2
+              debug MySort(fruit, fields order -1, count 2)
+              debug fruit via MySort: order -1, count 2
+    
+          Sometimes I wonder why I'm doing this. But then I think, you know, I want it to be 
+          clear what's going on. Languages can have multiple ways of saying things, and each 
+          different way emphasises different things. Use the code construct that 
+          makes your intention clear.
+
+
+      '|':
+        subtitle 'pipe operator prefix'
+        summary '''
+          The pipe character is a scoping prefix for second-class operators defined with the _piper_ system.
+        synref '''
+          .. | [operator name] [clauses] ...
+        detail '''
+          A note about order of operations.
+          
+          Pipers are processed left-to-right, as if data were feeding through a series of tubes, or machines
+          that slurped up what's given on the left and spits it out to the next machine along the line or as the 
+          result of the operation.
+          
+          Be sure when you're coding that you're aware of the order of operations, especially in a set statement.
+          For example, this may not produce what you want:
+          
+              set a list 1, 2, 3
+              set b list 4, 5, 6
+              
+              set a | concat b | thru it * 2
+              debug a
+              
+              > [ 2, 4, 6, 8, 10, 12 ]
+              
+          Were you expecting this:
+              
+              > [ 1, 2, 3, 8, 10, 12 ]
+          
+          Keep in mind that the flow of data is left to right, and in a self-modifying __set__ statement
+          the assignment happens at the end. These are the same:
+          
+              set a | concat b | thru it * 2
+              set a to a | concat b | thru it * 2
+
+          If you want that construct to work the other way, use parenthesis, or the "precedent" syntax:
+          
+              set a | concat ( b | thru it * 2 )
+              set a | concat <- b | thru it * 2 
+
+
+      '~':
+        subtitle 'global scoping prefix'
+        summary '''
+          Use `~` in front of an identifier to access an object defined globally, e.g. by the runtime environment.  
+        synref '''
+          .. ~GlobalIdentifier
+        detail '''
+          You must use `~` in each of the following examples:
+
+              set validated to ~parseInt(raw)
+              ~process.exit 1
+              set attendees to new ~Set
+              set func to new ~Function(arg1, src)
+    
+          You do not need to use `~` on file-level pseudo-globals defined with `reference`; it is only required 
+          for functions/values/objects that originate outside SAI.  
+        

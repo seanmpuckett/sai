@@ -17,9 +17,6 @@ manifest get
           'elsexists': #exproutblock
           'else': #block
         handler bind IfElseConstruct
-        subtitle 'conditional flow control'
-        summary ''
-        details ''
 
       'unless':
         repeats false
@@ -30,9 +27,6 @@ manifest get
           'elsexists': #exproutblock
           'else': #block
         handler bind IfElseConstruct
-        subtitle 'conditional flow control'
-        summary ''
-        details ''
 
       'exists':
         repeats false
@@ -43,10 +37,12 @@ manifest get
           'elsexists': #exproutblock
           'else': #block
         handler bind IfElseConstruct
-        subtitle 'conditional flow control'
-        summary ''
-        details ''
       
+
+docs get
+  return from Documentation
+  
+
 
 ///////////////   IF ELSE
 //
@@ -62,7 +58,7 @@ IfElseConstruct task expects $clauses, $tools
 
   ply $clauses
 
-    set outs from my OutVarHelper it.args.out
+    set outs from @OutVarHelper it.args.out
       
     switch .type
     case 'if.exproutblock'
@@ -164,3 +160,156 @@ IfElseConstruct task expects $clauses, $tools
   
   return: body body
 
+
+
+Documentation task
+  return:
+    'constructs':
+    
+    
+      'if':
+        subtitle 'conditional flow control'
+        summary '''
+          If the expression is _truthy_, the code directly after the **if** is executed.
+          Otherwise, perform additional tests if specified by any **elsif**, **elsexists** or **elsunless** clauses, 
+          or failing those, perform the code after the optional **else** clause.
+        detail '''
+          What is _truthy_?  Any value which is not _falsy_.  See [http://www.sitepoint.com/javascript-truthy-falsy/][1] for specifics; excerpted here.
+
+          _Falsy_ values are: `false`, `0` (zero), `""` (empty string), `null`, `undefined`, and `NaN` (not-a-number).  Everything else is _truthy_.  
+
+          The value used in the test of the **if** is available in the _pronoun_ **trial**, which can be reassigned using an **as** clause.
+
+              if names[pk]
+                debug trial // prints the contents of names[pk]
+  
+              if names[pk] as row
+                debug row // prints the contents of names[pk]
+
+          N.B. that __trial__ holds the value of the entire condition, not any sub-elements.
+          
+              if key is 'esc'
+                debug 'the value of trial is: ' + trial   // this prints 'true', not 'esc'
+
+          #### else 
+
+          Specifies a block of code that will be executed if the condition leading to the previous block fails. 
+          Used with conditional statements **if/unless/exists**.
+        
+              if b
+                debug 'b is truthy'
+              else
+                debug 'b is falsy'
+
+          #### elsif _clause_
+
+          Combines __else__ and __if__. If the test succeeds, the tested value will be placed in the __trial__ pronoun.
+
+              if b
+                debug 'b is truthy: ' + trial    // trial holds value of b
+              elsif c
+                debug 'b is falsy, but c is truthy: ' + trial   // trial now holds c
+              else
+                debug 'neither b nor c is truthy.'
+    
+
+          #### elsexists 
+
+          Combines __else__ and __exists__. If the test succeeds, the tested value will be placed in the __it__ pronoun.
+
+              exists a
+                debug "a exists: " + it   // it holds the value of a
+              elsexists b
+                debug "a does not exist, but b does: " + it  // it holds the value of b
+              else
+                debug "neither a nor b exists."
+
+          ### elsunless _clause_
+
+          Combines __else__ and __unless__.
+
+              if a
+                debug "a is truthy: " + trial
+              elsunless b
+                debug 'b is falsy!  And there is no pronoun for this clause.'
+              else
+                debug 'a is falsy and b is truthy.  No pronoun because else dosent' get one.'
+
+
+      'unless':
+        subtitle 'conditional flow control'
+        summary '''
+          If the expression is _falsy_, the code directly after the **unless** is executed.
+          Otherwise, perform additional tests if specified by any **elsif**, **elsexists** or **elsunless** clauses, 
+          or failing those, perform the code after the optional **else** clause.
+        detail '''
+          See __if__ for more details on th if/exists/unless constructions.
+          
+          Values that trigger an __unless__ clause are those that are _falsy_, that is: 
+          `false`, `null`, `undefined`, `0`, `NaN`, `''` (empty string).
+          
+          Objects are generally _truthy_, including empty arrays and blank traits.
+          
+          Another JS trap, the following is false:
+          
+              debug NaN is NaN
+              > false
+          
+              The only way to check for NaN is to use isNan:
+              debug isNaN NaN
+              > true
+
+
+      'exists':
+        subtitle 'conditional flow control'
+        summary '''
+          If the expression is _not_ __undefined__, the code directly after the **exists** is executed.
+          Otherwise, perform additional tests if specified by any **elsif**, **elsexists** or **elsunless** clauses, 
+          or failing those, perform the code after the optional **else** clause.
+        detail '''
+          See __if__ for more details on th if/exists/unless constructions.
+          
+          The only thing that does _not_ exist are things that are __undefined__.
+          
+          ( the following information should be in the EXISTS keyword )
+          
+          However, there is an annoying trick. You can set a variable's value to __undefined__, 
+          in which case the variable
+          technically exists, it is just the _value_ of the variable that is undefined.
+          
+              debug newvar
+              > undefined
+              debug newvar.attribute
+              // throws an error, can't look up an attribute on an undefined value
+              
+              set newvar blank
+              debug newvar
+              > {}
+              debug newvar.attribute
+              > undefined
+
+              set newvar.attribute 'a value'
+              debug newvar.attribute
+              > a value
+              
+              set newvar.attribute undefined
+              debug newvar.attribute
+              > undefined
+              
+              debug newvar
+              > { 'attribute': undefined }
+          
+          If you want to differentiate between an attribute that is not there 
+          and one that is there but holds the __undefined__ value, use `.hasOwnProperty` as follows
+          
+              debug newvar.attribute
+              > undefined
+              debug newvar.hasOwnProperty('attribute')
+              > true
+              
+              delete newvar.attribute
+
+              debug newvar.attribute
+              > undefined
+              debug newvar.hasOwnProperty('attribute')
+              > false

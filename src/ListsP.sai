@@ -118,105 +118,8 @@ manifest get
 
 
 docs get
-  return:
-    pipers:
-
-      'observe':
-        subtitle 'inspect a value without changing it'
-        summary '''
-          Evaluates the right expression using the left expression value as the **it** pronoun; 
-          however, **observe** always returns the original left hand expression, no matter the result 
-          of the right expression.
-        detail '''
-          For example:
-        
-              set b to 'Fred'
-              set c to b observe debug '$\{it.length} letters.'
-              debug c
-
-              > 4 letters.
-              > Fred
-
-          See the example for __audit__ for a more interesting reason why __observe__ is nice.
-
-          A warning: while you can **observe** an iterable expression, all you will see is a function.
-          Take care not to invoke it, lest you drain it inadvertently.
-          Heisenberg's uncertainty principle is very much at play with iterables: 
-          you can either have it or know what's in it.
-
-          N.B. **observe** very useful in **chain** expressions.
-
-      'set':
-        subtitle 'replacement operator'
-        summary '''
-          A chainable comprehension operator that allows direct reference and replacement of the incoming dataset within an expression or code block, using the  **it**  pronoun. 
-        detail '''
-          **Set** can be used with an expression:
-
-              debug 4 | set 5*it+2 | set it/7 
-
-              > 3.142857142857143
-
-          **Set** can use an indented code block:
-
-              debug friends by .age | set
-                set .length to 3
-
-              > [ { name: 'Doug', age: 18, province: 'ON' },
-              >    { name: 'John', age: 19, cat: true, dog: true, province: 'ON' },
-              >    { name: 'Marshal', age: 21, dog: true, province: 'ON' } ]
-
-          _If you don’t specifically **return** a value or object from within an **set** code block, the original value will be used (as in the example above). In other words, there is an implicit `return it` at the end of every **set** block._
-
-          **Set** supports the **using** clause, in which case the function specified receives the original value as its first parameter, and the return value is passed forward. The two debug statements below are equivalent
-
-              set ExtractFirst to task
-                return $[0]
-
-              debug friends #cat | set Extract(it)    
-              debug friends #cat | set using Extract  
-
-              > { name: 'Sara', age: 23, cat: true, province: 'ON' }
-              > { name: 'Sara', age: 23, cat: true, province: 'ON' }
-
-          You must specifically return a value in the function called by **set using**.
-
-          
-      
-      'audit':
-        subtitle 'observe the elements of a collection'
-        summary '''
-          Audit is used to pass all values in a collection into an expression, code block or method. 
-          Audit doesn’t alter the collection, it just observes all values and keys/indices going by.
-        detail '''      
-          For example:
-          
-              set b to chain fruit 
-                |observe debug('Pre-sort')
-                |audit debug('Fruit #$\{key} is $\{it}') 
-                |by desc
-                |observe debug('Post-sort')
-                |audit debug('Fruit #$\{key} is $\{it}') 
-              debug b
-            
-              > Pre-sort
-              > Fruit #0 is Apple
-              > Fruit #1 is Banana
-              > Fruit #2 is Citron
-              > Post-sort
-              > Fruit #0 is Citron
-              > Fruit #1 is Banana
-              > Fruit #2 is Apple
-              > [ 'Citron', 'Banana', 'Apple’ ] 
-
-          This example shows how one could add instrumentation to a process in a light-weight fashion.
-
-          Neither **observe** nor **audit** alter the chained data. _A side effect of this is that
-          **observe** can’t be used with non-reproducible iterators as it’s impossible to statically observe 
-          an iterator without draining it._
-        
-        
-
+  return from Documents
+  
 
 
 //// INTO PIPER 
@@ -226,11 +129,11 @@ IntoPiper task expects $work, $tools
   set 
     pattern '(${SPLIT})'
     tools empty
-    outs from my OutVarHelper $work.args.out
+    outs from @OutVarHelper $work.args.out
     startvalue $work.args.val 
     
   switch $work.type
-  case 'into.valexpr', 'total.expr'
+  case 'into.valexpr'
     set 
       vars:
         'this' false
@@ -246,7 +149,7 @@ IntoPiper task expects $work, $tools
       fn from $tools.replacer fn, vars
       pattern '$AI.reduce_op_fast(${SPLIT},${fn},${startvalue})'
 
-  case 'into.valoutblock', 'total.outblock'
+  case 'into.valoutblock'
     set 
       vars:
         'this' outs.0
@@ -263,7 +166,7 @@ IntoPiper task expects $work, $tools
       fn from $tools.replacer fn, vars
       pattern '$AI.reduce_op_fast(${SPLIT},${fn},${startvalue})'
 
-  case 'into.valuse', 'total.use'
+  case 'into.valuse'
     set pattern '$AI.reduce_op_fast(${SPLIT},${$work.args.use},${startvalue})'
 
   else
@@ -340,7 +243,7 @@ AuditPiper task expects $work, $tools
 
   case 'audit.outblock', 'observe.outblock'
     set
-      outs from my OutVarHelper $work.args.out      
+      outs from @OutVarHelper $work.args.out      
       vars:
         'this' outs.0
         'key' outs.1
@@ -387,7 +290,7 @@ ThruPiper task expects $work, $tools
 
   case 'thru.outblock', 'set.outblock'
     set
-      outs from my OutVarHelper $work.args.out      
+      outs from @OutVarHelper $work.args.out      
       vars:
         'this' outs.0
         'key' outs.1
@@ -494,3 +397,509 @@ ReplicatePiper task expects $work, $tools
   return: leftright pattern.split('${SPLIT}'), tools tools
 
 
+
+
+Documents task
+  return:
+    pipers:
+
+      'set':
+        subtitle 'replacement operator'
+        summary '''
+          A chainable comprehension operator that allows direct reference and replacement of the incoming dataset within an expression or code block, using the  **it**  pronoun. 
+        detail '''
+          **Set** can be used with an expression:
+
+              debug 4 | set 5*it+2 | set it/7 
+
+              > 3.142857142857143
+
+          **Set** can use an indented code block:
+
+              debug friends by .age | set
+                set .length to 3
+
+              > [ { name: 'Doug', age: 18, province: 'ON' },
+              >    { name: 'John', age: 19, cat: true, dog: true, province: 'ON' },
+              >    { name: 'Marshal', age: 21, dog: true, province: 'ON' } ]
+
+          _If you don’t specifically **return** a value or object from within an **set** code block, the original value will be used (as in the example above). In other words, there is an implicit `return it` at the end of every **set** block._
+
+          **Set** supports the **using** clause, in which case the function specified receives the original value as its first parameter, and the return value is passed forward. The two debug statements below are equivalent
+
+              set ExtractFirst to task
+                return $[0]
+
+              debug friends #cat | set Extract(it)    
+              debug friends #cat | set using Extract  
+
+              > { name: 'Sara', age: 23, cat: true, province: 'ON' }
+              > { name: 'Sara', age: 23, cat: true, province: 'ON' }
+
+          You must specifically return a value in the function called by **set using**.
+
+
+      'thru':
+        subtitle 'transform a collection with a map-like operation'
+        summary '''
+          Pass each element of a collection “thru’ an expression, code block, or previously defined 
+          function. The result of the expression becomes the new value in a copy of the collection. 
+        detail '''
+          __Thru__ returns the same type of collection it is given. An array yields an array, an object
+          an object, and an iterator another iterator. (There are other pipers for transforming 
+          between types of collection.)
+
+          Conversion to uppercase:
+
+              debug fruit | thru .toUpperCase()
+  
+              > [ 'APPLE', 'BANANA', 'CITRON' ]
+
+          A more complex formatting that could be an expression but I needed a block example:
+
+              debug friends | has .cat | thru
+                return '$\{key+1}) $\{.name}, age $\{.age}, lives in $\{.province}'
+  
+              > [ '1) Sara, age 23, lives in ON',
+                   '2) Jon, age 19, lives in QC',
+                   '3) Ann, age 23, lives in QC' ]
+
+          Passing values **thru** a function:
+
+              set rot13 to task
+                set out to ''
+                count $length
+                  set char to $charCodeAt(key)
+                  switch char >> 5
+                    case 2,3
+                      with char andb 31
+                        if it > 26
+                          nop
+                        elsif it > 13
+                          set char - 13
+                        elsif it > 0
+                          set char + 13
+                  set out + ~String.fromCharCode(char)
+                return out
+  
+              debug fruit | thru using rot13
+  
+              > [ 'Nccyr', 'Onanan', 'Pvgeba' ]
+  
+          The function called by the **using** variant receives three parameters for every iteration:
+          
+           - item value 
+           - item key
+           - reference to the entire collection
+          
+      
+      'audit':
+        subtitle 'observe the elements of a collection'
+        summary '''
+          Audit is used to pass all values in a collection into an expression, code block or method. 
+          Audit doesn’t alter the collection, it just observes all values and keys/indices going by.
+        detail '''      
+          For example:
+          
+              set b to chain fruit 
+                |observe debug('Pre-sort')
+                |audit debug('Fruit #$\{key} is $\{it}') 
+                |by desc
+                |observe debug('Post-sort')
+                |audit debug('Fruit #$\{key} is $\{it}') 
+              debug b
+            
+              > Pre-sort
+              > Fruit #0 is Apple
+              > Fruit #1 is Banana
+              > Fruit #2 is Citron
+              > Post-sort
+              > Fruit #0 is Citron
+              > Fruit #1 is Banana
+              > Fruit #2 is Apple
+              > [ 'Citron', 'Banana', 'Apple’ ] 
+
+          This example shows how one could add instrumentation to a process in a light-weight fashion.
+
+          Neither **observe** nor **audit** alter the chained data. _A side effect of this is that
+          **observe** can’t be used with non-reproducible iterators as it’s impossible to statically observe 
+          an iterator without draining it._
+
+        
+      'observe':
+        subtitle 'inspect a value without changing it'
+        summary '''
+          Evaluates the right expression using the left expression value as the **it** pronoun; 
+          however, **observe** always returns the original left hand expression, no matter the result 
+          of the right expression.
+        detail '''
+          For example:
+        
+              set b to 'Fred'
+              set c to b observe debug '$\{it.length} letters.'
+              debug c
+
+              > 4 letters.
+              > Fred
+
+          See the example for __audit__ for a more interesting reason why __observe__ is nice.
+
+          A warning: while you can **observe** an iterable expression, all you will see is a function.
+          Take care not to invoke it, lest you drain it inadvertently.
+          Heisenberg's uncertainty principle is very much at play with iterables: 
+          you can either have it or know what's in it.
+
+          N.B. **observe** very useful in **chain** expressions.
+
+        
+
+      'into':
+        subtitle 'reduce-like collection transformation'
+        summary '''
+          Javascript features the array method `Array.prototype.reduce` which performs the reduction function, 
+          and SAI extends its applicability with the **into** compherension keyword.
+        detail '''
+          In addition to the item (**it**) and the item key (**key**) available in other comprehensions, 
+          an sum variable (**sum**) is used when evaluating **into** expressions. The value 
+          of the expression becomes the value of **sum** the next time the expression is evaluated.
+
+          #### into inline
+
+          The **sum** variable is initialized by the value following **into** — in the example below 
+          `0` — and then each row in the collection is visited and we add `.age` to it. This adds up 
+          the ages of every friend.
+
+              debug friends | into 0 sum + .age
+  
+              > 185
+
+          #### into block
+
+          The **into** comprehension, like other comprehensions, has an inline version with an 
+          expression, and a long-form which takes a block of code.
+
+          A more complex example.  See if you can suss out how it works.
+
+              debug friends | into blank
+                set sum[.province] to (self default 0) + 1
+  
+              > { ON: 5, QC: 3 }
+
+          Here’s a hint: **self** is a _pronoun_ used only in **set** statements. It is initialized to 
+          the previous value of the variable being changed by **set**. 
+
+          Another hint: **default** is an operator that evaluates to its right hand value if 
+          and only if the left hand value is _undefined_.
+
+          Last hint: **blank** initializes an object with no traits; it is the SAI equivalent 
+          of Javascript’s `{}`.  The comparable word for arrays/lists with no elements is **empty**; 
+          in Javascript you’d write `[]`.
+
+          #### into using
+
+          The addition of **using** lets you call an external function.  The function must 
+          always `return` the value you wish to be used as the sum so the value can be preserved 
+          across function calls.  (The block version of **into** takes care of this for you.)
+
+              set ageTotal to task given accumulator, row
+                return accumulator + row.age
+      
+              debug friends | into 0 using ageTotal 
+  
+              > 185
+
+
+      'total':
+        subtitle 'reduction with addition/concatenation'
+        summary '''
+          __Total__ is very like __into__ however the emphasis is on addition.
+        detail '''
+          __Total__ is a reduction operator that is specialized for adding numbers, or concatenating strings.
+
+              debug list a,b,c; | total
+              
+              > abc
+              
+          Here, total has iterated through the three elements of the `list a, b, c` and added them together. 
+          Because they are strings, the result is a concatenated version of the array of strings.
+          
+              debug array 5, 10, 15, 20 | total
+              
+              > 50
+              
+          Similarly, total has added up the numbers.
+          
+          You can pass an expression (or function) to __total__ just like with __into__, in which case the 
+          addition is whatever value the expression returns on each iteration.
+          
+              debug fruit | total .length
+              
+              > 16
+              
+          The length of the three strings in the fruit array.
+          
+
+      'keys':
+        subtitle 'return a list of trait names'
+        summary '''
+          Returns the keys (or indices) of a collection’s elements.
+        detail '''
+          __Keys__ returns a list comprising the keys/indices of the collection it is given.
+          
+          If you give it an object/traits, you get the trait names.
+
+              debug friends | first | keys
+
+              > [ 'name', 'age', 'cat', 'province']
+
+          If you give it an array, it returns an array of indexes.
+
+              debug fruit | keys
+  
+              > [ 0, 1, 2 ]
+
+          Given an iterator, it returns an iterator that counts from 0 to the number of results in the source.
+          Of course, you lose the values, but you didn't want them, did you.
+          
+    
+      'values':
+        subtitle 'return a list of collection values'
+        summary '''
+          Returns the values of a collection's elements.
+        detail '''
+          __Values__ returns a list of all of the values in a collection.
+          
+          If you give it an object/traits, you get the the values.
+
+              debug friends | first | values
+              > [ 'Sara', 23, true, 'ON' ]
+            
+          Given an array, you get a copy of the array.
+
+              debug fruit | values
+              > [ 'Apple', 'Banana', 'Citron' ]
+  
+          With an iterator, it returns that iterator; that is, it does nothing.
+
+
+      'iterate':
+        subtitle 'transforms a static collection into an iterated form'
+        summary '''
+          Ensures the collection is an iterable. If it already is an iterable, return it unchanged. 
+          If it has a **Iterate** method, call it and return that iterable. If it's an Array, 
+          produce an iterator over its values. If it's an object, produce an iterator that returns 
+          for each trait a 2-element array with trait name, trait value. 
+          If it's just a plain value, produce an iterator that returns that value.
+        detail '''
+          Using **iterate** in this way allows you to guarantee that processing is being done using an 
+          iteration rather than a static collection. To go the other way, use **collect**, which turns an 
+          iterable into an Array.
+
+          The following example follows the one in the keyword **Iterator**:
+
+              ply inventory | by it.1
+                debug it
+  
+              > [ apple: 2, banana: 1 ]  // undesired result
+  
+              ply inventory | iterate | by it.1
+                debug it
+  
+              > [ 'banana', 1 ]          // correct result
+              > [ 'apple', 2 ]
+
+          The example wants to print out a sorted list of inventory items. 
+
+          The undesired result comes about because **by** needs access to the entire collection 
+          in order to sort it, so must process imperatively. Even if you give **by** an object 
+          with a **Iterate** method, which all objects and arrays have whether you put it there 
+          yourself or not, that method will not naturally be called. 
+
+          So, **by** converts the `inventory` object into an array so it can be sorted. The 
+          array conversion produces an array of all enumerable traits; in the case of `Tally` 
+          objects, the only enumerable trait is `bag`, and so an array that looks like `[ bag ]` 
+          is sorted (to no effect) and then printed one element at a time.
+
+          When you force a call to **Iterator** with the **iterate** comprehension, you get the 
+          correct result you're expecting, as you thereby force **by** to use your custom iterator 
+          rather than a naive array conversion.
+
+          The upshot is that right now SAI favours imperative collections rather than lazy 
+          iterators except when specifically using the **iterate** statement or comprehension. 
+
+
+      'concat':
+        subtitle 'assemble two collections into a single list'
+        summary '''
+          A list operator, not a string operator, **concat** returns a list that consists of a copy of 
+          set 1 followed by a copy of set 2. Set 1 is not modified, a new array or iterable is returned.
+        detail '''
+          Undefined values are ignored, and scalar values are promoted to single element arrays.  
+          
+          As follows:
+
+              [1, 2] concat [3, 4] -> [1, 2, 3, 4]
+              [1, 2] concat [[3, 4], [5, 6]] -> [1, 2, [3, 4], [5, 6]]
+              [1, 2] concat 3 -> [1, 2, 3]
+              [1, 2] concat {c:3, d:4} -> [1, 2, {c:3, d:4}]
+              [1, 2] concat undef -> [1, 2]
+              
+              1 concat [3, 4] -> [1, 3, 4]
+              1 concat 3 -> [1, 3]
+              1 concat {c:3, d:4} -> [1, {c:3, d:4}]
+              1 concat undef -> [1]
+              
+              {a:1, b:2} concat [3, 4] -> [{a:1, b:2}, 3, 4]
+              {a:1, b:2} concat 3 -> [{a:1, b:2}, 3]
+              {a:1, b:2} concat {c:3, d:4} -> [{a:1, b:2}, {c:3, d:4}]
+              {a:1, b:2} concat undef -> [{a:1, b:2}]
+              
+              undef concat undef -> undef
+              undef concat 3 -> [3]
+              undef concat {c:3, d:4} -> [{c:3, d:4}]
+              undef concat [3, 4] -> [3, 4]
+
+          If the first set is an iterable, **concat** will return an iterable, otherwise 
+          it returns a list (draining the second list if it is an iterable). 
+
+
+      'collect':
+        subtitle 'collect values from an iterator into a static list'
+        summary '''
+          If the expression on the left is an iterator, converts it to an array/list by draining 
+          the iterator; otherwise do nothing. If the iterator never ends, your system will 
+          lock up until you run out of memory. (You could use a **limit** comprehension to keep that from happening.)
+        detail '''
+          Example:
+
+              set Odds to process
+                local i to 1
+                while i
+                  yield i
+                  set i + 2
+  
+              debug Odds() | collect //           !!!! this locks up the computer
+              
+              debug Odds() | limit 10 | collect
+  
+              > [ 1, 3, 5, 7, 9, 11, 13, 15, 17, 19 ]
+
+          The opposite of **collect** is **iterate**. The difference between **enlist** and 
+          **collect** is that collect will only transform an iterator, while **enlist** will 
+          transform all values.
+
+
+      'enlist':
+        subtitle 'convert a collection to an array'
+        summary '''
+          Converts various collection types into a list/array such that it should be possible to 
+          reverse the transformation later without losing data.
+        detail '''
+          Here are the basic rules:
+          
+              undefined -> undefined
+              value -> [ value ]
+              list -> self
+              object -> [ [ key, value ], [ key, value ], ... ]
+              iterable -> [ value, value, value, ... ]
+
+          Note specifically that **enlist** will turn a set of key, value pairs into an array 
+          of [key,value] arrays thus no data is lost in the conversion.
+
+              set data to:
+                cats 7
+                dogs 12
+  
+              debug data
+              debug data | enlist
+  
+              > { cats: 7, dogs: 12 }
+              > [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
+
+          Such a result can be turned back into traits with **entrait**.
+
+          The difference between **enlist** and **collect** is that **enlist** will always transform its 
+          source data into an array/list, while **collect** will only transform an iterator.
+
+
+      'entrait':
+        subtitle 'convert collections to object/traits'
+        summary '''
+          Converts various collection types into traits/fields using rules that allow the
+          transformation to be reversed later without losing data.
+        detail '''
+          Here are the rules:
+
+              undefined -> undefined
+              value -> { value: true }
+              list -> { [0][0]: [0][1], [1][0]: [1][1], ... }
+              object -> self
+              iterable -> { first[0]: first[1], next[0]: next[1]... }
+
+          **Entrait** is designed primarily to losslessly restore the results of enlist and iterators 
+          that produce arrays of key/value pairs.
+
+              debug 'Coyote' | entrait
+  
+              > { Coyote: true }
+  
+              set data to:
+                list cats, 7
+                list dogs, 12
+  
+              debug data
+              debug data | entrait
+  
+              > [ [ 'cats', 7 ], [ 'dogs', 12 ] ]
+              > { cats: 7, dogs: 12 }
+
+          **Entrait** ignores input data that does not conform to expectations; if given a list that 
+          does not contain two-element key/value lists, it will not create traits.
+ 
+          You could, however, use **enkey** to transform this data:
+
+               debug fruit | enkey
+  
+               > { Apple: true, Banana: true, Citron: true, Durian: true }
+
+
+      'enkey':
+        subtitle 'convert a list/iterator into a set of traits'
+        summary '''
+          __Enkey__ transforms a list into an object (set of traits) by turning each value in the list
+          into a trait with the value of `true`. 
+        detail '''
+          This is similar to __entrait__ except that instead of assuming the source list has 
+          embedded key/value pairs, the source list is used for the keys only, and the value is 
+          either `true` or some other expression that is calculated.
+          
+          Examples:
+          
+              set a list a, b, c
+              set a | enkey
+              debug a
+            
+              > { 'a': true, 'b': true, 'c': true }
+
+              set a list a, b, c
+              set a | enkey '$\{it.toUpperCase()}$\{key}'
+              > { 'a': 'A0', 'b': 'B1', 'c': 'C2' }
+
+          Dry, but very useful.
+          
+
+    
+      'replicate':
+        subtitle 'create a list by copying an element'
+        summary '''
+          Replicate sucks, it should be removed.
+        detail '''
+          What it does:
+          
+              set b 'a' | replicate 3
+              debug b
+            
+              > [ 'a', 'a', 'a' ]
+    
+          I dunno, this doesn't feel meaty.
+        

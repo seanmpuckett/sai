@@ -29,7 +29,7 @@
   }
 
   var ResWords={},ResWordsA=(
-    "andb,and,array,as,arguments,"+
+    "andb,and,array,as,"+
     "bind,blank,"+
     "chain,create,copy,"+
     "default,delete,"+
@@ -37,15 +37,15 @@
     "false,fields,from,"+
     "get,"+
     ""+
-    "into,is,isnt,isNaN,"+
+    "is,isnt,isNaN,"+
     ""+
     "list,"+
-    "me,my,"+
+    ""+
     "NaN,nand,new,nor,notb,not,number,null,"+
     "orb,or,"+
     "promise,process,"+
     "self,set,singleton,swap,"+
-    "task,trial,throw,to,traits,true,typeof,"+
+    "task,trial,to,traits,true,typeof,"+
     "undefined,using,"+
     "via,"+
     "xorb,xor").split(/,/);
@@ -961,6 +961,7 @@ ConstructStatement
       )
  {return [cli,cla];})* {
    
+     var opi=options.constructs[i];
      var work=[[i,a]].concat(cl);
      var work2=[];
      for (var i1=0; i1<work.length; i1++) {
@@ -975,7 +976,7 @@ ConstructStatement
          args: j[1]
        });
      }
-    var result=options.constructs[i].handler({
+    var result=opi.handler({
       clauses:work2,
       tools:{
         addlocal:function(v){ if (!v) v=tempvar(); addLocal(v); return v; },
@@ -984,6 +985,8 @@ ConstructStatement
       }
     });
     if (result.error) fail(result.error);
+    if (opi.tools && opi.tools.length) for (var tc=0; tc<opi.tools.length; tc++) AddTool(opi.tools[tc]);
+    if (result.tools && result.tools.length) for (var tc=0; tc<result.tools.length; tc++) AddTool(result.tools[tc]);
     return result.body;
  }
  
@@ -1093,7 +1096,7 @@ SetTerm
    }
    return code;
  }
- / l:LValues _ (TO?/&FROM/&BANG/&CHAIN) _ e:Expression {
+ / l:LValues _ ((TO &[^a-zA-Z0-9_])?/&FROM/&BANG/&CHAIN) _ e:Expression {
    if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    if (l.length==1) return l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
@@ -1385,7 +1388,6 @@ RLocal
 
 Parameter
  = '$$' { return [['arguments','']]}
- / ARGUMENTS _ { return [['arguments','']]}
  / '$' v:IdentifierProto { return [[ 'parameters','' ],['attribute',v]] }
  / '$' { return [[ 'parameters','' ]]}
 
@@ -1397,11 +1399,9 @@ Global
 
 Property
  = '@' v:IdentifierProto { return [['this',''],[ 'attribute',v ]] }
- / MY Sep v:IdentifierProto { return [['this',''],[ 'attribute',v ]] }
  / '@@' v:IdentifierProto { return [['currentthis',''],[ 'attribute',v ]] }
  / '@@' { return [['currentthis','']] }
  / '@' { return [['this','']] }
- / ME ![a-zA-Z_0-9] { return [['this','']] }
 
 SimpleTerm
  = It/RLocal/Parameter/Property/Root
@@ -1913,14 +1913,14 @@ Fraction
  = v:[0-9]+ { return v.join('') } 
 
 SimpleStringLiteral
- = '\'' v:(EscapedChar/StringTickChar)* '\'' { return assembleLiteral(v) }
- / '\"' v:(EscapedChar/StringQuoteChar)* '\"' { return assembleLiteral(v) }
+ = '&#39' v:(EscapedChar/StringTickChar)* '&#39' { return assembleLiteral(v) }
+ / '&#34' v:(EscapedChar/StringQuoteChar)* '&#34' { return assembleLiteral(v) }
  
 StringLiteral
  = MultiString
- / '\`' v:Bareline { return v }
- / '\'' v:(EscapedChar/StringTemplate/StringTickChar)* '\'' { return assembleLiteral(v) }
- / '\"' v:(EscapedChar/StringTemplate/StringQuoteChar)* '\"' { return assembleLiteral(v) }
+ // '\x60' v:Bareline { return v }
+ / '\x27' v:(EscapedChar/StringTemplate/StringTickChar)* '\x27' { return assembleLiteral(v) }
+ / '\x22' v:(EscapedChar/StringTemplate/StringQuoteChar)* '\x22' { return assembleLiteral(v) }
  
 StringTickChar
  = v:[^\'\n] { return [true,v] }
@@ -1940,19 +1940,24 @@ BarelineStringChar
  / v:[^\n] { return [true,v] }  
   
 EscapedChar
- = '\\' "'" { return [true,'\\'+"'"] }
- / '\\' '"' { return [true,'\\'+'"'] }
- / '\\' '$' { return [true,'\\'+'$'] }
- / '\\' '&#123;' { return [true,'\\'+'&#123;'] }
- / '\\' '&#125;' { return [true,'\\'+'&#125;'] }
- / '\\' 'n' { return [true,'\\'+'n'] }
- / '\\' 'r' { return [true,'\\'+'r'] }
- / '\\' 't' { return [true,'\\'+'t'] }
- / '\\' 'b' { return [true,'\\'+'b'] }
- / '\\' 'f' { return [true,'\\'+'f'] }
- / '\\' 'x' a:[0-9a-fA-F] b:[0-9a-fA-F] { return [true,'\\'+'x'+a+b ] }
- / '\\' 'u' a:[0-9a-fA-F] b:[0-9a-fA-F] c:[0-9a-fA-F] d:[0-9a-fA-F] { return [true,'\\'+'u'+a+b+c+d] }
- / '\\' 'u' '{' a:[0-9a-fA-F]+ '}' { return [true,'\\'+'u{'+a.join('')+'}' ] }
+ = '\x5c\x27'  { return [ true, "\x27" ] }
+ / '\x5c' c:. { return [ true, '\x5c'+c ] }
+  
+EscapedCharx
+ = '\x5c' "'" { return [true,'\x5c'+"'"] }
+ / '\x5c' '"' { return [true,'\x5c'+'"'] }
+ / '\x5c' '$' { return [true,'\x5c'+'$'] }
+ / '\x5c' '\x5c;' { return [true,'\x5c'] }
+ / '\x5c' '\x7b;' { return [true,'\x7b;'] }
+ / '\x5c' '\x7d;' { return [true,'\x7d;'] }
+ / '\x5c' 'n' { return [true,'\x5c'+'n'] }
+ / '\x5c' 'r' { return [true,'\x5c'+'r'] }
+ / '\x5c' 't' { return [true,'\x5c'+'t'] }
+ / '\x5c' 'b' { return [true,'\x5c'+'b'] }
+ / '\x5c' 'f' { return [true,'\x5c'+'f'] }
+ / '\x5c' 'x' a:[0-9a-fA-F] b:[0-9a-fA-F] { return [true,'\x5c'+'x'+a+b ] }
+ / '\x5c' 'u' a:[0-9a-fA-F] b:[0-9a-fA-F] c:[0-9a-fA-F] d:[0-9a-fA-F] { return [true,'\x5c'+'u'+a+b+c+d] }
+ / '\x5c' 'u' '{' a:[0-9a-fA-F]+ '}' { return [true,'\x5c'+'u{'+a.join('')+'}' ] }
 
 StringTemplate
  = '${' _ v:Expression  '}' { return [false,v] }
@@ -1981,7 +1986,7 @@ EOLs
  = EOL+
 
 EOL
- = '//' [^\r\n]* CR
+ = [\ ]* '//' [^\r\n]* CR
  / CR
  
 
@@ -2006,13 +2011,10 @@ ALL = 'all'
 AND = 'and'
 ANDB = 'andb'
 ANY = 'any'
-ARG = 'arg'
-ARGUMENTS = 'arguments'
 ARRAY = 'array'
 AS = 'as'
 BIND = 'bind'
 BLANK = 'blank'
-CATCH = 'catch'
 CHAIN = 'chain'
 COPY = 'copy'
 CONTRACT = 'contract'
@@ -2021,8 +2023,6 @@ CREATE = 'create'
 DEC = 'dec'
 DEFAULT = 'default'
 DELETE = 'delete'
-DO = 'do'
-ELSE = 'else'
 EMPTY = 'empty'
 ENUM = 'enum'
 ERROR = 'error'
@@ -2034,7 +2034,6 @@ GET = 'get'
 GIVEN = 'given'
 INFINITY = 'Infinity'
 INSTANCE = 'instance'
-INTO = 'into'
 INC = 'inc'
 INHERIT = 'inherit'
 ISNT = 'isnt'
@@ -2046,8 +2045,6 @@ IT = 'it'
 KEY = 'key'
 LIST = 'list'
 LOCAL = 'local'
-ME = 'me'
-MY = 'my'
 MAIN = 'main'
 NaN = 'NaN'
 NAND = 'nand'
@@ -2059,7 +2056,6 @@ NOTB = 'notb'
 NUMBER = 'number'
 NULL = 'null'
 OBJECT = 'object'
-ORPHAN = 'orphan'
 OR = 'or'
 ORB = 'orb'
 TRUE = 'true'
@@ -2074,17 +2070,14 @@ SUM = 'sum'
 SWAP = 'swap'
 SUPER = 'super'
 TASK = 'task'
-THEN = 'then'
 TRAITS = 'traits'
 TRIAL = 'trial'
-TRY = 'try'
 TO = 'to'
 TYPEOF = 'typeof'
 UNBOUND = 'unbound'
 UNDEFINED = 'undefined'
 USING = 'using'
 VIA = 'via'
-WITH = 'with'
 XOR  = 'xor'
 XORB  = 'xorb'
 

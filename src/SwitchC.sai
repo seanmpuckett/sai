@@ -16,6 +16,11 @@ manifest get
           'else': #block
         handler bind SwitchConstruct
       
+      
+docs get
+  return from Documents
+  
+  
 
 ///////////////   SWITCH
 //
@@ -32,7 +37,7 @@ SwitchConstruct task expects $clauses, $tools
       
   set 
     body ''
-    outs from my OutVarHelper $clauses.0.args.out
+    outs from @OutVarHelper $clauses.0.args.out
     trialvar fields 'trial' outs.0 or from $tools.addlocal 
 
   ply $clauses
@@ -82,3 +87,39 @@ SwitchConstruct task expects $clauses, $tools
 
   return: body body
 
+
+Documents task
+  return:
+    'constructs':
+      'switch':
+        subtitle 'choice-based conditional'
+        summary '''
+          Choose among alternatives based on expression equality. 
+        detail '''
+          The expression under evaluation is available to all codepaths 
+          as **trial** (which can be renamed with the **as** clause).
+
+          Unlike the native Javascript `switch` these __case__ clauses do not fall through;
+          the break is implicit.  (Though you can break out early.)
+
+              switch ~System.IO.Keypress() as key
+              case 'n', 'N'
+                Move 0,-1
+              case 's', 'S'
+                Move 0,1
+              case 'e', 'E'
+                Move 1,0
+              case 'w', 'W'
+                Move -1,0
+              case ' '
+                Jump
+              case '?'
+                Help
+              else
+                Emit 'Key [$\{key}] isn't used; type ? for help.'
+
+          The compiler will insist on an __else__ clause as a matter of good programming hygeine.
+
+
+
+        

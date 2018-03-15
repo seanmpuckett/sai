@@ -121,6 +121,11 @@ given:
       'valuse'        '[value] USING [function reference]'
       'valoutblock'   '[value] (AS var1, var2...) [indent code block]'
 
+    globals: blank
+    keywords: blank
+    operators: blank
+    pronouns: blank
+    syntax: blank
 
 
 // Instantiate
@@ -160,9 +165,9 @@ Clean task
       
     Parse from GetParser
 
-    config.Loader from GetSourceFromPaths.bind me
-    SAILIB.import from Require.bind me
-    SAILIB.create_op from Create.bind me
+    config.Loader bind GetSourceFromPaths
+    SAILIB.import bind Require
+    SAILIB.create_op bind Create
 
 
   IntegrateConstructs
@@ -179,6 +184,7 @@ IntegrateConstructs task
       'clauses' 'clauses list'
       'handler' 'handler function'
       'tools' 'tools to include in object definition (set to false if none)'
+    
   
   set fail to task given msg
     throw new Error 'SAI Construct Manager: manifest for ${file}/${category}/${constructName}${msg}'
@@ -187,7 +193,7 @@ IntegrateConstructs task
     try
       set fn to "./"+file
       set implementation from require fn
-      set implementation.SAI me // this is for introspection in Keywords.sai
+      set implementation.SAI @ // this is for introspection in Keywords.sai
       set manifest to implementation's manifest
       
       // a little validation
@@ -213,30 +219,24 @@ IntegrateConstructs task
       
 
 Document task
-  set documents:
-    keywords blank
-    
-  set documents | update from DocumentConstructs
-
-  return documents
+  return from DocumentConstructs
 
 
 DocumentConstructs task 
 
   set documents blank
   set prefix:
-    'constructs':
-       main ''
-       aux ''
     'pipers':
        main '... | '
        aux '(optional) '
+
+  set seealso blank
 
   ply CONSTRUCTS as file
     set 
       fn to "./"+file
       implementation from require fn 
-      implementation.SAI me // this is for introspection in Keywords.sai
+      implementation.SAI @ // this is for introspection in Keywords.sai
       manifest to implementation's manifest
       docs to implementation's docs 
     
@@ -247,22 +247,27 @@ DocumentConstructs task
 
         set doc to ?docs\category\constructName or blank
         set synref empty
-
+        
         each construct.clauses as requestedSyntax, clauseName
+          set seealso\clauseName default empty
+          push'd seealso\clauseName array category, constructName
           each requestedSyntax as val, type
             set sub to clauseName is constructName ?? 'main' :: 'aux'
-            push'd synref '${prefix\category\sub}${clauseName} ${validSyntax\category\type}'
+            push'd synref '${?prefix\category\sub ? ''}${clauseName} ${validSyntax\category\type}'
           push'd synref ''
           
-        set documents\category\constructName:
-          title constructName
-          subtitle doc.subtitle ? 'subtitle'
-          summary doc.summary ? 'summary'
+        set page:
+          name constructName
+          subtitle 'subtitle'
+          summary 'summary'
           synref join'd synref '\n'
-          detail doc.detail ? 'detail'
-            
+          detail 'detail'
 
-  return documents
+        set documents\category\constructName page | update doc
+            
+  return:
+    documents documents
+    references seealso
   
   
   
@@ -313,8 +318,6 @@ Dedenter task given src
       if heredocstate is 2
         if depth < heredepth
           set heredocstate 0
-        elsif depth > heredepth
-          set trimmed (line | limit heredepth, undefined)
 
       if heredocstate is 1
         if depth <= heredepth
@@ -340,6 +343,8 @@ Dedenter task given src
           throw new Error "SAI: incorrect indentation ${from Context lineno}"
 
     unless isComment and heredocstate and depth<heredepth
+      if heredocstate and depth > heredepth
+        set trimmed (line | limit heredepth, undefined)
       push'd lines trimmed
     
   while shift'd indent
@@ -557,7 +562,7 @@ GetProtogen task given name
     set s1 new ~Date
     set load from config's Loader name
     unless load.success
-      throw new Error `SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
+      throw new Error 'SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
     set source from Parse load's source, undefined, load's context
     set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
     set protogen from Compile source

@@ -39,6 +39,10 @@ manifest get
         handler bind ReturnConstruct
 
 
+docs get
+  return from Documents
+  
+
 ReturnConstruct task
 
   if $clauses.length > 1
@@ -81,5 +85,115 @@ ReturnConstruct task
       return: error "Unhandled construct type ${.type} in ReturnConstruct"
       
   return: body body
+
+
+Documents task
+  return:
+    'constructs':
+
+
+      'reject':
+        subtitle 'mark a Promise as having failed'
+        summary '''
+          Call the failed potential outcome for a function declared with **promise**. 
+        detail '''
+          This does not implicity end execution, however, the way **return** does.
+
+          For an example, see **promise**.
+          
+          
+      'resolve':
+        subtitle 'mark a Promise as succeeding'
+        summary '''
+          Call the successful potential outcome for a function declared with **promise**.
+        detail '''
+          Doesn't implicitly end execution the way **return** does, so make sure you mind the code path.
+
+          For an example, see **promise**.
+
+      
+      'return':
+        subtitle 'exit a function, returning a value maybe'
+        summary '''
+          Return a value to the caller of a **task**. 
+        detail '''
+          Works just like Javascript.
+
+              set multiply to task given a, b
+                return a*b
+  
+              debug multiply(2, 4)
+  
+              > 8
+
+
+      'yielding':
+        subtitle 'process inclusion'
+        summary '''
+          Yields to another process until that process is done yielding. 
+        detail '''
+          Equivalent to Javascript’s `yield *` syntax. 
+          Essentially, **yielding** calls another process given a subroutine.
+
+              // The Mirror process yields its first argument
+              // then reverses it (in ASCII), yields that
+              // then terminates
+  
+              set Mirror to process given str
+                yield str
+                yield str.split('').reverse().join('')
+  
+              // FruitSalad process is yielding an invocation of Mirror 
+              // for each fruit, then terminates
+  
+              set FruitSalad to process
+                ply fruit
+                  yielding Mirror(it)
+  
+              // access each generated value in FruitSalad in turn
+              iterate FruitSalad()
+                debug it
+  
+              > Apple
+              > elppA
+              > Banana
+              > ananaB
+              > Citron
+              > nortiC
+
+          In the example, Mirror yields twice, and FruitSalad yields to Mirror three times (once for each fruit), so the final iteration result is six values. 
+      
+      
+      'yield':
+        subtitle 'process product'
+        summary '''
+          Produces the _next_ value in a __process__.
+        detail '''
+          Used with functions defined as **process**; see that keyword in this documentation, 
+          and the EcmaScript 6 documentation for details.
+
+              set OddNumbers to process
+                set i to 1
+                while true
+                  yield i
+                  set i + 2
+  
+              set myOdds OddNumbers()
+              debug myOdds.next
+              debug myOdds.next
+              debug myOdds.next
+  
+              > { value: 1, done: false }
+              > { value: 3, done: false }
+              > { value: 5, done: false }
+  
+              iterate OddNumbers() | limit 4
+                debug it
+  
+              > 1
+              > 3
+              > 5
+              > 7
+
 
 

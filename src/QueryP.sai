@@ -65,6 +65,8 @@ manifest get
         tools empty
         
 
+docs get
+  return from Documents
 
 //// FILTER PIPER 
 
@@ -94,7 +96,7 @@ FilterPiper task expects $clauses, $tools
 
   case 'has.outblock'
     set
-      outs from my OutVarHelper work.args.out      
+      outs from @OutVarHelper work.args.out      
       vars:
         'this' outs.0
         'key' outs.1
@@ -156,7 +158,7 @@ LowestPiper task expects $clauses, $tools
 
   case 'lowest.outblock', 'highest.outblock'
     set
-      outs from my OutVarHelper work.args.out      
+      outs from @OutVarHelper work.args.out      
       whichway to ascending>0 ?? '>0' :: '<=0'
       vars:
         'a' outs.0 ? '_a'
@@ -182,7 +184,7 @@ LowestPiper task expects $clauses, $tools
           return (${work.args.use}(a,b)${whichway}) ? b : a;
         })
 
-  case 'lowest.none', 'higest.none'
+  case 'lowest.none', 'highest.none'
     set
       whichway to ascending>0 ?? 'a>b' :: 'a<b'
       pattern '''
@@ -207,44 +209,46 @@ SortPiper task expects $clauses, $tools
     pattern '(${SPLIT})'
     tools empty
     Repl $tools.replacer
-    ascending 1
     grammar $clauses | total (.clause)
     work $clauses.0
     
-  unless grammar is 'by' or grammar is 'byasc' or grammar is 'bydesc'
-     return: error "SAI Compiler: bad grammar in BY; expecting BY or BY...ASC or BY...DESC "
-
-  if grammar is 'bydesc'
-    set ascending to -1
-
   switch work.type
 
   case 'by.expr'
-    set
-      source to work.args.expr ? '^\{this}'
-      afetch from Repl 'aa=${source}; ', fields 'this' 'a'
-      bfetch from Repl 'bb=${source}; ', fields 'this' 'b'
-
-      tester from Repl:
-        afetch+bfetch+'if (aa<bb) return ^\{lt}; if (aa>bb) return ^\{gt}; '
-        fields 
-          lt -ascending
-          gt ascending
-
-      fn '''
-        function(a,b){
-          var aa,bb;
-          ${tester};
-          return 0;
-        }
-
-      fn to source is '^\{this}' ?? 'function(a,b){return ${ascending}*$AI.compare_op(a,b)}' :: self
-
-      pattern '$AI.sort_op(${SPLIT},${fn})'
-
+    try
+      set pattern to chain $clauses
+        | into empty 
+          switch .clause
+          case 'by'
+            push'd sum: 
+              expr ( .args.expr ? '^{this}' )
+              order 1
+          case 'asc'
+            set (sum|last).order 1
+          case 'desc'
+            set (sum|last).order to -1
+          else
+            throw "SAI Compiler: unexpected clause in BY: ${trial}"
+        | thru '''
+          aa=${from Repl .expr, fields 'this' 'a'};
+          bb=${from Repl .expr, fields 'this' 'b'};
+          if (aa<bb) return ${-.order}; if (aa>bb) return ${.order};
+        | total
+        | set '''
+          $AI.sort_op(${SPLIT},function(a,b){
+            var aa,bb;
+            ${it};
+            return 0;
+          })
+    catch as msg
+      return: error msg
+      
   case 'by.outblock'
+    if $clauses.length > 1
+      return: error "SAI Compiler: BY.outblock should not have any extra clauses"
+      
     set
-      outs from my OutVarHelper work.args.out      
+      outs from @OutVarHelper work.args.out      
       vars:
         'a' outs.0 ? '_a'
         'b' outs.1 ? '_b'
@@ -257,12 +261,16 @@ SortPiper task expects $clauses, $tools
       pattern '$AI.sort_op(${SPLIT},${fn})'
 
   case 'by.use'
+    if $clauses.length > 1
+      return: error "SAI Compiler: BY.use should not have any extra clauses"
     set pattern '$AI.sort_op(${SPLIT},${work.args.use})'
 
   case 'by.none'
+    if $clauses.length > 1
+      return: error "SAI Compiler: BY with no sort expression should not have any extra clauses. If you wish to sort descending, use by it desc."
     set 
       pattern '''
-        $AI.sort_op(${SPLIT},function(a,b){return ${ascending}*$AI.compare_op(a,b);})
+        $AI.sort_op(${SPLIT},function(a,b){return $AI.compare_op(a,b);})
     
   else
     return: error "Unhandled piper type ${trial} in SortPiper"
@@ -312,4 +320,303 @@ LimitPiper task expects $clauses, $tools
       
   return: leftright pattern.split('${SPLIT}'), tools tools
 
+
+
+
+
+
+
+Documents task
+  return:
+    'pipers':
+    
+      'limit':
+        subtitle 'select certain array/iterator elements'
+        summary '''
+          Returns a subset of elements from an array, string, or iterator.
+        detail '''
+          If one parameter is provided, returns the first **qty** elements in the 
+          collection if **qty** is positive. If negative, returns the last (absolute) **qty** 
+          number of elements. 
+          
+          If an **index** is supplied, return **qty** elements starting at **index**.  
+          Negative index values do interesting things, there's a chart below.
+
+            .. [collection] | limit [qty]
+            .. [collection] | limit [index], [qty]
+
+            .. [string] | limit [character count]
+            .. [string] | limit [start character], [character count]
+
+          You always get a list back, even if just one element will be returned.
+
+              limit -y            last y rows
+              limit 0             empty
+              limit undefined     everything
+              limit +y            first y rows
+    
+              limit -x, -y        everything except last y rows starting x from end of list
+              limit -x, 0         empty
+              limit -x, undef     last x rows
+              limit -x, +y        y rows starting x from end of list
+        
+              limit 0, -y         everything except last y rows
+              limit 0, 0          empty
+              limit 0, undef      everything
+              limit 0, +y         first y rows
+ 
+              limit +x, -y        everything except last y rows starting at x
+              limit +x, 0         empty
+              limit +x, undef     everything starting at x
+              limit +x, +y        y rows starting at x
+
+          If the collection is an iterable, it will only be fetched as many times as needed. 
+          (If you ask for elements offset from the end, the iterator will be exhausted because an 
+          iterator’s length can only be ascertained by exhausting it.)
+
+          If the iterator is infinite and you ask for an offset from the end, you'll run out of 
+          memory as it will cache an infinite number of intermediate results order to comply 
+          with your impossible request. (Infinite iterators have no end.)
+
+          #### limit with strings
+
+          You can use __limit__ to extract substrings. For this purpose characters are 
+          treated as elements in the array.
+
+              debug 'abcdef' | limit 2,2      // cd
+              debug 'abcdef' | limit -3       // def
+              debug 'abcdef' | limit -3,2     // de
+              debug 'abcdef' | limit 1,-1     // bcde
+
+          And so on. One "gotcha" is operator precedence; pipers have the lowest 
+          priority, so you will need to wrap them in parenthesis if using __limit__ in any 
+          logical expression.
+
+              Do this: 
+                if '#!' is (line | limit 0,2)   // correct code
+    
+              Not this:
+                if '#!' is line | limit 0,2     // bad code
+                if ('#!' is line) | limit 0,2   // also bad
+
+          Another "gotcha" is the way  __limit__ intentionally changes behaviour when its 
+          arguments change from negative to positive. If you pass calculated values that 
+          could become negative, __limit__ may return things you don't expect. 
+
+
+      'first':
+        subtitle 'first value'
+        summary '''
+          Returns the first value in a list or iterator.
+        detail '''
+          Example:
+          
+              debug fruit | first
+              > Apple
+
+          __First__ doesn't just crop the array, it unwraps whatever value is there, as 
+          if you'd coded `array.[0]`.
+
+
+      'last':
+        subtitle 'last value'
+        summary '''
+          Returns the last value in a list or iterator.
+        detail '''
+          If the collection is an iterator, it will be exhausted. If it's an infinite iterator, the machine will stop
+          responding.
+
+              debug fruit | last
+  
+              > Citron
+
+          __Last__ doesn't just crop the array, it unwraps whatever value is there, as 
+          if you'd coded `array.[array.length-1]`.
+
+
+      'count':
+        subtitle 'collection item count'
+        summary '''
+          Returns the number of elements in the collection. 
+        detail '''
+          If the collection is an iterator, it will be drained.
+
+              debug undefined count  
+              debug 1 count 
+              debug fruit count
+   
+              > 0
+              > 1
+              > 3
+
+
+      'by':
+        subtitle 'array sorting'
+        summary '''
+          To create a sorted array, use **by**. The newly resulting array will be sorted by the specified 
+          inline expression or code block. 
+        detail '''
+          **By** does not sort in-place; it always returns a new array.
+          If **by** is used on an iterable, it will **collect** all values before sorting.
+
+          #### by inline
+
+          When you use the inline expression form, the provided expression is used to extract a 
+          value from a single record, which is then compared against other records to determine the sort order.
+
+          The **it** pronoun and its **dot** scoping prefix are available within the expression.
+
+          Print a list of friends sorted alphabetically by name:
+
+              set result to friends | by .name
+  
+              debug ( result | thru .name ).join(', ')
+  
+              > Ann, Doug, Ellie, Harry, Jenna, John, Marshal, Sara 
+
+          You may sort by more than one value by adding another **by** clause. Multiple sort clauses 
+          are handled the way a database would: if a clause provides no guidance (the values are 
+          identical), subsequent clauses are each checked in turn.
+
+          Print sorted by length of name, then age:
+
+              set result to friends | by .name.length by .age
+  
+              debug (result | thru '$\{.name}: $\{.age}').join('\n')
+  
+              > Ann: 23
+              > Doug: 18
+              > John: 19
+              > Sara: 23
+              > Ellie: 22
+              > Jenna: 28
+              > Harry: 31
+              > Marshal: 21
+
+          #### by block
+
+          When using **by** with a block of code, the pronouns change. You are given both records 
+          under consideration just as you would using the Javascript `.sort` method. And 
+          perhaps unsurprisingly to those who have ever seen a programming textbook, the pronouns 
+          are the letters **a** and **b**.
+
+          Print a sorted list of ages by province:
+
+              set result to friends | by
+                return a.province <=> b.province or a.age <=> b.age
+  
+              debug (result | thru '$\{.name}: $\{.province}, $\{.age}').join('\n')
+  
+              > Doug: ON, 18
+              > John: ON, 19
+              > Marshal: ON, 21
+              > Sara: ON, 23
+              > Jenna: ON, 28
+              > Ellie: QC, 22
+              > Ann: QC, 23
+              > Harry: QC, 31
+
+          #### by using
+
+          __By using__ provides the ability to use a named function for your 
+          sorting facilitator.
+
+              set ProvinceAge to task given a, b
+               return a.province <=> b.province or a.age <=> b.age
+  
+              set result to friends | by using ProvinceAge
+  
+              // same result as previous example
+
+          #### desc (descending) _modifier_
+
+              .. [expr] | by [expr] (desc)  
+
+          Used with the **by** comprehension just like **asc** but the sort order will be highest to lowest.
+
+              debug list Bob, Carol, Ted, Alice | by it desc
+  
+              > [ 'Ted', 'Carol', 'Bob', 'Alice' ]
+
+
+      'has':
+        subtitle 'collection filtering'
+        summary '''
+          Use __has__ to test for exclusion each object in a collection.
+        detail '''
+          The pipe operator **has** indicates an expression based filter using the **it** 
+          _pronoun_ to represent the item currently under examination. Since **it** is in play, 
+          the associated **dot** scoping prefix is also active within the expression for 
+          easy access to item fields. 
+
+          #### has inline
+
+              debug friends | has (.province = 'QC') and (.cat or .dog)
+  
+              > [ { name: 'Ann', age: 23, cat: true, province: 'QC' } ]
+ 
+          Any valid expression can be used in a **has** piper, and one can refer 
+          to values outside the expression as well.
+
+              set rentAge to: ON 25, QC 21
+              debug friends | has .age >= rentAge[.province]
+  
+              > [ { name: 'Ellie', age: 22, province: 'QC' },
+              >   { name: 'Ann', age: 23, cat: true, province: 'QC' },
+              >   { name: 'Harry', age: 31, province: 'QC' },
+              >   { name: 'Jenna', age: 28, dog: true, province: 'ON' } ]
+ 
+          #### has block
+
+          **Has** can reference a block of code directly, which makes 
+          the **it** pronoun available within that block, or be given the name of a 
+          task (or a task definition). 
+          
+          You must **return** a _truthy_ (keep) or 
+          _falsy_ (discard) value from the block so the filter can take the according 
+          action. If you don’t return a value, all rows will be discarded.
+
+              friends | has
+                return .age >= rentAge[.province]
+
+          #### has using
+
+          You can integrate function calls by adding the 
+          **using** keyword immediately following the __has__ keyword itself.
+
+              set CanRent to task given row
+                return row.age >= rentAge[row.province]
+
+              debug friends | has using CanRent
+
+
+        
+      'lowest':
+        subtitle 'search collection for lowest value'
+        summary '''
+          Returns the collection element with the lowest value of the expression. 
+        detail '''
+          Prepares the pronouns **it** and **key** for use by the expression.
+
+              debug friends lowest .age
+
+              > { name: 'Doug', age: 18, province: 'ON' }
+
+          __Lowest__ is like a combination of __by__ and __first__, except that instead of
+          sorting, it just runs through the collection and finds the correct answer. (This is faster.)
+        
+        
+      'highest':
+        subtitle 'search collection for highest value'
+        summary '''
+          Returns the collection element with the highest value of the expression. 
+        detail '''
+          Prepares the pronouns **it** and **key** for use by the expression.
+
+              debug friends highest .age
+  
+              > { name: 'Harry', age: 31, province: 'QC' }
+
+          __Highest__ is like a combination of __by__ and __first__, except that instead of
+          sorting, it just runs through the collection and finds the correct answer. (This is faster.)
 

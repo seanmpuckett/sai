@@ -411,6 +411,9 @@ Execute task
     :name 'Harry', age 31, province 'QC'
     :name 'Jenna', age 28, #dog, province 'ON'  
 
+  @Test 'by two expression', task
+    set b to friends | by .province by .age desc | last
+    return 'Ellie' is b.name
   
   @Test 'has task', task
     set a friends |has using task
@@ -483,6 +486,14 @@ Execute task
   @Match 'last', 'Jenna', task
     return (friends |last).name
     
+  @Match 'lowest number', 1, task
+    return (list 1,2,3) | lowest
+    
+  @Match 'highest number', 3, task
+    return (list 1,2,3) | highest
+    
+    
+
   
   @Test 'enlist undefined', task
     set a to undefined |enlist

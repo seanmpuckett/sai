@@ -95,6 +95,12 @@ manifest get
         handler bind CountConstruct
 
 
+docs get
+  return from Documents
+  
+  
+
+
 //////////////  FLOW CONTROL
 //
 //
@@ -137,7 +143,7 @@ EveryConstruct task expects $clauses, $tools
     case 'every.exproutblock'
 
       set 
-        outs from my OutVarHelper main.args.out
+        outs from @OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -231,29 +237,29 @@ IndexedConstruct task expects $clauses, $tools
   
     case 'index.exprsoutblock'
       set
-        outs from my OutVarHelper main.args.out
+        outs from @OutVarHelper main.args.out
       
         vars:
-          block main.args.block
           'rawlist' main.args.exprs.0
           'rawkeys' main.args.exprs.1
-          'keys' false
-          'index' false
           'this' outs.0 default false
           'key' outs.1 default false
           'list' outs.2 default false
-          'length' false
+          'iterator' false
+          'next' false
+          'block' main.args.block
           none ?none.args.block default false
     
         preface '''
-          var ^{list}=^{rawlist},^{keys}=^{rawkeys},^{key};
-          if (undefined===^{keys}) ^{keys}=[];
-          var ^{length}=^{keys}.length,^{index};
+          var ^{list}=^{rawlist},^{key},
+              ^{iterator}=$AI.kviterate_op(^{rawkeys});
+              ^{next}=^{iterator}.next();
 
         loop '''
-          for (^{index}=0; ^{index}<^{length}; ^{index}++) {
-          ^{key}=^{keys}[^{index}]; ^{this}=^{list}[^{key}];
-          ^{block};
+          while (!^{next}.done) {
+            ^{key}=^{next}.value[1]; ^{this}=^{list}[^{key}];
+            ^{block};
+            ^{next}=^{iterator}.next();
           }
       
         elseclause from task
@@ -261,42 +267,40 @@ IndexedConstruct task expects $clauses, $tools
             return ''
           else
             return '''
-              if (^{key}===0) { ^{none} } 
+              if (^{next}.done) { ^{none} } else 
       
-        text from $tools.replacer preface + loop + elseclause, vars
+        text from $tools.replacer preface + elseclause + loop, vars
 
     case 'index.exprsusing'
-
-      set 
+      set
         vars:
-          'task' main.args.using
           'rawlist' main.args.exprs.0
           'rawkeys' main.args.exprs.1
-          'index' false
-          'keys' false
-          'key' false
           'list' false
-          'length' false
+          'iterator' false
+          'next' false
+          'fn' main.args.using
           none ?none.args.block default false
     
         preface '''
-          var ^{list}=^{rawlist},^{keys}=^{rawkeys},^{key};
-          if (undefined===^{keys}) ^{keys}=[];
-          var ^{length}=^{keys}.length,^{index};
+          var ^{list}=^{rawlist},
+              ^{iterator}=$AI.kviterate_op(^{rawkeys});
+              ^{next}=^{iterator}.next();
 
+        loop '''
+          while (!^{next}.done) {
+            ^{fn}(^{list}[^{next}.value[1]],^{next}.value[1],^{list});
+            ^{next}=^{iterator}.next();
+          }
+      
         elseclause from task
           unless none
             return ''
           else
             return '''
-              if (^{key}===0) { ^{none} } 
+              if (^{next}.done) { ^{none} } else 
       
-        loop '''
-          for (^{index}=0; ^{index}<^{length}; ^{index}++) {
-          ^{key}=^{keys}[^{index}]; ^{task}(^{list}[^{key}],^{key},^{list});
-          }
-      
-        text from $tools.replacer preface + loop + elseclause, vars
+        text from $tools.replacer preface + elseclause + loop, vars
 
     else
       return: error "Unhandled construct type ${main.type} in IndexConstruct"
@@ -327,7 +331,7 @@ IterateConstruct task expects $clauses, $tools
     case 'iterate.exproutblock'
 
       set 
-        outs from my OutVarHelper main.args.out
+        outs from @OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -421,7 +425,7 @@ EachConstruct task expects $clauses, $tools
     case 'each.exproutblock'
 
       set 
-        outs from my OutVarHelper main.args.out
+        outs from @OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -507,7 +511,7 @@ PlyConstruct task expects $clauses, $tools
     case 'ply.exproutblock'
 
       set 
-        outs from my OutVarHelper main.args.out
+        outs from @OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -592,7 +596,7 @@ WhileConstruct task expects $clauses, $tools
     case 'while.exproutblock'
 
       set 
-        outs from my OutVarHelper main.args.out
+        outs from @OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -675,7 +679,7 @@ CountConstruct task expects $clauses, $tools
 
  try
   
-   set outs from my OutVarHelper main.args.out
+   set outs from @OutVarHelper main.args.out
 
    switch main.type
 
@@ -770,5 +774,446 @@ CountConstruct task expects $clauses, $tools
    debug error
   
  return: body text
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Documents task
+  return:
+    'constructs':
+  
+      'every':
+        subtitle 'general-purpose collection iterator'
+        summary '''
+          **Every** is a general-purpose iterator that can handle any collection -- array, object or iterable -- or a even single value (which case it executes the block once).  
+        detail '''
+          __Every__ steps through each element of the collection, in order if possible (array, iterable), in 
+          random order otherwise (objects), setting **it** and **key** pronouns, and executing the code block. 
+
+          The **key** pronoun will be the index number for arrays, the attribute name for objects, or a row 
+          counter for iterables. It will be `0` for the single pass granted a single value. 
+
+          If the collection is empty, executes the (optional) **else** block instead. 
+
+              set friend to friends first
+              every friend
+                debug `$\{key}: $\{it}
+              else
+                debug `You have no friends.
+  
+              > name: Jon
+              > age: 19
+              > cat: true
+              > dog: true
+              > province: QC
+  
+          Recall that you can rename **it** and **key** with the **as** clause:
+
+              every friend as value, fieldname
+                debug `$\{fieldname}: $\{value}
+
+
+          _Note:_ there is a slight performance penalty associated with using __every__ instead of a more specific iterator, as SAI must wrap the collection in a thin iteration in order to generically handle all cases. It is, however, very useful when you are not sure what kind of collection you'll be working with.
+
+          #### every ... using
+
+          **Every** can also call out to a function with the **every ... using** variation.
+
+              set handler to task given value, field
+                debug `$\{field}: $\{value}
+  
+              every friend using handler
+
+          The function is called for each attribute of the collection with two parameters:
+
+             - attribute value (e.g. __it__)
+             - attribute name (e.g. __key__)
+
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.
+
+      
+      'iterate':
+        subtitle 'sequentially examine values from a generator/iterator'
+        summary '''
+          The **iterate** statement steps through each value in an _iterable expression_. 
+          This can be an object with fields/traits, an array/list with numbered elements, or a passive 
+          iterator/generator that **yield**s values for iteration. 
+        detail '''
+          What’s an iterable expression?  It’s an object that **yield**s values for iteration, or an object that 
+          on demand (via call to **[Symbol.iterator]** produces such an expression. (In ES6, native collection 
+          types based on **Array**, **Map**, and **Set** support lazy iteration.)
+
+          This construct steps through each result of an _iterable expression_, passing it through a block 
+          of code via the **it** pronoun.  If an **else** clause is present, that code is executed only if there is 
+          no iteration. 
+
+          Even though generators don't provide a key to match the value, when using a generator **iterate** 
+          nevertheless provides **key**, giving you the row number of each value returned. 
+
+              set seen to new ~Set 
+              seen.add 'horse'
+              seen.add 'pig'
+              seen.add 'horse'
+              iterate seen
+                debug '$\{key} - $\{it}'
+  
+              > 0 - horse
+              > 1 - pig
+
+          #### iterate ... using
+
+          This variation calls the given function with two parameters, the iteration value and the current row number:
+
+              set fruit list Apple, Banana, Citron, Durian
+              set SeeFunctionParameters to task
+                debug $$
+      
+              iterate (fruit iterate) using SeeFunctionParameters
+
+              > { '0': 'Apple', '1': 0 }
+              > { '0': 'Banana', '1': 1 }
+              > { '0': 'Citron', '1': 2 }
+              > { '0': 'Durian', '1': 3 }
+
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.
+
+
+      'each':
+        subtitle 'object attribute enumeration'
+        summary '''
+          **Each** uses Javascript's `for-in` loop construct to iterate through an object's 
+          enumerable properties. It steps through each element of the collection, in arbitrary 
+          order, setting **it** and **key** variables, and executing the code block for each one. 
+          If the collection is empty, executes the (optional) **else** block instead. 
+        detail '''
+          Example:
+          
+              set friend to friends | first
+              each friend
+                debug `$\{key}: $\{it}
+              else
+                debug `You have no friends.
+
+              > name: Jon
+              > age: 19
+              > cat: true
+              > dog: true
+              > province: QC
+  
+          Recall that you can rename **it** and **key** with the **as** clause:
+
+              each friend as value, field
+                debug `$\{field}: $\{value}
+
+          #### each ... using
+
+          **Each** can also call out to a function with the **each using** variation.
+
+              set handler to task given value, field, collection
+                debug `$\{field}: $\{value}
+  
+              each friend using handler
+
+          The function is called for each attribute of the collection with three parameters:
+
+           - attribute value (e.g. __it__)
+           - attribute name (e.g. __key__)
+           - reference to the collection itself
+
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.
+
+
+      'index':
+        subtitle 'custom order iterator'
+        summary '''
+          __Index__ iterates through an array or object sequentially using a separately provided collection of 
+          keys. The index is stepped through one row at a time, and the value of the object with that index is
+          presented in the enclosed block of code.
+        detail '''
+          You provide a collection, and the index, separated by a comma.
+          
+              index [collection], [index]
+          
+          In pseudo-code, this happens:
+          
+              ply index as key
+                with collection\key as it
+                  [ code ]
+                  
+          A real example:
+          
+              set fruit to traits a Apple, b Banana, c Cherry
+              index fruit, list b, c, a, c
+                debug it
+
+              > Banana
+              > Cherry
+              > Apple
+              > Cherry
+          
+          It is relatively easy to synthesize the function of __index__ using a normal iterator and __with__, 
+          nevertheless it is such a common pattern it makes sense to abstract it slightly for better clarity.
+          
+          __Index__ can accept an iterator as the index, in which case it will be stepped through until it is
+          exhausted (or you  __break__ out of the loop).
+          
+          If the index requests a key that does not exist in the collection, __undefined__ is presented to the block.
+          In other words, missing values are neither skipped nor thrown as an error.
+          
+          #### index using
+          
+          __Index__ also offers the __using__ variant, where a function is called rather than a block of code executed.
+          
+              set tally blank
+              set Tally to task as name
+                inc tally\name
+                
+              set fruit to traits a Apple, b Banana, c Cherry
+              index fruit, list b, c, a, c
+                Tally it
+
+              debug tally
+              
+              > { Banana: 1, Cherry: 2, Apple: 1 }
+          
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.
+
+
+      'ply':
+        subtitle 'iterate over an array-like collection'
+        summary '''
+          The **ply** iterator sequentially steps through all elements in an _array-like_ collection; 
+          it works on any object that has a **length** trait.  
+          It accesses numeric traits from 0 to **length**-1, sending each trait value to the code 
+          block or function. If **length** is 0, the **else** clause is invoked instead.
+        detail '''
+          The trait value is captured in the **it** pronoun, and the trait number is captured as **key**.
+
+              ply fruit 
+                debug '$\{key}: $\{it}'
+              else
+                debug 'There is no fruit.'
+  
+              > 0: Apple
+              > 1: Banana
+              > 2: Citron
+
+          #### ply ... using
+
+          **Ply** can also call out to a function with the **ply using** variation.
+
+            set handler to task given value, field, collection
+              debug `$\{field}: $\{value}
+  
+            ply fruit using handler
+
+          The function is called for each element of the array with three parameters:
+
+           - element value (__it__)
+           - element index # (__key__)
+           - a reference to the array itself
+
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.
+
+
+      'while':
+        subtitle 'loop over a block of code while an expression is true'
+        summary '''
+          Executes the code block repeatedly, as long as the expression is true.
+        detail '''
+          The basic **while** variation performs the test first, so there is a chance the code will not execute. 
+          The **dowhile** variation executes the block first, then performs the test.
+
+              while false
+                debug 'You will never see this.'
+  
+              dowhile false
+                debug 'You will see this once.'
+
+          **While** makes its value available for use as **it**, as below. 
+
+              while file.NextLine()
+                @story.push it
+
+          **Dowhile** _does not_ use **it**, because the expression is not evaluated until after the first pass 
+          through the code, thus the first **it** result would always be **undefined**.
+
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.
+
+      
+      'until':
+        subtitle 'loop over a block of code while an expression is false'
+        summary '''
+          Executes the code block repeatedly, as long as the expression is false. This is essentially 
+          a **while** statement with the test inverted.
+        detail '''
+          The basic **until** variation performs the test first, so there is a chance the code will not execute. 
+          The **dountil** variation executes the block first, then performs the test.
+
+              until true
+                debug 'You will never see this.'
+  
+              dountil true
+                debug 'You will see this once.'
+
+          **Until** _does not_ make its test value available for use as **it**. Because the code block 
+          only executes when the test value is _falsy_, there’s really no point.
+
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.
+
+      
+      'dowhile':
+        subtitle 'while variant that always executes the loop once'
+        summary '''
+          Functions just like the __while__ loop, except that the block of code is always executed once _first_,
+          before the test.
+        detail '''
+          Check out these wacky examples.
+
+              dountil true
+                debug 'Hello, World!' 
+  
+              dowhile false
+                debug 'Hello, World!'
+
+          Note there's no space in there. It's __dowhile__ and __dountil__. Makes parsing easier when it's one word.
+
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.  See __while__ for more.
+      
+
+      'dountil':
+        subtitle 'until variant that always executes the loop once'
+        summary '''
+          Functions just like the __until__ loop, except that the block of code is always executed once _first_,
+          before the test.
+        detail '''
+          I could duplicate text here or just refer you to __dowhile__ and __while__.  Which would you like?
+          
+
+      'break':
+        subtitle 'exit a loop or switch case'
+        summary '''
+          To exit a loop, iterator or switch case before its natural end, use the **break** keyword. 
+        detail '''
+          As in:
+
+              ply collection
+                unless FileExists(collection)
+                  break
+              
+          or ..
+              
+              switch choice
+              case 'exit'
+                if exiting
+                  break
+                set exiting true
+                ...
+          
+          or ...
+
+              count 5
+                debug it
+                if it=2 
+                  debug 'Nevermind...'
+                  break
+  
+              > 1
+              > 2
+              > Nevermind…
+
+  
+      'continue':
+        subtitle 'shortcut to the next iteration of a loop'
+        summary '''
+          In a loop or otherwise iterating block of code, **continue** short-cuts the remaining code in 
+          the block, causing the loop to continue its next iteration immediately.
+        detail '''
+          An example:
+          
+              count 10
+                unless key % 2
+                  continue
+                debug key
+  
+              > 1
+              > 3
+              > 5
+              > 7
+              > 9
+
+  
+      'count':
+        subtitle 'numerically controlled looping'
+        summary '''
+          In this most basic kind of loop, a block of code is executed a certain number of times with a counter
+          keeping track of iteration count. More complexity is available if needed.
+        detail '''
+          Specifically designed as an integer iterator for list elements, **count** always counts 1 at a time 
+          (unless a **step** value is provided), and its highest value is always the step value less than the 
+          high value provided (both when counting up and down). 
+          
+          To reiterate, **count** _never_ outputs the high value.
+          
+          Variants:
+          
+              count [low expr], [high expr] ( as [counter ident] )
+              count [low expr], [high expr], [step amount expr] ( as [counter ident] )
+
+              countdown [high expr] ( as [counter ident] )
+              countdown [high expr], [low expr] ( as [counter ident])
+              countdown [high expr], [low expr],  [step expr] ( as [counter ident])
+
+          **Count** uses the pronoun **counter** for the value.
+
+              count 10
+                debug counter                
+              .. counts from 0 to 9 
+  
+              count 5, 10
+              ... numbers 5 to 9
+  
+              countdown 10 as i
+              ... numbers from 9 to 0
+  
+              countdown 25, 15
+              ... numbers 24 to 15
+  
+              count 0, 50, 10
+              ... 0, 10, 20, 30, 40
+  
+              countdown 45, 0, -10
+              ... 35, 25, 15, 5
+
+          When using a step with **count down**, be sure that the step expression is negative, otherwise an infinite loop will result.
+ 
+              count aList.length
+                debug 'List element $\{counter} is $\{aList[counter]}'
+              else
+                debug 'The list is empty.'
+
+          The optional **else** clause is executed instead of the main block if the **count** range length computes to 0 (or less). 
+
+          You can use __break__ to exit out of the loop prematurely, and __continue__ to shortcut to the start. 
+          See the documentation on these terms for more.  
+
+
+      'countdown':
+        subtitle 'numerically controlled looping in reverse'
+        summary '''
+          Very similar to __count__ except that __countdown__ is designed to operate with a negative step. That is,
+          the first value will be higher than the last value.
+        detail '''
+          See the entry for __count__ for details.
+    
 
 
