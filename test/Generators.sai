@@ -24,7 +24,7 @@ Counter process given start, stop, delta
       set start + delta
 
 
-Execute task
+Execute promise
 
   set Twice to process given a
     yield a
@@ -134,6 +134,9 @@ Execute task
       set b + k
     iterate: 1, 2, 3; |iterate using countb
     return b
+  
+  resolve
+  
   
 Fudge task
   nop

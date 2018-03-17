@@ -21,41 +21,48 @@ docs get
 
 // STATE HANDLER
 
-StateConstruct task as work
+StateConstruct task expects $clauses, $tools
 
   set
-    tools to work's tools
-    header to '''
-      var ^{temp}=function (){
-      var _goto,_then;
-      var $states={
+    tools: '''
+      var $state$getfn=function(states,state) {
+        return $AI.assert(states[state],"SAI runtime: STATE "+state+" does not exist; available states are "+$AI.keys_op(states).join(','));
+      }
 
-    header from tools.replacer header, fields temp undefined
+    header to '''
+      var ${from $tools.addlocal}=function(){
+        var _goto,_then;
+        var $states={
 
     trailer '''
       }
-        var $getstatefn=function(state) {
-          return $AI.assert($states[state],"SAI runtime: STATE "+state+" does not exist; available states are "+$AI.keys_op($states).join(','));
-        }
         _goto=function(state){
-          var statefn=$getstatefn(state);
-          var fn=undefined;
+          var fn=$state$getfn($states,state);
           var l=arguments.length, args=new Array(l-1);
           for (var li=1; li<l; li++) args[li-1]=arguments[li];
-          fn=function(){statefn.apply(undefined,args)};
-          setImmediate(fn);
+          setImmediate(function(){fn.apply($,args)});
         };
         _then=function(state){
-          var statefn=$getstatefn(state);
-          return function(){statefn.apply(undefined,arguments);};
+          var fn=$state$getfn($states,state);
+          var l=arguments.length, args=new Array(l-1);
+          for (var li=1; li<l; li++) args[li-1]=arguments[li];
+          return function(){
+            var l=arguments.length;
+            if (l) { 
+              var o=args.length;
+              args.length=l+o;
+              for (var li=0; li<l; li++) args[o+li]=arguments[li];
+            }
+            fn.apply($,args);
+          };
         };
-        _goto(${work's clauses.0's args.expr});
+        _goto(${$clauses.0's args.expr});
       }();    
 
     names blank
     states empty
 
-  each work's clauses
+  each $clauses
 
     switch .type
     case 'state.exproutblock'
@@ -65,7 +72,7 @@ StateConstruct task as work
         return: error 'SAI compile: duplicate state ${name} in STATE construct'
       inc names\name
       
-      set block from tools.tasker:
+      set block from $tools.tasker:
         'as' .args.out
         block .args.block
         kind 'function'
@@ -74,11 +81,11 @@ StateConstruct task as work
     else
       return: error "Unhandled construct type ${.type} in StateConstruct"
     
-  tools.addlocal '_goto'
-  tools.addlocal '_then'
+  $tools.addlocal '_goto'
+  $tools.addlocal '_then'
   
   set body to "${header}${join'd states ','}${trailer}"
-  return: body body
+  return: body body, tools tools
 
 
 
@@ -219,10 +226,27 @@ Documents task
           execution of the next state.  (This trickery should be essentially invisible, but just in case you
           need to know how, this is how.)
 
+          ##### Parameters with __goto__
+
+          __goto__ will pass any provide parameters on to the state function:
+          
+              state 'start' 
+                debug "You're lost in a cave!"
+                dountil maze\\pos is 'empty'
+                  set pos from Rand size
+                goto 'move', pos            // we're passing the new position here as POS
+  
+              state 'move' given newpos        // and it is recevied here as NEWPOS
+                inc moves
+                set position from Valid newpos
+                debug " move \${moves} ... now in room \${position}"
+                goto maze\\position
+
           #### then
 
-          Similarly, __then__ is a function that immediately jumps to the next state rather than rescheduling
-          another callback.  (Don't use __then__ except in callbacks, you'll trash the stack.) 
+          Similarly, __then__ is a function that _creates a function_ that immediately jumps to the next 
+          state rather than rescheduling another state transition. In other words, __then__ is a callback
+          creator.
           
           Use __then__ like this:
           
@@ -233,5 +257,70 @@ Documents task
                       debug dsc
           
                 Timer 800, !then 'step'
+
+              state 'step' 
+                goto 'move', position + !Step
           
-          This example does some housekeeping, delays for 800ms, _then_ the timer callback jumps to the next state.
+          This example does some housekeeping, delays for 800ms, _then_ the timer callback jumps to the 
+          next state.
+
+          ##### Parameters with __then__
+          
+          Because __then__ creates a callback function, there are _two_ opportunities for arguments to be 
+          passed to the next state.
+          
+          1. When __then__ is executed to create the callback.
+          2. When the callback is executed some later time.
+          
+          In the above example,
+          
+              Timer 800, !then 'step'
+    
+          This is the first opportunity for parameters to be passed.
+          
+          To make it clear, let's add one:
+
+              ...
+                Timer 800, !then 'step', !Step
+
+              state 'step' given stepValue
+                goto 'move', position + stepValue
+          
+          Parameters added at callback creation time are resolved immediately, even though they're not
+          used until later. These parameters are invisibly bound into the callback function that is 
+          created. In the above example, `stepValue` is calculated 800ms before the state change to `step`
+          occurs; this step value waiting in the callback defined when the `Timer` function is invoked.
+          
+          The second opportunity is when the callback is actually made. In our example, let's say the timer 
+          wishes to pass the real time it was resolved. And we want that data. But we also want our 
+          `stepValue`, which was passed in earlier.
+          
+          Fortunately, we can have both pieces of data. The callback function that __then__ creates will
+          append any arguments it receives _as a callback_ to the arguments bound to it _on callback 
+          creation_. So we now have two parameters to our `step` state. 
+
+              state 'step' given stepValue, resolvedTime
+                debug "Timer resolved at \${resolvedTime}"
+                goto 'move', position + stepValue
+  
+          Just to make it clear: `stepValue` was calculated and passed into the callback generator when we 
+          started the timer, and `resolvedTime` was calculated and passed into the callback when
+          the timer resolved. The callback concatentated them into one set of arguments for the call to
+          the `step` state.
+          
+          If you unroll this, it looks something like this:
+          
+              then 'step', stepValue
+               .. becomes ..
+              callback invoking 'step' with stepValue
+               .. which _later_ is invoked as ..
+              callback resolvedTime
+               .. which becomes ..
+              invoke 'step' with stepValue, resolvedTime
+              
+          This works with any number of arguments provided at callback creation and resolution. Just be 
+          sure you know how many of each there are when you pick them up in the _state handler_.
+
+          I hope that's clear. And useful!
+          
+          

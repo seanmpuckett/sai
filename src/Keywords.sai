@@ -1561,11 +1561,11 @@ Documentation task
           
           You can use any number of indirections on the object to be verb'd:
           
-              set index to join'd library\\reference\\category.titles '\n'
+              set index to join'd library\\reference\\category.titles '\\n'
 
           I find this much clearer than:
           
-              set index from library\\reference\\category.titles.join '\n'
+              set index from library\\reference\\category.titles.join '\\n'
           
           Because as you're reading the code, you see WHAT action will take place first, then you learn
           the subject and object and how they relate to each other.  Hey if you don't like it,
@@ -1709,10 +1709,10 @@ Documentation task
         detail '''
           The following are functionally identical:
 
-            if error 
-              return -1
+              if error 
+                return -1
   
-            if error .. return -1
+              if error .. return -1
           
           Don't use the caboose unless it will help make your code clearer.
 
@@ -2078,7 +2078,7 @@ Documentation task
               debug friend['name']
               debug friend['na'+'me']
               debug friend[field]
-              debug friend\field
+              debug friend\\field
   
               // prints 'Sara' five times.
 

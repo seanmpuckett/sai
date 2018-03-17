@@ -5,7 +5,7 @@ inherit list
   Harness
 
 
-Execute task
+Execute promise
 
   @Test 'null', task
     return not (null is undefined) and (null=undefined) and (typeof null = 'object')
@@ -122,6 +122,10 @@ Execute task
     set a self | by it asc
     return a is null
 
+  resolve
+  
+
 Iterator process
   yield 1
+  
   

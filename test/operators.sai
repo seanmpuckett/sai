@@ -4,7 +4,7 @@ object Operators
 inherit list
   Harness
 
-Execute task
+Execute promise
 
   // returns true for odd iterations, undefined for even including 0
   set OddTrue to process
@@ -449,4 +449,5 @@ Execute task
     set a to b | expects traits a number, b string
     return a.length=0
   
-    
+  resolve
+  

@@ -17,7 +17,7 @@ Instantiate task
   
   set onceler to singleton Onceler
 
-Execute task
+Execute promise
   
   @onceler.Tally
   
@@ -52,3 +52,6 @@ Execute task
     b.Tally
     return a.tallies is 3
     
+    
+  resolve
+  

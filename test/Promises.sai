@@ -4,36 +4,126 @@ object Promises
 inherit:
   Harness
 
-Execute task
-  nop
+Timer task given d, f
+  ~setTimeout f, d
+
+TimerExtra task given d, e, f
+  set f2 to task
+    f e
+  ~setTimeout f2, d
+
+Execute promise
+  promising
+
+  then @Verify "simple promise", promise
+    promising Resolver
+    then
+      resolve true
+    finalized
   
-  // Isn't much of a test bc harness doesn't work with async stuff yet. HAH
-
-  //debug @TestPromise.toString()
-  
-  //@TestPromise
-
-
-TestPromise task
-
-  set 
-    willIGetNewPhone promise given isMomHappy
-      if isMomHappy
-        resolve:
-          brand 'Wangdoodle'
-          colour 'paisley'
+  then @Verify "simple rejection", promise
+    set success false
+    promising Rejecter
+    catch
+      set success true
+    then
+      if success
+        resolve success
       else
-        reject new ~Error 'Mom is not happy.'
-      
-    showOff promise given phone
-      with phone
-        debug 'Hey friend, I have a new ${.colour} ${.brand} phone'
+        reject success
+    finalized
+
+  then @Verify "resolve value propogate", promise
+    promising Resolver 7
+    then
+      unless $ is 7
+        reject $
+      resolve $
+    finalized
     
-    askMom task given happiness
-      chain from willIGetNewPhone happiness
-        then showOff
-        catch promise given e
-          debug '${e}\nNo phone for you.'
-        
-  askMom true
-  askMom false
+  then @Verify "reject value propogate", promise
+    promising Rejecter 7
+    then
+      reject "failed to reject"
+    catch
+      unless $ is 7
+        reject $
+      resolve $
+    finalized
+    
+
+  then @Verify "simple states", promise
+    state "a"
+      goto "b"
+    state "b"
+      goto "c"
+    state "c"
+      resolve true
+    Timer 100, task
+      reject "didn't resolve fsm fast enough"
+
+  then @Verify "then states", promise
+    state "a"
+      Timer 1, !then "b"
+    state "b"
+      resolve true      
+    Timer 100, task
+      reject "didn't resolve fsm fast enough"
+      
+  then @Verify "state goto parameters", promise
+    state "a"
+      goto "b", 5
+    state "b" given val
+      unless val is 5
+        reject val
+      resolve val 
+    Timer 100, task
+      reject "didn't resolve fsm fast enough"
+      
+  then @Verify "state then parameters 1", promise
+    state "a"
+      Timer 1, !then "b", 5
+    state "b" given val
+      unless val is 5
+        reject val
+      resolve val 
+    Timer 100, task
+      reject "didn't resolve fsm fast enough"
+      
+  then @Verify "state then parameters 2", promise
+    state "a"
+      TimerExtra 1, 10, !then "b"
+    state "b" given val
+      unless val is 10
+        reject val
+      resolve val 
+    Timer 100, task
+      reject "didn't resolve fsm fast enough"
+      
+  then @Verify "state then parameters both", promise
+    state "a"
+      TimerExtra 1, 10, !then "b", 5
+    state "b" given val1, val2
+      set msg "5:${val1} & 10:${val2}"
+      unless val1 is 5 and val2 is 10
+        reject msg
+      resolve msg
+    Timer 100, task
+      reject "didn't resolve fsm fast enough"
+      
+
+
+
+  then 
+    debug "done promise tests"
+  finalized
+
+  
+Resolver promise given v
+  ~setImmediate task
+    Timer 10, task
+      resolve v
+
+Rejecter promise given v
+  ~setImmediate task
+    reject v

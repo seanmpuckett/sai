@@ -5,7 +5,7 @@ inherit list
   Harness
 
 
-Execute task
+Execute promise
 
   set child to create 'ITChild'
   
@@ -24,4 +24,6 @@ Execute task
   @Test 'isof parent', task
    return child isof 'ITParent'
    
+  resolve
+  
   

@@ -5,7 +5,7 @@ inherit:
   Harness
 
 
-Execute task
+Execute promise
 
   set T to task 
     return true
@@ -78,4 +78,6 @@ Execute task
 
 
     
-    
+  resolve
+  
+  

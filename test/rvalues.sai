@@ -6,7 +6,7 @@ inherit list
 
 
 
-Execute task
+Execute promise
 
 
   @Test '@.', task
@@ -111,3 +111,5 @@ Execute task
     return b[a] = 1
 
 
+  resolve
+  

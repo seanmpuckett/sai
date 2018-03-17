@@ -1389,6 +1389,7 @@ RLocal
 Parameter
  = '$$' { return [['arguments','']]}
  / '$' v:IdentifierProto { return [[ 'parameters','' ],['attribute',v]] }
+ / '$' v:Number { return [[ 'parameters','' ],['index',v]] }
  / '$' { return [[ 'parameters','' ]]}
 
 LiteralElm

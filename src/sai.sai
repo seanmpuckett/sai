@@ -96,7 +96,6 @@ instance:
 
 given:
   validSyntax: 
-    keywords blank
     
     constructs:
       'block'         '[indent code block]'
@@ -476,7 +475,7 @@ GetParser task
         set location to number trial.1 
 
       exists location
-        throw new Error '''
+        set error.message to '''
           SAI: Syntax error <HERE> in\n${meta}
           
           ${Contextualize(source, location)}
@@ -484,12 +483,13 @@ GetParser task
           ${error.message}
           
       else
-        debug error
-        throw new Error '''
+        set error.message to '''
           SAI: Error creating prototype in\n${meta}
           
-          ${error}
+          ${error.message}
           
+      throw error
+      
     if config.options.beautify
       set js from Beautify js, fields
         indent_size 2
@@ -662,20 +662,20 @@ GetSource task as name
   set source '''
     #!/usr/bin/env node
     
-    \/\/ Javascript source for ${name} transpiled by SAI
-    \/\/
+    // Javascript source for ${name} transpiled by SAI
+    //
     
     "use strict";
     
-    var prototype=new function() ${'{'}
-    this.Constructor=function()${'{}'};
-    this.__tobelocked=[];
-    this.__tobefrozen=[];
-    this.__contracts=[];
-    this.__unverified=true;
-    this.isof=${'{}'};
-    return this;
-    ${'}'}();
+    var prototype=new function() {
+      this.Constructor=function(){};
+      this.__tobelocked=[];
+      this.__tobefrozen=[];
+      this.__contracts=[];
+      this.__unverified=true;
+      this.isof={};
+      return this;
+    }();
     var $AI=${islib ?? 'prototype' :: 'require("sai-library")'};
     // Generated code follows
     

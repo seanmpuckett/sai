@@ -6,7 +6,7 @@ inherit list
 
 
 
-Execute task
+Execute promise
 
   @Match 'count to 4', 6, task
     set a to 0
@@ -455,3 +455,5 @@ Execute task
       return false
     return b.length is 1 and b.0.0 is 0 and b.0.1 is 1
     
+  resolve
+  

@@ -4,7 +4,7 @@ object SetStatement
 inherit list
   Harness
 
-Execute task
+Execute promise
 
   @Match 'set 1', 1, task
     set a to 1
@@ -287,3 +287,5 @@ Execute task
         return false
     return a=1 and b=2
   
+  
+  resolve

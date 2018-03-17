@@ -11,15 +11,16 @@ manifest get
       'promising':
         repeats false
         clauses: 
-          promising: #verb, #outblock
+          promising: #verb, #outblock, #none
           then: #verb, #outblock
           catch: #verb, #outblock
           finally: #verb, #outblock
           all: #exprs, #none
           any: #exprs, #none
-          resolving: #exprs, #none
-          rejecting: #exprs, #none
-          finalizing: #none
+          adopt: #exprs
+          resolved: #exprs, #none
+          rejected: #exprs, #none
+          finalized: #none
         handler bind PromisingConstruct
 
 
@@ -32,8 +33,8 @@ docs get
 PromisingConstruct task as work
 
   with ( work's clauses | last ).clause
-    unless it is 'finally' or it is 'catch' or it is 'rejecting' or it is 'finalizing'
-      return: error "SAI compiler: final clause in PROMISING must be CATCH, FINALLY, REJECTING or FINALIZING, not ${toUpperCase'd it}"
+    unless it is 'finally' or it is 'catch' or it is 'rejected' or it is 'finalized'
+      return: error "SAI compiler: final clause in PROMISING must be CATCH, FINALLY, REJECTED or FINALIZED, not ${toUpperCase'd it}"
 
   set tasker to task  
     set options:
@@ -47,55 +48,70 @@ PromisingConstruct task as work
         postface 'if ($_resolve) return $_resolve();})'
     return from work's tools.tasker options
 
-  set body 'var $tthen=function(t){if (!t || !t.then) throw new Error("SAI Runtime: THEN should be followed by a verb returning a promise (or an indented block of code)."); return t;};\n'
+  set tools: '''
+    var $promising$then=function(t,name){
+//      if (typeof t === "function") t=t();
+      if (!t || !t.then) return Promise.resolve(t);
+//      throw new Error("SAI Runtime: "+(name.toUpperCase())+" is looking for an active Promise."); 
+      return t;
+    };
+  
+  set body ''
   
   each work's clauses
   
     switch .type
 
     case 'promising.verb'
-      set body + "$tthen(${.args.verb})"
+      set body + "$promising$then(${.args.verb},'promising')"
 
     case 'promising.outblock'
       set block from tasker: args .args, #ispromise, #execute
-      set body + "(${block})"
+      set body + "(${block?''})"
+
+    case 'promising.none'
+      set body + "Promise.resolve()"
 
     case 'then.verb'
-      set body + ".then(function(p){return $tthen(${.args.verb});})"
+      set body + ".then(function(p){return $promising$then(${.args.verb},'then');})"
 
     case 'then.outblock'
       set block from tasker: args .args, #ispromise
       set body + ".then(${block})"
 
     case 'catch.verb'
-      set body + ".catch(function(p){return $tthen(${.args.verb});})"
+      set body + ".catch(function(p){return $promising$then(${.args.verb},'catch');})"
 
     case 'catch.outblock'
       set block from tasker: args .args
       set body + ".catch(${block})"
 
     case 'finally.verb'
-      set body + ".finally(function(p){return $tthen(${.args.verb});})"
+      set body + ".finally(function(p){return $promising$then(${.args.verb},'finally');})"
 
     case 'finally.outblock'
       set block from tasker: args .args
       set body + ".finally(${block})"
 
-    case 'resolving.exprs'
+    case 'resolved.exprs'
       set body + ".then(function(p){return $_resolve(${.args.exprs.1});})"
       
-    case 'resolving.none'
+    case 'resolved.none'
       set body + ".then(function(){return $_resolve.apply(null,arguments);})"
       
-    case 'rejecting.exprs'
+    case 'rejected.exprs'
       set body + ".catch(function(p){return $_reject(${.args.exprs.1});})"
 
-    case 'rejecting.none'
+    case 'rejected.none'
       set body + ".catch(function(){return $_reject.apply(null,arguments);})"
       
-    case 'finalizing.none'
+    case 'finalized.none'
       set body + ".then(function(){return $_resolve.apply(null,arguments);})"
       set body + ".catch(function(){return $_reject.apply(null,arguments);})"
+
+    case 'adopt.exprs'
+      set body + '''
+        .then(function(){return $promising$then(${.args.exprs.1},'adopt')})
 
     case 'all.exprs'
       set body + ".then(function(p){return Promise.all(${.args.exprs.1});})"
@@ -108,7 +124,7 @@ PromisingConstruct task as work
 
 
   set body + ';\n'
-  return: body body
+  return: body body, tools tools
 
 
 
@@ -120,42 +136,46 @@ Documents task
         summary '''
           The __promising__ construct lends clarity to asynchronous operations using `promise`-based functions. 
         synref '''
-          promising [active promise]
+          promising [promise generator]
             resolve/reject [parameters]
            - or -
           promising
             [code that is turned into a promise]
             resolve/reject (parameters)
-
+           - or -
+          promising // with nothing following
+          
           ... followed by one or more of ...
 
-          then [active promise]
+          then [promise generator]
            - or -
           then (promise parameters)
             [code that is turned into a promise]
             resolve/reject (parameters)
 
-          catch [active promise]
+          catch [promise generator]
            - or -
           catch (promise parameters)
             [code that is turned into a promise]
             resolve/reject (parameters)
 
-          finally [active promise]
+          finally [promise generator]
            - or -
           finally (promise parameters)
             [code that is turned into a promise]
             resolve/reject (parameters)
 
+          adopt [active promise]
+
           any [array of active promises]
 
           all [array of active promises]
 
-          rejecting (expression)
+          rejected (expression)
 
-          resolving (expression)
+          resolved (expression)
 
-          finalizing 
+          finalize 
 
         detail '''
           In one sense __promising__ is just a bit of syntactical sugar for using `chain` 
@@ -224,6 +244,18 @@ Documents task
           yourself, perhaps as part of some global object. But more likely you'd just find 
           a package on npm that offers promisified fetchers ai Because you're smart.
 
+          ##### promising with no block or parameter
+          
+          If you have an already-active promise or array of promises that you'd like to 
+          use with __adopt__, __all__, or __any__ then just start the structure with
+          __promising__ with no parameter or block:
+          
+              promising
+              adopt promiseYouGotFromElsewhere
+              catch
+                debug "uh oh"
+
+
           #### then 
 
               then [verb expression returning an active Promise]
@@ -243,7 +275,7 @@ Documents task
               then
                 resolve from db.dropDatabase dbName
       
-          Notice how the second form uses `from` to invoke the function before resolving 
+          Notice how the second form uses `from` to invoke the function before resolved 
           the value, while the first form just assumes you'll be wanting to execute a 
           function so makes the invokation syntax implicit.
 
@@ -278,6 +310,27 @@ Documents task
       
               catch debug $
 
+          #### adopt
+          
+              adopt [active promise]
+              
+          Use __adopt__ when you have been given a Promise object (rather than a Promise-generating
+          function) and would like to wait on it. 
+          
+          In this example, the test suite doesn't know if it's going to get a promise or not:
+
+              set maybePromise from suite.Execute
+              unless ?maybePromise.then            // a `.then` attribute is a good sign of a Promise
+                debug "Tested \${it} normally"      // in this case we didn't get one, so don't wait for it
+              else
+                promising                          // but if we did, we'll adopt and wait for resolution
+                adopt maybePromise
+                then  
+                  debug "Tested \${it} promise"
+                catch
+                  nop
+          
+          
           #### catch 
 
               catch [verb expression returning an active Promise]
@@ -348,11 +401,11 @@ Documents task
           will wait to resolve for everything to be finished, __any__ will resolve when the first 
           Promise it is monitoring does so. Like __all__, however, it __rejects__ on the first Promise to do so.
 
-          #### rejecting 
+          #### rejected (only within a __promise__ function)
 
-              rejecting [expression]
+              rejected [expression]
                - or -
-              rejecting
+              rejected
 
           So you might be wondering how do you pass the results of a __promising__ construct to a 
           Promise that contains it. After all, you cannot __resolve__ or __reject__ an outer promise 
@@ -361,26 +414,25 @@ Documents task
           __Rejecting__ is internally equivalent to a __catch__ clause, in that any error conditions 
           are caught by it. However, it then marks the Promise _containing_  the __promising__ construct as rejected. 
 
-          The bare word version of __rejecting__ sends the error value it received to the containing 
+          The bare word version of __rejected__ sends the error value it received to the containing 
           Promise, while the version with an expression allows you to customise it.
 
-          #### resolving
+          #### resolved (only within a __promise__ function)
 
-              resolving [expression]
+              resolved [expression]
                - or -
-              resolving
+              resolved
 
-          Similarlly, __resolving__ will resolve a containing Promise with either an expression 
+          Similarlly, __resolved__ will resolve a containing Promise with either an expression 
           or a passed-on value.
     
-          #### finalizing
+          #### finalized (only within a __promise__ function)
 
-              finalizing [expression]
-               - or -
-              finalizing
+              finalized
     
-          And, most useful, the __finalizing__ clause will take the current state of the __promising__ 
+          And, most useful, the __finalized__ clause will take the current state of the __promising__ 
           clause it is a part of and transfer it to the containing promise, kind of like a `return` statement. 
 
-
+          Finalized doesn't take a value because it passes on whatever value the last promise state has. If you
+          need to override your return values you'll need to do so with rejected and/or resolved.
         

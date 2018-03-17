@@ -6,11 +6,10 @@ inherit:
 
 
 
-Execute task
+Execute promise
 
   // first section tests low level functionality, not the parser
   
-
   set friends to:
     :name 'Sara', age 23, #cat, province 'ON'
     :name 'John', age 19, #cat, #dog, province 'ON'
@@ -28,3 +27,6 @@ Execute task
     return true
   
 
+  resolve
+  
+  

@@ -1,5 +1,18 @@
 ## Change log
 
+
+### 0.2.1
+
+#### Enhancements
+
+ - updated `finalizing` `rejecting` and `resolving` to be `finalized`, `rejected` and `resolved`. These are part of the __promising__ construct (which is still `promising`). The gerund didn't make sense to describe something that was complete (or, in grammar speak, perfect).
+ - also enhanced the promise value checker to wrap non-promise values in a `Promise.resolve` wrapper. I think that's how it's supposed to work. I am still disturbed by some aspects of the promise system but it is getting better.
+ - updated `then` in the `state` construct to pass along arguments from both creation and callback. There's documentation.
+ - added `adopt` clause to `promising` construct to make dealing with pre-existing promises less ugly.  May retire the extra clauses on the `promise` creation keyword as I believe everything that needs to be done is now handled more cleanly by the construct.
+ - more improvements to error handling, propogating errors rather than throwing new ones.  
+ - upgrades to test suite to handle asynchronous code paths, which means we'll now be doing continuous integration on all of that garbage.  Once the tests are written.
+
+ 
 ### 0.2.0
 
 #### Breaking Changes

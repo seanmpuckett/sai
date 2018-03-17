@@ -6,8 +6,7 @@ inherit list
 
 
 
-Execute task
-
+Execute promise
 
   @Test 'with 1', task
     with true
@@ -20,8 +19,6 @@ Execute task
       with .b
         return it is 1
     return false
-    
-
 
   @Test 'if true', task
     if true
@@ -237,3 +234,7 @@ Execute task
     catch
       return true
     return false
+    
+  resolve
+  
+  

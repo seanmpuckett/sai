@@ -12,6 +12,9 @@ instance:
   fail empty
   ids blank
 
+Timer task given d, f
+  ~setTimeout f, d
+
 Instantiate task
 
   //@AnalyseParseTrace
@@ -36,21 +39,31 @@ Instantiate task
     Inheritance
 
   set startTime new ~Date
-  ply tests
-    try
-      set suite to create it @
-      suite.Execute
+
+  set pending tests | thru !promise
+    promising (create it @).Execute
+    then
+      debug "Test ${it} complete."
     catch
-      debug error
+      debug $
       push'd fail "Could not execute tests in ${it}"
+    finalized
       
-  set endTime new ~Date
-  debug 'Test time ${endTime-startTime}ms.'
+  promising 
+  all pending
+  then
+    set endTime new ~Date
+    debug 'Test time ${endTime-startTime}ms.'
+    if @fail.length
+      debug 'FAILED'
+      ply @fail
+        debug 'FAIL: ${it}'
+      ~process.exit 1
+    else
+      debug 'SUCCESS'
+  catch
+    debug $
+    debug "I am not sure how the promises failed."
+    
   
-  if @fail.length
-    debug 'FAILED'
-    ply @fail
-      debug 'FAIL: ${it}'
-    ~process.exit 1
-  else
-    debug 'SUCCESS'
+  

@@ -22,6 +22,19 @@ Log task
   set @ids[$] to true
 
 
+Verify promise given description, function
+  set description to '${@isa}: ${self}'
+  @Log description
+
+  promising function
+  then
+    debug "pass ${description} with: ${$}"
+    @pass.push description
+  catch
+    debug "fail ${description} with: ${$}"
+    @fail.push 'test "${description}" failed, reporting: ${$}\n\n${function.toString()}'
+  finalized
+
 
 Test task given description, function
   set description to '${@isa}: ${self}'

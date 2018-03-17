@@ -6,7 +6,7 @@ inherit list
 
 
 
-Execute task
+Execute promise
 
 
   @Test 'from', task
@@ -169,3 +169,5 @@ Execute task
       return g
     return from t 0,0,0,0,0,0,true
     
+  resolve
+  

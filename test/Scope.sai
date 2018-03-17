@@ -20,7 +20,7 @@ given:
   d true
   
 
-Execute task
+Execute promise
 
   @Test 'Scope variable a', task
     return @a and a
@@ -52,4 +52,5 @@ Execute task
       return error.toString().indexOf('when declaring') >= 0
     return false
     
-        
+  resolve
+  
