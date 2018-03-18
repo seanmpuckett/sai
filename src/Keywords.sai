@@ -858,22 +858,6 @@ Documentation task
           calls will return that same object.
 
 
-      'dec':
-        subtitle 'decrement verb'
-        summary '''
-          Decrements (reduces by 1) the value in the given variable.
-        synref '''
-          dec [var]
-        detail '''
-          Example:
-
-            set a to 2
-            dec a
-            debug a
-  
-            > 1
-
-
       'default':
         subtitle 'variable initialization'
         summary '''
@@ -907,57 +891,6 @@ Documentation task
           This checks to see if the calculation cache has a value for the given key, and if not, 
           calculates the value and assigns it to the cache.
     
-
-      'delete':
-        subtitle 'a verb that deletes variables'
-        summary '''
-          summary
-        synref '''
-          delete [variable]
-        detail '''
-          When called on a variable or traits, undefines the named variable or attribute(s) of a variable.
-
-              delete thisUnwantedValue
-              delete goodObject.unwantedAttribute
-
-          This just calls the underlying Javascript version of **delete**, with all the same rules and caveats.
-          
-          #### delete pipe operator
-          
-          The __delete__ pipe operator has advanced functionality, which see.
-          
-
-      'inc':
-        subtitle 'value increment'
-        summary '''
-          Increments (adds 1 to) the given variable.
-        synref '''
-          inc [var]
-        detail '''
-          As in:
-          
-              set a to 1
-              inc a
-              debug a
-  
-              > 2
-
-          The __inc__ statement has special behaviour around values that are _undefined_ or evaulate to _falsy_; when you increment one of these values, it becomes `1`.  For example:
-
-              set a to undefined
-              inc a
-              debug a
-    
-              > 1
-    
-          This is useful when tallying with an array, e.g. the following construct automatically initializes array elements the way the standard `++` operator does not, such that the `tally` object will contain a log of word usage.
-
-              set tally blank
-              every word
-                inc tally\it
-      
-          Note that __dec__ does not have similar initialization functionality.
-
 
       'is':
         subtitle 'equivalence test'
@@ -2193,37 +2126,6 @@ Documentation task
           Best to refer to good documentation on this elsewhere.
 
 
-      'adopt':
-        subtitle 'part of the promise keyword'
-        summary '''
-          Please read __promise__ for more.
-        synref '''
-          .. promise (given [parameters]) adopt [expression]
-        
-        detail '''
-          Intentionally left blank.
-
-
-      'all':
-        subtitle 'part of the promise keyword'
-        summary '''
-          Please read __promise__ for more.
-        synref '''
-          .. promise (given [parameters]) all [array-expression]
-        detail '''
-          Intentionally left blank.
-
-
-      'any':
-        subtitle 'part of the promise keyword'
-        summary '''
-          Please read __promise__ for more.
-        synref '''
-          .. promise (given [parameters]) any [array-expression]
-        detail '''
-          Intentionally left blank.
-
-
       'array':
         subtitle 'expression-oriented list literal'
         summary '''
@@ -3283,14 +3185,12 @@ Documentation task
         summary '''
           Wraps the code block in a Promise-like function shell. 
         synref '''
+          object 
           [identifier] promise ( as [parameter list] )
             [code block]
 
           .. promise ( as [parameter list] )
             [code block]
-          .. promise (given [parameters]) any [array-expression]
-          .. promise (given [parameters]) all [array-expression]
-          .. promise (given [parameters]) adopt [expression]
         detail '''
           Along with **resolve** and **reject**, forms a convenient bit of syntactic sugar for making 
           Promise-like functionality.
@@ -3351,37 +3251,6 @@ Documentation task
           So basically it throws a **Promise** wrapper around the function and allows you to use 
           **resolve** and **reject** as statements. (The $56 in there is housekeeping for the **trial** pronoun; 
           V8 optimizes unused assignments like this away.)
-
-          #### promise any
-
-              ..
-              then promise any urls into empty get(it) 
-              then promise given a, b any Timers
-              ..
-
-          Creates a promise that, given an array, resolves/rejects based on the results of first promise in the 
-          array to fulfill itself. That is, an __any__ promise is considered complete when _any_ of its 
-          components completes.
-
-          #### promse all
-
-              ..
-              then promise all urls into empty get(it) 
-              ..
-
-          Creates a promise that, given an array, waits until all of the promises in the array have resolved, 
-          or the first one rejects. That is, an __all__ promise will not resolve until all of its components 
-          have done so, or any of them have rejected.
-
-          #### promise adopt
-
-              ..
-              then promise adopt promisify(timer(500))
-              ..
-
-          Adopt creates a promise based on a single other promise and will not resolve/reject until that 
-          adopted promise does so. This is useful when chaining generated promises; something that is 
-          otherwise fairly difficult syntactically.
 
 
       'reference':

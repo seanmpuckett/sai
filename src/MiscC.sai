@@ -19,11 +19,101 @@ manifest get
         clauses:
           'with': #exproutblock
         handler bind MiscConstruct
+
+      'inc':
+        repeats false
+        clauses:
+          'inc': #rvalue
+        handler bind MiscConstruct
+
+      'dec':
+        repeats false
+        clauses:
+          'dec': #rvalue
+        handler bind MiscConstruct
+
+      'delete':
+        repeats false
+        clauses:
+          'delete': #rvalue
+        handler bind MiscConstruct
       
+
 
 docs get 
   return:
     'constructs':
+
+      'dec':
+        category 'keywords'
+        subtitle 'decrement verb'
+        summary '''
+          Decrements (reduces by 1) the value in the given variable.
+        synref '''
+          dec [var]
+        detail '''
+          Example:
+
+            set a to 2
+            dec a
+            debug a
+  
+            > 1
+
+
+      'delete':
+        category 'keywords'
+        subtitle 'a verb that deletes variables'
+        summary '''
+          summary
+        synref '''
+          delete [variable]
+        detail '''
+          When called on a variable or traits, undefines the named variable or attribute(s) of a variable.
+
+              delete thisUnwantedValue
+              delete goodObject.unwantedAttribute
+
+          This just calls the underlying Javascript version of **delete**, with all the same rules and caveats.
+          
+          #### delete pipe operator
+          
+          The __delete__ pipe operator has advanced functionality, which see.
+
+
+      'inc':
+        category 'keywords'
+        subtitle 'value increment'
+        summary '''
+          Increments (adds 1 to) the given variable.
+        synref '''
+          inc [var]
+        detail '''
+          As in:
+          
+              set a to 1
+              inc a
+              debug a
+  
+              > 2
+
+          The __inc__ statement has special behaviour around values that are _undefined_ or evaulate to _falsy_; when you increment one of these values, it becomes `1`.  For example:
+
+              set a to undefined
+              inc a
+              debug a
+    
+              > 1
+    
+          This is useful when tallying with an array, e.g. the following construct automatically initializes array elements the way the standard `++` operator does not, such that the `tally` object will contain a log of word usage.
+
+              set tally blank
+              every word
+                inc tally\it
+      
+          Note that __dec__ does not have similar initialization functionality.
+
+
     
     
       'orphan':
@@ -90,6 +180,15 @@ MiscConstruct task
     switch .type
     case 'orphan.none'
       set body 'var $=this;\n'
+
+    case 'inc.rvalue'
+      set body '${.args.rvalue}=(${.args.rvalue} || 0)+1;\n'
+      
+    case 'dec.rvalue'
+      set body '${.args.rvalue}--;\n'
+        
+    case 'delete.rvalue'
+      set body 'delete ${.args.rvalue};\n'
 
     case 'with.exproutblock'
       set

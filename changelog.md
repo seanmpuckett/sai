@@ -1,5 +1,18 @@
 ## Change log
 
+### 0.2.2
+
+#### Breaking changes
+
+ - The parser seemed to be intended to allow `set a 1, b 2`  which is no good because multiple side effects per line, so I took that out. It didn't seem to work anyway. And so confusing.
+ - Removed the `any` `all` and `adopt` modifiers to the `promise` creator. My feeling is these are better handled with the `promising` construct rather than by creating discrete promises. In any case, it's easy enough to use the `.all` `.race` and `.resolve` methods of the native `Promise` object if you want to do this stuff. Yes this is a parser simplification bender.
+  
+ 
+#### Enhancements
+
+ - __promising/catch [block]__ is now wrapped in a promise, so you can properly chain rejections. 
+ - rolled original source line numbers through into both compile-time error reporting and as comments in the generated Javascript.  Comments look like `/*@:744*/` and will appear in the JS code after the generated code that line produced.  Not every line will produce a referencing comment, however most lines of code will.
+
 
 ### 0.2.1
 

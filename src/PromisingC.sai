@@ -83,7 +83,7 @@ PromisingConstruct task as work
       set body + ".catch(function(p){return $promising$then(${.args.verb},'catch');})"
 
     case 'catch.outblock'
-      set block from tasker: args .args
+      set block from tasker: args .args, #ispromise
       set body + ".catch(${block})"
 
     case 'finally.verb'

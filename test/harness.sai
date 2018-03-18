@@ -28,10 +28,10 @@ Verify promise given description, function
 
   promising function
   then
-    debug "pass ${description} with: ${$}"
+    //debug "pass ${description} with: ${$}"
     @pass.push description
   catch
-    debug "fail ${description} with: ${$}"
+    //debug "fail ${description} with: ${$}"
     @fail.push 'test "${description}" failed, reporting: ${$}\n\n${function.toString()}'
   finalized
 

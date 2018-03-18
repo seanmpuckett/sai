@@ -8,21 +8,28 @@ SAI is a transpiler for the Node Javascript environment.
 
 Your source files are written in another programming language (called SAI) and _transpiled_ into the equivalent Javascript, which is then executed like any other Javascript. SAI objects are compatible with regular JS objects, and a project can mix SAI and JS code on a file-level basis. 
 
-SAI embraces Javascript's capabilities, including new features of ES6 such as promises and generators, but removes the heavy reliance on arcane symbology. SAI was designed primarily as a humane language one could simply read aloud. This has the side effect that SAI programs look more or less like pseudo-code; they can be their own design documents.
+### What does it look like?
+
+The quickest way to get a feel for real code written in SAI is to look at the GitHub source for SAI itself -- the compiler and its runtime library are all self-compiled SAI code.  
+
+- The main compiler: [https://github.com/seanmpuckett/sai/blob/master/src/sai.sai]
+- The runtime library: [https://github.com/seanmpuckett/sai-library/blob/master/src/sailib.sai]
 
 SAI, like Python and CoffeeScript, treats whitespace as semantically relevant: level of indent is used to identify code blocks, and line breaks are always significant. SAI's parser is quite rigid as to what constitutes a single 'statement'; run-on code with heavily nested calls is strongly discouraged (if not impossible) -- and this is intentional.
 
-SAI exists to encourage understandable and maintainable programs through the affordance of a straightforward programming style. While Javascript allows heavily nested expressions, opaque idioms and clever uses of the prototyping system, this often results in difficult to maintain code. Instead, SAI encourages simplicity and elegance that results in software that is easy to write, easy to read, and easy to maintain. 
+### Why a new transpiler?
 
-#### What it isn't
+SAI embraces Javascript's capabilities but removes the heavy reliance on arcane symbology. SAI was designed primarily as a humane language one could simply read aloud. This has the side effect that SAI programs look more or less like pseudo-code; they can be their own design documents.
+
+That doesn't mean SAI is a lightweight. Its constructs for asynchronous tasks including Promises and finite state machines, flexible and simply applied collection manipulators, compile-time sanity checks, and truly object-oriented coding style, all allow you to get complex projects done more effectively by encouraging the creation of cleaner and more straightforward code.
+
+SAI, then, exists to encourage understandable and maintainable programs through the affordance of a straightforward programming style. While Javascript allows heavily nested expressions, opaque idioms and clever uses of the prototyping system, this often results in difficult to maintain code. Instead, SAI encourages simplicity and elegance that results in software that is easy to write, easy to read, and easy to maintain. 
+
+### What it isn't
 
 While SAI appears to look a little like Coffeescript (in particular due to their semantic use of whitespace), SAI is not a derivation of Coffeescript. I am however thankful to the developers of CS for demonstrating that creating a transpiler is a viable approach to fixing some of the shortcomings of Javascript. 
 
 SAI doesn't make it impossible to write sloppy, ugly and buggy code.  However, SAI's _affordances_ tend to emphasise clear code, while making some of the more egregiously obnoxious Javascript hacks and idioms either impossible, or just very difficult. Just because you _can_ do something a certain way in JS doesn't mean you _should_.
-
-#### Self-compiled
-
-Both the SAI runtime library and the runtime manager are as of 0.1.14 / 0.1.7 written in SAI and compiled to Javascript.
 
 
 ## Usage 
@@ -170,7 +177,7 @@ The `samples` folder has several sample bits of code, some of which are reproduc
 
 To run the samples, invoke e.g. `./sai-run sample/FizzBuzz/FizzBuzz`
 
-You may also look at my solutions to Advent of Code 2017 which were all written in SAI: `https://github.com/seanmpuckett/advent-of-code-2017`
+You may also look at my solutions to Advent of Code 2017 which were all written in SAI: [https://github.com/seanmpuckett/advent-of-code-2017].
 
 
 #### FizzBuzz

@@ -62,7 +62,7 @@ Instantiate task
     else
       debug 'SUCCESS'
   catch
-    debug $
+    debug $.message
     debug "I am not sure how the promises failed."
     
   

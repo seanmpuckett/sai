@@ -32,7 +32,7 @@
     "andb,and,array,as,"+
     "bind,blank,"+
     "chain,create,copy,"+
-    "default,delete,"+
+    "default,"+
     "empty,enum,exists,expects,"+
     "false,fields,from,"+
     "get,"+
@@ -352,9 +352,6 @@
     '-': '^{1}=-(^{1})' , // test 'self negate'
     'not': '^{1}=!(^{1})', // test 'self not'
     'notb': '^{1}=~(^{1})', // test 'self notb'
-    'inc': '^{1}=(^{1} || 0)+1;', // test 'self inc'
-    'dec': '^{1}--', // test 'self dec'
-    'delete': 'delete ^{1}', // test 'self delete'
   };  
 
   
@@ -569,6 +566,14 @@
     var lm=LeakedMagic.exec(code);
     if (lm) fail("SAI Compiler: Pronoun '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)");
   }
+  
+  function WhereAmI(line) {
+    if (line) {
+      return '/*@:'+line+'*/';
+    }
+    return '';
+  }
+  
 }
 
 
@@ -733,28 +738,7 @@ IteratorClause
 
 
 PromiseClause
-= o:MultiOutput? _ option:(ANY/ALL/ADOPT) _ x:Expression {
-  var f='';
-  if (option=='any') {
-    f="Promise.race("+x+")";
-  } else if (option=='all') {
-    f="Promise.all("+x+")";
-  } else {
-    f=x;
-  }
-  
-  var b=RV('^{f}.then( function(){ return $_resolve.apply($,arguments); } ).catch( function(){ $_reject.apply($,arguments); });',{f:f});
-
-  return TaskClauseFormatter({
-    as:o
-    ,block:b
-    ,nodefaultparam:true
-    ,kind:'function'
-    ,preface:'return new Promise(function($_resolve,$_reject) {'
-    ,postface:'});'
-  });
-}
- / x:Expects? _ o:MultiOutput? _ b:Block {
+ = x:Expects? _ o:MultiOutput? _ b:Block {
   return TaskClauseFormatter({
     expects:x
     ,as:o
@@ -782,7 +766,7 @@ Lines
  = v:(LineTerm)+ { return v.join('') }
 
 LineTerm
- = v:Line EOLs { return v }
+ = v:Line w:EOLs { var l=WhereAmI(w); return v + l; }
 
 Line
  = ConstructStatement
@@ -849,7 +833,6 @@ Piper
     var result=opi.handler({work:work[0],clauses:work,tools:tools});
     if (result.error) fail(result.error);
 
-    if (opi.tools.length) for (var tc=0; tc<opi.tools.length; tc++) AddTool(opi.tools[tc]);
     if (result.tools && result.tools.length) for (var tc=0; tc<result.tools.length; tc++) AddTool(result.tools[tc]);
 
     return result.leftright || ['',''];
@@ -937,6 +920,7 @@ ConstructStatement
        / &{return options.constructs[i].clauses[i].outblock}       ca:CAOutblock      {return ca}
        / &{return options.constructs[i].clauses[i].block}          ca:CABlock      {return ca}
        / &{return options.constructs[i].clauses[i].exprs}          ca:CAExprs      {return ca}
+       / &{return options.constructs[i].clauses[i].rvalue}         ca:CARvalue       {return ca}
        / &{return options.constructs[i].clauses[i].verb}           ca:CAVerb       {return ca}
        / &{return options.constructs[i].clauses[i].none}           ca:CANone       {return ca}
 
@@ -955,6 +939,7 @@ ConstructStatement
        / &{return options.constructs[i].clauses[cli].outblock}      claa:CAOutblock {return claa}
        / &{return options.constructs[i].clauses[cli].block}         claa:CABlock {return claa}
        / &{return options.constructs[i].clauses[cli].exprs}         claa:CAExprs {return claa}
+       / &{return options.constructs[i].clauses[cli].rvalue}        claa:CARvalue {return claa}
        / &{return options.constructs[i].clauses[cli].verb}          claa:CAVerb {return claa}
        / &{return options.constructs[i].clauses[cli].none}          claa:CANone{return claa}
 
@@ -985,7 +970,7 @@ ConstructStatement
       }
     });
     if (result.error) fail(result.error);
-    if (opi.tools && opi.tools.length) for (var tc=0; tc<opi.tools.length; tc++) AddTool(opi.tools[tc]);
+
     if (result.tools && result.tools.length) for (var tc=0; tc<result.tools.length; tc++) AddTool(result.tools[tc]);
     return result.body;
  }
@@ -1051,6 +1036,11 @@ CAVerb = v:VerbSentence { return {
   verb: v
 }; }
 
+CARvalue = v:RValue { return {
+  syntax: 'rvalue',
+  rvalue: v
+}; }
+
 CANone = _ &EOLs { return { 
   syntax: 'none' 
 }; }
@@ -1067,19 +1057,14 @@ SwapStatement
 
 
 SetStatement
- = SET _ t:SetTerms { return t }
+ = SET _ t:SetTerm { return t }
  / SET Sep EOLs INDENT EOLs t:SetBlock DEDENT { return t.join(''); } 
- / LOCAL _ t:LocalTerms { return t }
+ / LOCAL _ t:LocalTerm { return t }
  / LOCAL Sep EOLs INDENT EOLs t:LocalBlock DEDENT { return t.join(''); } 
- / INC _ v:RValue _ { return v+'=('+v+' || 0)+1;\n'; } // test 'inc a'
- / DEC _ v:RValue _ { return v+'--;\n'; } // test 'dec a'
- / DELETE _ v:RValue _ { return 'delete '+v+';\n'; }
 
-SetTerms
- = t:SetTerm _ v:(',' _ v:SetTerm _ { return v })*  { return v.concat(t) }
-  
+
 SetLine
- = v:SetTerms EOLs { return v }
+ = v:SetTerm EOLs { return [v] }
 
 SetBlock
  = v:(SetLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
@@ -1124,12 +1109,8 @@ SetTerm
    return code;
  }
 
-
-LocalTerms
- = t:LocalTerm _ v:(',' _ v:LocalTerm _ { return v })*  { return v.concat(t) }
-  
 LocalLine
- = v:LocalTerms EOLs { return v }
+ = v:LocalTerm EOLs { return [v] }
 
 LocalBlock
  = v:(LocalLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
@@ -1162,7 +1143,7 @@ LocalAdj
 
 
 UnOp // test 'self*'
- = '-' / DELETE / NOTB / NOT 
+ = '-' / NOTB / NOT 
 
 Itselfop // test 'self*'
  = '+' / '-' 
@@ -1985,15 +1966,18 @@ OptionalEOLs
  = EOL*
  
 EOLs
- = EOL+
+ = ln:EOL+ { return ln[0]; }
 
 EOL
- = [\ ]* '//' [^\r\n]* CR
- / CR
+ = [\ ]* '//' [^\r\n]* ln:CR { return ln; }
+ / ln:CR { return ln; } 
  
 
 CR
- = [\n\r]
+ = [\n\r] ln:LineNo? { return ln; }
+
+LineNo
+ = '@' d:[0-9]+ ':' { var ln=d.join(''); return ln; }
 
 OBRACE
  = '{'
@@ -2008,11 +1992,8 @@ __OFFSET = '__offset'
 __COLUMN = '__column'
 __LINE = '__line'
 
-ADOPT = 'adopt'
-ALL = 'all'
 AND = 'and'
 ANDB = 'andb'
-ANY = 'any'
 ARRAY = 'array'
 AS = 'as'
 BIND = 'bind'
@@ -2022,9 +2003,7 @@ COPY = 'copy'
 CONTRACT = 'contract'
 COUNTER = 'counter'
 CREATE = 'create'
-DEC = 'dec'
 DEFAULT = 'default'
-DELETE = 'delete'
 EMPTY = 'empty'
 ENUM = 'enum'
 ERROR = 'error'
@@ -2036,7 +2015,6 @@ GET = 'get'
 GIVEN = 'given'
 INFINITY = 'Infinity'
 INSTANCE = 'instance'
-INC = 'inc'
 INHERIT = 'inherit'
 ISNT = 'isnt'
 ISNAN = 'isNaN'

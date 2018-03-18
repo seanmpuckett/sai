@@ -16,25 +16,21 @@ manifest get
         clauses:
           'select': #expr
         handler bind CrudPiper
-        tools empty
           
       'update':
         clauses:
           'update': #expr
         handler bind CrudPiper
-        tools empty
   
       'delete':
         clauses:
           'delete': #expr
         handler bind CrudPiper
-        tools empty
   
       'expects':
         clauses:
           'expects': #expr
         handler bind CrudPiper
-        tools empty
 
 
 docs get

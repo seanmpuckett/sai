@@ -108,6 +108,7 @@ given:
       'exprusing'     '[expr] USING [function reference]'
       'none'          ' '
       'outblock'      '(AS var1, var2...) [indent code block]'
+      'rvalue'        '[variable]'
       'verb'          '[verb sentence]'
       
     pipers:
@@ -182,7 +183,6 @@ IntegrateConstructs task
     pipers:
       'clauses' 'clauses list'
       'handler' 'handler function'
-      'tools' 'tools to include in object definition (set to false if none)'
     
   
   set fail to task given msg
@@ -204,6 +204,8 @@ IntegrateConstructs task
           each requiredElements\category as description, element
             unless exists construct\element
               fail ' is missing ${description}.'
+          if exists construct.clauses and not exists construct.clauses\constructName
+            fail ' is missing a clause definition for itself'
           if ?requiredElements\category.clauses
             each construct.clauses as requestedSyntax, clauseName
               each requestedSyntax as val, type
@@ -282,6 +284,7 @@ Dedenter task given src
     heredocstate 0
     heredepth 0
     indent: 0
+    offset 1
     lines empty
 
     Context task given lineno
@@ -294,7 +297,8 @@ Dedenter task given src
 
   if '#!' is (rawlines.0 | limit 0, 2)
     shift'd rawlines
-    
+    inc offset
+      
   ply rawlines as line, lineno
   
     if line.indexOf('\t') >= 0
@@ -344,11 +348,12 @@ Dedenter task given src
     unless isComment and heredocstate and depth<heredepth
       if heredocstate and depth > heredepth
         set trimmed (line | limit heredepth, undefined)
-      push'd lines trimmed
+      push'd lines '@${lineno+offset}:${trimmed}'
     
   while shift'd indent
     push'd lines DEDENT
 
+  unshift'd lines ''
   push'd lines ''
   set lines join'd self '\n'
 
@@ -370,6 +375,8 @@ WrapExtract task given source, location
 //
 
 Contextualize task given source, offset
+  set linenorex /^\@([0-9]+):(.*)/
+
   set
     context from WrapExtract source, offset
     lines from context.split '\n'
@@ -388,7 +395,11 @@ Contextualize task given source, offset
     if line is INDENT .. inc ind
     elsif line is DEDENT .. dec ind
     else 
-      set newcontext + (repeat'd '  ' ind) + line + '\n'
+      set ln from linenorex.exec line
+      if ln
+        set newcontext + ln.1 + ': ' + (repeat'd '  ' ind) + ln.2 + '\n'
+      else
+        set newcontext + (repeat'd '  ' ind) + line + '\n'
       
   return newcontext
 

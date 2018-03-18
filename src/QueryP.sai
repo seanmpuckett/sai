@@ -14,29 +14,24 @@ manifest get
     'pipers':
 
       'limit':
-        subtitle: 'array/string cropping'
         clauses:
           'limit': #exprs
         handler bind LimitPiper
-        tools empty
 
       'first':
         clauses:
           'first': #none
         handler bind LimitPiper
-        tools empty
 
       'last':
         clauses:
           'last': #none
         handler bind LimitPiper
-        tools empty
 
       'count':
         clauses:
           'count': #none
         handler bind LimitPiper
-        tools empty
 
       'by':
         clauses:
@@ -44,25 +39,21 @@ manifest get
           'asc': #none
           'desc': #none
         handler bind SortPiper
-        tools empty
 
       'has':
         clauses:
           'has': #expr, #outblock, #use
         handler bind FilterPiper
-        tools empty
         
       'lowest':
         clauses:
           'lowest': #expr, #use, #none, #outblock
         handler bind LowestPiper
-        tools empty
         
       'highest':
         clauses:
           'highest': #expr, #use, #none, #outblock
         handler bind LowestPiper
-        tools empty
         
 
 docs get

@@ -17,103 +17,76 @@ manifest get
         clauses:
          'set': #expr, #outblock, #use
         handler bind ThruPiper
-        tools empty
 
       'thru':
         clauses:
          'thru': #expr, #outblock, #use
         handler bind ThruPiper
-        tools empty
-
 
       'audit':
         clauses:
           'audit': #expr, #outblock, #use
         handler bind AuditPiper
-        tools empty
         
       'observe':
         clauses:
           'observe': #expr, #outblock, #use
         handler bind AuditPiper
-        tools empty
-
 
       'into':
         clauses:
           'into': #valexpr, #valoutblock, #valuse
         handler bind IntoPiper
-        tools empty
-
 
       'total':
         clauses:
           'total': #expr, #use, #none
         handler bind TotalPiper
-        tools empty
-
 
       'keys':
         clauses:
           'keys': #none
         handler bind KVPiper
-        tools empty
     
       'values':
         clauses:
           'values': #none
         handler bind KVPiper
-        tools empty
-
 
       'iterate':
         clauses:
           'iterate': #none
         handler bind ArraysPiper
-        tools empty
 
       'concat':
         clauses:
           'concat': #expr
         handler bind ArraysPiper
-        tools empty
 
       'collect':
         clauses:
           'collect': #none
         handler bind ArraysPiper
-        tools empty
 
       'enlist':
         clauses:
           'enlist': #none
         handler bind ArraysPiper
-        tools empty
 
       'entrait':
         clauses:
           'entrait': #none
         handler bind ArraysPiper
-        tools empty
 
       'enkey':
         clauses:
           'enkey': #none, #expr
         handler bind ArraysPiper
-        tools empty
-
     
       'replicate':
         clauses:
           'replicate': #expr
         handler bind ReplicatePiper
-        
-        tools array '''
-          var $piper$replicate=function(a,c){
-            var r=new Array(c);
-            while (c>0) r[--c]=a;
-            return r;
-          }
 
 
 
@@ -389,6 +362,12 @@ ReplicatePiper task expects $work, $tools
   case 'replicate.expr'
 
     set pattern '$piper$replicate((${SPLIT}),(${$work.args.expr}))'
+    push'd tools '''
+          var $piper$replicate=function(a,c){
+            var r=new Array(c);
+            while (c>0) r[--c]=a;
+            return r;
+          }
 
   else
     return: error "Unhandled piper type ${trial} in ReplicatePiper"

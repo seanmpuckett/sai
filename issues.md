@@ -13,9 +13,7 @@
 
 ### Test suite
 
- - test suite needs to support async tests
- - need tests for `state` and `promising`
-
+ - need to find a coverage tester that will actually work
 
 ### Language Changes
 
@@ -24,14 +22,11 @@
  - 100% test coverage of parser -- is this even practical?
  - integrate support for Map and Set
  - source code lookup for exceptions or debugging
- - state machine construct
 
- - serious need to make parse errors easier to debug
   
 #### Bugs
 
  - parser can't handle slashes in comments 
- - blank character after `return ` is a parse error
  
 
 #### Breaking

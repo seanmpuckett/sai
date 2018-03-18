@@ -51,6 +51,27 @@ Execute promise
       resolve $
     finalized
     
+  then @Verify "rethrow in catch", promise
+    set success false
+    promising Rejecter
+    catch
+      reject "1"
+    then
+      debug "uh oh"
+    catch
+      reject $+"2"
+    then
+      debug "not good"
+    catch
+      if $ is '12'
+        set success true
+    then
+      if success
+        resolve success
+      else
+        reject success
+    finalized
+      
 
   then @Verify "simple states", promise
     state "a"
@@ -114,8 +135,6 @@ Execute promise
 
 
 
-  then 
-    debug "done promise tests"
   finalized
 
   
