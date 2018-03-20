@@ -37,6 +37,7 @@ Instantiate task
     Reference
     CompOrderOps
     Inheritance
+    Environment
 
   set startTime new ~Date
 

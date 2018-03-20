@@ -1,5 +1,15 @@
 ## Change log
 
+### 0.2.3
+
+#### Enhancements
+
+ - picking up the `$` parameter in `promising/adopt` now works
+ - added __or__ and __and__ logical pipe operators.
+ - added a unary list-based and multi-line capable version of __and__, __or__, __nor__ and __nand__ to help simplify complicated logical expressions. These compile down into standard JS logical expressions for speed & expected behaviour.
+ - updated `sai-library` requirement to `1.0.17` for comprehensible logical operator support.
+
+
 ### 0.2.2
 
 #### Breaking changes

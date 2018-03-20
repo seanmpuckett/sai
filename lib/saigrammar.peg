@@ -1070,8 +1070,8 @@ SetBlock
  = v:(SetLine)+ { return v.reduce(function(a,b){return a.concat(b)}) }
 
 SetTerm
- = l:RValues _ '-' _ e:Expression {
-     fail('SAI Compiler: the "set val - expr" construct is unclear. Please use "set val to -expr" or "set val self - expr" as appropriate.');
+ = l:RValues _ op:('-') _ e:Expression {
+     fail('SAI Compiler: the "set val '+op+' expr" construct is unclear. Please use "set val to '+op+' expr" or "set val self '+op+' expr" as appropriate.');
    }
  / l:RValues _ o:Itselfop _ e:Expression {
    if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
@@ -1143,7 +1143,7 @@ LocalAdj
 
 
 UnOp // test 'self*'
- = '-' / NOTB / NOT 
+ = '-' / NOTB / NOT  
 
 Itselfop // test 'self*'
  = '+' / '-' 
@@ -1426,12 +1426,17 @@ SemVer
  }
 
 
+ItemList
+ = COLON _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
+ / COLON? _ v:Items SEMI? { return ['array',v.join(','),v] }
+
+
 ParameterList
  = COLON _ EOLs INDENT EOLs v:FieldBlock DEDENT { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields', '{'+w.join(',')+'}',v] }
  / COLON _ EOLs INDENT EOLs v:ItemBlock DEDENT { return ['array',v.join(','),v] }
- / v:Items ';'? { return ['array',v.join(','),v] }
- / v:Fields ';'? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
- / ';' { return null }
+ / v:Items SEMI? { return ['array',v.join(','),v] }
+ / v:Fields SEMI? { var w=[]; for (var i in v) { w[i]=v[i][0]+':'+v[i][1]; } return ['fields','{'+w.join(',')+'}',v] }
+ / SEMI { return null }
 
 Definition
  = _ v:Item { return ['literal',v] }
@@ -1681,7 +1686,7 @@ MultiplicationOp
  / '>>' // test 'rsh'
  / '<<' // test 'lsh'
 
- 
+
 Value
  = '-' _ v:Value _ { return '(0-('+v+'))' } // test 'unary -'
  / NOTB Sep v:Value _ { return '(~('+v+'))' } // test 'unary binary not' 
@@ -1704,14 +1709,28 @@ Value
  / o:NewObject _ { return o }
  / '<-' _ v:Expression { return v; }
  / LPAREN _ v:Expression _ o:Output? RPAREN _ { 
-   if (o) {
-     addLocal(o);
-     return RV('(^{out}='+v+')',{out:o}); 
-   } else {
-     return '('+v+')'; 
-   }
-  }
+     if (o) {
+       addLocal(o);
+       return RV('(^{out}='+v+')',{out:o}); 
+     } else {
+       return '('+v+')'; 
+     }
+    }
  / x:Regex _ { return x }
+ / op:(AND/OR/NAND/NOR) _ v:ItemList { 
+     var code='';
+     if (v[2].length == 1) {
+       fail("SAI Compiler: the unary (left-side) variation of the "+op.toUpperCase()+" operator needs to be followed by a list with two or more values.")
+       code='false';
+     } else {
+       var oper='||';
+       if (op==='and' || op==='nand') oper='&&';
+       code='('+v[2].join(')'+oper+'(')+')';
+       if (op==='nand' || op==='nor') code='!('+code+')';
+       code='('+code+')';
+     }
+     return code;
+ }
 
 Regex
  = '/' x:(RegexEscape/RegexChar)+ '/' m:[igm]* _ {
@@ -1925,22 +1944,6 @@ EscapedChar
  = '\x5c\x27'  { return [ true, "\x27" ] }
  / '\x5c' c:. { return [ true, '\x5c'+c ] }
  / '\x5e' { return [ true, '\\x5e' ]}
-  
-EscapedCharx
- = '\x5c' "'" { return [true,'\x5c'+"'"] }
- / '\x5c' '"' { return [true,'\x5c'+'"'] }
- / '\x5c' '$' { return [true,'\x5c'+'$'] }
- / '\x5c' '\x5c;' { return [true,'\x5c'] }
- / '\x5c' '\x7b;' { return [true,'\x7b;'] }
- / '\x5c' '\x7d;' { return [true,'\x7d;'] }
- / '\x5c' 'n' { return [true,'\x5c'+'n'] }
- / '\x5c' 'r' { return [true,'\x5c'+'r'] }
- / '\x5c' 't' { return [true,'\x5c'+'t'] }
- / '\x5c' 'b' { return [true,'\x5c'+'b'] }
- / '\x5c' 'f' { return [true,'\x5c'+'f'] }
- / '\x5c' 'x' a:[0-9a-fA-F] b:[0-9a-fA-F] { return [true,'\x5c'+'x'+a+b ] }
- / '\x5c' 'u' a:[0-9a-fA-F] b:[0-9a-fA-F] c:[0-9a-fA-F] d:[0-9a-fA-F] { return [true,'\x5c'+'u'+a+b+c+d] }
- / '\x5c' 'u' '{' a:[0-9a-fA-F]+ '}' { return [true,'\x5c'+'u{'+a.join('')+'}' ] }
 
 StringTemplate
  = '${' _ v:Expression  '}' { return [false,v] }

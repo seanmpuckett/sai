@@ -32,9 +32,20 @@ docs get
 
 PromisingConstruct task as work
 
+  set finals: #finally, #catch, #rejected, #finalized
   with ( work's clauses | last ).clause
-    unless it is 'finally' or it is 'catch' or it is 'rejected' or it is 'finalized'
-      return: error "SAI compiler: final clause in PROMISING must be CATCH, FINALLY, REJECTED or FINALIZED, not ${toUpperCase'd it}"
+    unless finals\it
+      set finalText (finals | keys).join('/').toUpperCase()
+      return: error "SAI compiler: final clause in PROMISING must be ${finalText}, not ${toUpperCase'd it}."
+
+  set terminal false
+  set finishers: #resolved, #rejected, #finalized
+  ply work's clauses
+    if finishers\.clause
+      set terminal true
+    elsif terminal
+      set finisherText (finishers | keys).join('/').toUpperCase()
+      return: error "SAI compiler: ${finisherText} should not have any other clauses, such as ${toUpperCase'd .clause}, following."
 
   set tasker to task  
     set options:
@@ -50,9 +61,7 @@ PromisingConstruct task as work
 
   set tools: '''
     var $promising$then=function(t,name){
-//      if (typeof t === "function") t=t();
       if (!t || !t.then) return Promise.resolve(t);
-//      throw new Error("SAI Runtime: "+(name.toUpperCase())+" is looking for an active Promise."); 
       return t;
     };
   
@@ -111,7 +120,7 @@ PromisingConstruct task as work
 
     case 'adopt.exprs'
       set body + '''
-        .then(function(){return $promising$then(${.args.exprs.1},'adopt')})
+        .then(function(p){return $promising$then(${.args.exprs.1},'adopt')})
 
     case 'all.exprs'
       set body + ".then(function(p){return Promise.all(${.args.exprs.1});})"
@@ -123,7 +132,9 @@ PromisingConstruct task as work
       return: error "SAI compiler: PROMISING construct unhandled type ${.type}"
 
 
-  set body + ';\n'
+  set body + '''
+    ;
+    
   return: body body, tools tools
 
 

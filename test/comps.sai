@@ -846,6 +846,57 @@ Execute task
         set b + key
     return b
     
+  @Test 'lop or array', task
+    set t: 0,2,0
+    set f: 0,0,0
+    return (t|or) and not (f|or)
+    
+  @Test 'lop or array 2', task
+    set t: 0,2,0; | or
+    set f: 0,0,0; | or
+    return t and not f
+    
+  @Test 'lop or traits', task
+    set t: a 0,b 2,c 0
+    set f: a 0,b 0,c 0
+    return (t|or) and not (f|or)
+    
+  @Test 'lop or generator', task
+    set t: 0,2,0; | iterate
+    set f: 0,0,0; | iterate
+    set t | or | collect | first
+    set f | or | collect | first
+    return t and not f
+    
+  @Test 'lop or values', task
+    set t 1
+    set f 0
+    return (t|or) and not (f|or)
+    
+
+  @Test 'lop and array', task
+    set t: 1,2,3
+    set f: 1,0,3
+    return (t|and) and not (f|and)
+    
+  @Test 'lop and traits', task
+    set t: a 1,b 2,c 3
+    set f: a 1,b 0,c 3
+    return (t|and) and not (f|and)
+    
+  @Test 'lop and generator', task
+    set t: 1,2,3; | iterate
+    set f: 1,0,3; | iterate
+    set t | and | collect | first
+    set f | and | collect | first
+    return t and not f
+    
+  @Test 'lop and values', task
+    set t 1
+    set f 0
+    return (t|and) and not (f|and)
+
+
     
     
     

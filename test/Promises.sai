@@ -15,6 +15,23 @@ TimerExtra task given d, e, f
 Execute promise
   promising
 
+
+  then @Verify "bail out", promise
+    set success false
+
+    set inner promise given v
+      Timer 1, task
+        resolve v+1
+
+    promising 
+    adopt 1
+    adopt $ and inner($)
+    then
+      if $ isnt 2
+        reject $
+    finalized
+
+
   then @Verify "simple promise", promise
     promising Resolver
     then

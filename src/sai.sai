@@ -5,6 +5,9 @@
 // Framework for SAI language.
 //
 // Designed by Sean M Puckett
+//             sean.m.puckett@gmail.com
+//
+// MIT License
 //
 
 reference:
@@ -46,15 +49,14 @@ reference:
       'Error' 'Error'
       'Math' 'Math'
 
-    constructs blank // initialized later
-    pipers blank // initialized later
+    constructs blank 
+    pipers blank 
     paths:
       DIRNAME + '/'
     options:
       speedometer false
       beautify true
-    Loader:
-      'default source loader linked later in file'
+    Loader undefined
 
   //// Built-in constructs
 
@@ -75,8 +77,11 @@ reference:
 
 
 
+/////////////// Compiler / Manager object
+
 object SAI singleton
 
+// instance variables
 
 instance:
   prototypes blank
@@ -85,16 +90,16 @@ instance:
   isas blank
   config undefined
   persist: globalcount 1
-
   mainParser undefined
 
   protoConstructor undefined
-  
   Parse undefined
   Beautify undefined
 
+// static variables
 
 given:
+
   validSyntax: 
     
     constructs:
@@ -121,22 +126,23 @@ given:
       'valuse'        '[value] USING [function reference]'
       'valoutblock'   '[value] (AS var1, var2...) [indent code block]'
 
-    globals: blank
-    keywords: blank
-    operators: blank
-    pronouns: blank
-    syntax: blank
+    globals blank
+    keywords blank
+    operators blank
+    pronouns blank
+    syntax blank
 
 
-// Instantiate
+
+// Instantiate Method
 //
 // object wake-up
 //
 
 Instantiate task
-  
   Clean
   
+
   
 // Clean
 //
@@ -151,7 +157,6 @@ Clean task
     isas blank
     config copy DEFAULT_config
     persist: globalcount 1
-
     protoConstructor task
       set
         @@Constructor task
@@ -162,16 +167,20 @@ Clean task
         @@__unverified true
         @@isof blank
       return @@
-      
     Parse from GetParser
 
+    // bound callback functions 
     config.Loader bind GetSourceFromPaths
     SAILIB.import bind Require
     SAILIB.create_op bind Create
 
-
   IntegrateConstructs
 
+
+///////////
+//
+//  Add Constructs and Pipers
+//
   
 IntegrateConstructs task
 
@@ -183,7 +192,6 @@ IntegrateConstructs task
     pipers:
       'clauses' 'clauses list'
       'handler' 'handler function'
-    
   
   set fail to task given msg
     throw new Error 'SAI Construct Manager: manifest for ${file}/${category}/${constructName}${msg}'
@@ -219,11 +227,12 @@ IntegrateConstructs task
       debug error
       
 
+//////////////////////// Document
+//
+//  Create documentation data tree
+//
+
 Document task
-  return from DocumentConstructs
-
-
-DocumentConstructs task 
 
   set documents blank
   set prefix:
@@ -274,7 +283,7 @@ DocumentConstructs task
   
 // Dedenter
 //
-// Converts semantic whitespace into braces for easier parsing.
+// Converts SAI source into pre-processed form ready for parsing
 //
 
 Dedenter task given src
@@ -510,11 +519,20 @@ GetParser task
     return js
 
   
-// Parse
-//
-// Build and bind parser
-//
-// (see Clean)
+// GetSourceFromFilename
+
+GetSourceFromFilename task given filename
+  try
+    return:
+      success true
+      source toString'd FS.readFileSync(filename)
+      context:
+        loader 'SAI.GetSourceFromFilename'
+        path filename
+        mtime FS.statSync(filename).mtime
+        fetched new ~Date
+  catch
+    return undefined
 
 
 // GetSourceFromPaths -> config.Loader
@@ -528,19 +546,11 @@ GetSourceFromPaths task given name
   ply config's paths as path
     ply array '.sai', ''; as extension
       set filename from PATH.join path, name+extension
-      try
-        return:
-          success true
-          source toString'd FS.readFileSync(filename)
-          context:
-            name name
-            loader 'SAI.GetSourceFromPaths'
-            path filename
-            mtime FS.statSync(filename).mtime
-            fetched new ~Date
-      catch
-        nop
-          
+      exists from GetSourceFromFilename filename
+        set .name name
+        set .loader + '/GetSourceFromPaths'
+        return it
+
   return:
     success false
     context '''
@@ -562,6 +572,7 @@ Compile task given source
     debug source
     debug error
 
+
 // ProtoGen
 //
 // Create a fully scoped Javascript prototype for a single object (ignoring inheritance)
@@ -571,17 +582,17 @@ GetProtogen task given name
   
   set protogens\name default from task
     set s1 new ~Date
-    set load from config's Loader name
+    set load from config.Loader name
     unless load.success
       throw new Error 'SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
-    set source from Parse load's source, undefined, load's context
+    set source from Parse load.source, undefined, load.context
     set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
     set protogen from Compile source
     //debug source 
     unless protogen
       throw new Error 'SAI.GetProtogen: Error in generated code ${name}'
     set s2 new ~Date
-    if config's options's speedometer
+    if config's options.speedometer
       debug 'SAI: Compiled ${name} in ${s2-s1}ms.'
     set sources\name source
     return protogen
@@ -626,7 +637,7 @@ GetAncestors task given name
           heritage.push it
 
   return ancestors
-  
+
 
 // GetPrototype
 // 
@@ -755,3 +766,25 @@ Configure task given c
   
   if config.options.beautify
     set Beautify require('js-beautify').js_beautify
+
+
+// RegisterWithNode
+//
+// register .sai as an extension
+//
+
+RegisterWithNode task
+  set REQUIRE ~require
+
+  exists REQUIRE.extensions
+    set it.sai to task given module, filename
+      unshift'd config.paths PATH.dirname(filename)
+      set result Require(PATH.basename(filename))
+      shift'd config.paths
+      return result
+  else
+    throw new Error "SAI Runtime: Could not find require.extensions to register .sai files with node"
+    
+  
+  
+

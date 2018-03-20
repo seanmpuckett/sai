@@ -83,6 +83,16 @@ manifest get
           'enkey': #none, #expr
         handler bind ArraysPiper
     
+      'and':
+        clauses:
+          'and': #none
+        handler bind ArraysPiper
+    
+      'or':
+        clauses:
+          'or': #none
+        handler bind ArraysPiper
+    
       'replicate':
         clauses:
           'replicate': #expr
@@ -292,6 +302,12 @@ ArraysPiper task expects $work, $tools
   set tools empty
   
   switch $work.type
+
+  case 'or.none'
+    set pattern '$AI.l_op("or",${SPLIT})'
+
+  case 'and.none'
+    set pattern '$AI.l_op("and",${SPLIT})'
 
   case 'iterate.none'
     set pattern '$AI.iterate_op(${SPLIT})'
@@ -864,6 +880,77 @@ Documents task
               > { 'a': 'A0', 'b': 'B1', 'c': 'C2' }
 
           Dry, but very useful.
+          
+
+    
+      'and':
+        subtitle 'confirms a collection'
+        summary '''
+          Examines every item in a collection, returning the collection itself if all of them are _truthy_.
+        detail '''
+          For example:
+          
+              set t: 'horse', 9, true
+              set f: 0, 'goat', 99
+
+              debug t | and
+              debug f | and
+
+              > [ 'horse', 9, true ]
+              > 0
+
+          Rules for source data:
+          
+          - __undefined__: returns `undefined`.
+          
+          - __value__: returns the value.
+          
+          - __array__: returns _the array_ itself if _every_ element in the array is _truthy_, 
+          otherwise returns the first _falsy_ element.
+          
+          - __traits__: returns _the object_ itself if _every_ value in the object is _truthy_, 
+          otherwise returns the first _falsy_ value.
+          
+          - __iterable__: yields `true` if _every_ value returned by the iterator is _truthy_, 
+          otherwise yields the first _falsy_ value. This _vill_ lock up on infinite _truthy_ 
+          generators as it will try forever to find a _falsy_ value.
+          
+          If given an iterator, __and__ returns an iterator that will yield one value (or lock up).
+          
+          
+      'or':
+        subtitle 'explores a collection'
+        summary '''
+          Examines every item in a collection, returning the first one found _truthy_.
+        detail '''
+          For example:
+          
+              set t: undefined, 9, true
+              set f: 0, null, false
+
+              debug t | or
+              debug f | or
+
+              > 9
+              > undefined
+
+          Rules for source data:
+          
+          - __undefined__: returns `undefined`.
+          
+          - __value__, returns the value.
+          
+          - __array__, returns the first _truthy_ element found in the array, otherwise `undefined`. 
+          The array is searched starting at index 0.
+          
+          - __traits__: returns that value if _any_ value in the collection is _truthy_, 
+          otherwise `undefined`. The collection is searched in no defined order.
+          
+          - __iterable__: yields the _first_ truthy value returned by the iterator. 
+          Yields `undefined` if the iterator ends before one is found. 
+          Will lock up if an infinite iterator never yields a truthy value.
+          
+          If given an iterator, __or__ returns an iterator that will yield one value (or lock up).
           
 
     

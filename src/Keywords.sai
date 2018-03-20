@@ -15,9 +15,10 @@ given:
   goodlist:
     'assert', 'debug', 'isa'
 
-
 instance:
   SAI undefined
+
+
 
 manifest get
   return introspect  
@@ -78,7 +79,9 @@ Documentation task
           If the first expression is _falsy_, throw an exception with the second expression as a message.
           Otherwise, return the expression.
         synref '''
-          assert [expr], [expr]
+          assert [test value], [error message]
+          
+          .. from assert [test value], [error message]
         detail '''
           For example:
 
@@ -86,7 +89,7 @@ Documentation task
   
               > Error: SAI: failed assertion: I have some bad news...
 
-          You can use __assert__ in expression, because it returns the value passed.
+          You can use __assert__ in an expression, because it returns the value passed.
           
               set sock from assert GetSocket, "Could not obtain socket resource"
           
@@ -708,11 +711,16 @@ Documentation task
       'and':
         subtitle 'logical and'
         summary '''
-          If the left expression evaluates to **falsy**, returns it, otherwise returns the right expression.
+          Checks two or more values; if they're all _truthy_, return a _truthy_ value. 
+          Otherwise returns a _falsy_ value.
         synref '''
           .. [expr] and [expr]
+          .. and [list of expressions]
         detail '''
-          For example:
+          As a binary operator, if the left expression evaluates to **falsy**, returns it, 
+          otherwise returns the right expression.
+          
+          Binay operator examples:
           
               debug 1 and 0     // prints '0'
               debug 1 and false // prints 'false'
@@ -723,6 +731,45 @@ Documentation task
               debug true and 'Fred'
               > Fred
 
+          As a unary operator given a list, returns the right-most element of the list if all the 
+          elements in the list are _truthy_, otherwise returns the first _falsy_ element.
+
+          Unary operator examples:
+          
+              debug and 'frog', 2, true
+              debug and 'toad', false, 'mario'
+              
+              > true
+              > false
+
+          The list can be split on more than one line, indented:
+
+              debug and:
+                'hello', true
+                'this', 4, 88
+                lookup('thing')
+                
+              > [ result of call to lookup ]
+
+          You can nest logical operators on multiple lines:
+          
+              debug and:
+                or test1(2), test2(3)
+                or fallback(1), fallback(2)
+            
+          It can get very clunky to try and use multi-line logical expressions with IF statements.
+          Instead, assign the results of your test to a clearly named variable that describes your
+          test and then use that in your IF statement:
+          
+              set buildOk to and:
+                fileExists(fn)
+                fileDate(fn) > lastBuild\fn
+                not alreadyBuilt\fn
+                extensionhandler[PATH.extension(fn)]
+                
+              if buildOk as hdlr
+                hdlr.build fn       // rule about AND: last element in the list if all are true.
+          
 
       'andb':
         subtitle 'bitwise and'
@@ -1022,12 +1069,12 @@ Documentation task
       'nand':
         subtitle 'not-and logical'
         summary '''
-          Performs the logical not-and operation. 
+          Checks two or more values; returns _false_ if all of the values are _truthy_. Otherwise
+          returns _true_.
         synref '''
           .. [expr] nand [expr]
+          .. nand [list of expressions]
         detail '''
-          Returns **false** only if left or right expression are both _truthy_. Otherwise returns **true**.  
-
           A semantic simplification of `not ([expr] and [expr])`.
 
               debug 0 nand 0 // prints 'true'
@@ -1040,7 +1087,7 @@ Documentation task
               debug a nand b
               debug not ( a and b )
 
-          How useful!
+          For syntax of the list-based version of __nand__ please review keyword __and__.
 
 
       'new':
@@ -1093,9 +1140,11 @@ Documentation task
       'nor':
         subtitle 'not-or logical'
         summary '''
-          Performs the logical not-or operation. 
+          Checks two or more values; returns true only if _all_ of them are _falsy_. Otherwise
+          returns true.
         synref '''
           .. [expr] nor [expr]
+          .. nor [list of expressions]
         detail '''
           Returns **true** only if left or right expression are both _falsy_. Otherwise returns **false**.
 
@@ -1112,6 +1161,8 @@ Documentation task
               if a nor b
               unless a or b
 
+          For the syntax related to the list-based version of 'nor' review keyworcd __and__.
+          
 
       'not':
         subtitle 'logical not'
@@ -1169,10 +1220,11 @@ Documentation task
       'or':
         subtitle 'logical or'
         summary '''
-          If the left expression is **truthy**, returns it without executing the right expression, 
-          otherwise returns the right expression.
+          Checks two or more values; returns the first one examined that is _truthy_. Otherwise
+          returns the last value checked.
         synref '''
           .. [expr] or [expr]
+          .. and [list of expressions]
         detail '''
           Examples:
           
@@ -1181,6 +1233,9 @@ Documentation task
               debug 0 or 2  // prints '2'
               debug 1 or 2  // prints '1'
 
+          __Or__ also works with a list. Please review the __and__ keyword for details on
+          syntax.
+          
 
       'orb':
         subtitle 'bitwise-or'

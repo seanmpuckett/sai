@@ -6,6 +6,10 @@ inherit list
 
 Execute promise
 
+
+
+
+
   // returns true for odd iterations, undefined for even including 0
   set OddTrue to process
     local i to 0
@@ -31,6 +35,59 @@ Execute promise
         a to b
         b to c
       yield c
+
+
+  @Test 'lop or multi inline', task
+    set t to or 0,2,0
+    set f to or 0,0,0
+    return t is 2 and not f
+    
+  @Test 'lop or multi colon', task
+    set t to or: 0,2,0
+    set f to or: 0,0,0
+    return t is 2 and not f
+    
+    
+  @Test 'nested lop', task
+    return and:
+      4
+      or 8, 0, or:
+        0
+        0
+        3
+      nor 0, null
+      nand 2,3,0
+      and 'frog', 'winter', 88
+        
+    
+  @Test 'lop or multi block', task
+    set t to or:
+      0
+      2
+      0
+    set f to or:
+      0
+      0
+      0
+    return t is 2 and not f
+
+  @Test 'lop and multi inline', task
+    set t to and 1,2,5
+    set f to and 0,0,0
+    return t and not f
+    
+  @Test 'lop nand multi inline', task
+    set t to nand 1,0,5
+    set f to nand 1,1,3
+    return t and not f
+    
+  @Test 'lop nor multi inline', task
+    set t to nor 0,0,0
+    set f to nor 0,5,0
+    return t and not f
+
+
+
 
 
   @Test '?', task
