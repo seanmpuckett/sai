@@ -1,8 +1,14 @@
 
+
+
+
 object Promises
 
 inherit:
   Harness
+
+instance:
+  #npm, #PATH, #FS, #build, #log
 
 Timer task given d, f
   ~setTimeout f, d
@@ -12,35 +18,87 @@ TimerExtra task given d, e, f
     f e
   ~setTimeout f2, d
 
+
+
+RebuildBundles promise given pkg, folder
+
+  unless npm.config.get('rebuild-bundle')
+    resolve 
+  
+  set
+    bundles to pkg.bundleDependencies ? pkg.bundledDependencies ? empty
+    
+    Tester to task given fn                                   // build go/nogo
+      return and:                                             //
+               not fn.match(/^[\._-]/)                        // not a virtual or pseudo-hidden directory
+               fn.indexOf('@') is -1                          // and not old format module
+               or:                                            // and either
+                 bundles.indexOf(fn) isnt -1                  //     already explicitly bundled
+                 and:
+                   pkg.dependencies.indexOf(fn) is -1         //     or not marked as a dependency 
+                   pkg.devDependencies.indexOf(fn) is -1            
+    
+    Builder to promise given fn
+      set pfn to PATH.resolve(folder, 'node_modules', fn)
+      if build.didBuild\pfn
+        resolve                                  // already built! success       
+      log.verbose 'rebuild bundle', pfn
+      promising FS.lstatAsync(PATH.resolve(pfn, 'package.json')) // is there a package?
+      catch false                                // do not throw error on missing package, just resolve false
+      then $ and build.promiseBuild(pfn)         // rules of logic: false value ($) means promiseBuild is not called
+      finalized                                  // kick state up a level
+      
+  promising FS.readdirAsync(PATH.resolve(folder, 'node_modules')) // 
+  all $ | has using Tester | thru using Builder  // filter, map & wait for all to finish (or fail)
+  finalized                                      // kick state back to caller
+
+
+
+
 Execute promise
   promising
 
 
-  then @Verify "bail out", promise
+  then from @Verify "catching and bypassing", promise
+
+    promising !Rejecter
+    catch true
+    then $ and !Rejecter
+    catch true
+    finalized 
+
+
+
+
+
+
+
+
+  then !@Verify "bail out", promise
     set success false
 
     set inner promise given v
       Timer 1, task
         resolve v+1
 
-    promising 
-    adopt 1
-    adopt $ and inner($)
+    promising 0 
+    then 1
+    then $ and inner($)
     then
       if $ isnt 2
         reject $
     finalized
 
 
-  then @Verify "simple promise", promise
-    promising Resolver
+  then !@Verify "simple promise", promise
+    promising Resolver()
     then
       resolve true
     finalized
   
-  then @Verify "simple rejection", promise
+  then !@Verify "simple rejection", promise
     set success false
-    promising Rejecter
+    promising !Rejecter
     catch
       set success true
     then
@@ -50,16 +108,16 @@ Execute promise
         reject success
     finalized
 
-  then @Verify "resolve value propogate", promise
-    promising Resolver 7
+  then !@Verify "resolve value propogate", promise
+    promising !Resolver 7
     then
       unless $ is 7
         reject $
       resolve $
     finalized
     
-  then @Verify "reject value propogate", promise
-    promising Rejecter 7
+  then !@Verify "reject value propogate", promise
+    promising !Rejecter 7
     then
       reject "failed to reject"
     catch
@@ -68,9 +126,9 @@ Execute promise
       resolve $
     finalized
     
-  then @Verify "rethrow in catch", promise
+  then !@Verify "rethrow in catch", promise
     set success false
-    promising Rejecter
+    promising !Rejecter
     catch
       reject "1"
     then
@@ -89,8 +147,7 @@ Execute promise
         reject success
     finalized
       
-
-  then @Verify "simple states", promise
+  then !@Verify "simple states", promise
     state "a"
       goto "b"
     state "b"
@@ -100,7 +157,7 @@ Execute promise
     Timer 100, task
       reject "didn't resolve fsm fast enough"
 
-  then @Verify "then states", promise
+  then !@Verify "then states", promise
     state "a"
       Timer 1, !then "b"
     state "b"
@@ -108,7 +165,24 @@ Execute promise
     Timer 100, task
       reject "didn't resolve fsm fast enough"
       
-  then @Verify "state goto parameters", promise
+  then !@Verify "state this preserve", promise
+    set @test 0
+    state "a"
+      inc @test
+      goto 'b'
+    state 'b'
+      inc @test
+      Timer 1, !then "c"
+    state 'c'
+      inc @test
+      if @test is 3
+        resolve @test
+      else
+        reject @test
+    Timer 100, task
+      reject "didn't resolve fsm fast enough"
+      
+  then !@Verify "state goto parameters", promise
     state "a"
       goto "b", 5
     state "b" given val
@@ -118,7 +192,7 @@ Execute promise
     Timer 100, task
       reject "didn't resolve fsm fast enough"
       
-  then @Verify "state then parameters 1", promise
+  then !@Verify "state then parameters 1", promise
     state "a"
       Timer 1, !then "b", 5
     state "b" given val
@@ -128,7 +202,7 @@ Execute promise
     Timer 100, task
       reject "didn't resolve fsm fast enough"
       
-  then @Verify "state then parameters 2", promise
+  then !@Verify "state then parameters 2", promise
     state "a"
       TimerExtra 1, 10, !then "b"
     state "b" given val
@@ -138,7 +212,7 @@ Execute promise
     Timer 100, task
       reject "didn't resolve fsm fast enough"
       
-  then @Verify "state then parameters both", promise
+  then !@Verify "state then parameters both", promise
     state "a"
       TimerExtra 1, 10, !then "b", 5
     state "b" given val1, val2

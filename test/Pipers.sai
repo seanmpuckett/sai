@@ -590,8 +590,8 @@ Execute promise
     return b.next().value
 
   @Match 'total 3 iterable using', 'abc', task
-    set s to task given s,i,k
-      return s ?? s+i :: i
+    set s to task given i,k
+      return i
     set b to list a,b,c; |iterate | total using s
     return b.next().value
 

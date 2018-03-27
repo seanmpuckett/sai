@@ -9,6 +9,12 @@ Execute promise
 
 
 
+  @Test 'initialized', task
+    set a to blank
+    set b to a.1 initialized 'frog'
+    return b is 'frog' and a.1 is 'frog'
+  
+  
 
   // returns true for odd iterations, undefined for even including 0
   set OddTrue to process
@@ -471,6 +477,15 @@ Execute promise
     
   @Match 'rshz', 1073741821, task
     return -9 >>> 2
+    
+  @Match 'lsh2', 2, task
+    return 1 lsh 1
+    
+  @Match 'rsh2', 1, task
+    return 2 rsh 1
+    
+  @Match 'rshz2', 1073741821, task
+    return -9 ursh 2
     
   @Match 'typeof', 'object', task
     return typeof @

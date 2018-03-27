@@ -293,6 +293,7 @@ Dedenter task given src
     heredocstate 0
     heredepth 0
     indent: 0
+    literate false
     offset 1
     lines empty
 
@@ -307,6 +308,10 @@ Dedenter task given src
   if '#!' is (rawlines.0 | limit 0, 2)
     shift'd rawlines
     inc offset
+
+  count 10 ?< rawlines.length as i
+    if match'd rawlines\i /^\#+\s/
+      set literate true
       
   ply rawlines as line, lineno
   
@@ -320,9 +325,28 @@ Dedenter task given src
     set depth 0
     while ' ' is line\depth .. inc depth
     set trimmed (line | limit depth, undefined)
-    
+
     set isComment '//' is (trimmed | limit 0, 2)
     set isBlank 0 is trimmed's length
+
+    if literate
+      if depth<2 
+        unless isBlank
+          set isExample false
+        continue
+      elsif depth <4
+        throw new Error '''
+          SAI Compiler: file looks 'literate' with a # header up top, but has lines with an indent of 2 or 3 spaces. 
+          Literate SAI files should have left justified markdown (one space indent allowed for lists) 
+          and all code should be indented four spaces or more.  This looks wrong: ${from Context lineno}
+      elsif isExample
+        continue
+      elsif '// example' is (line | limit -10)
+        set isExample true
+        continue
+      else
+        set depth to self - 4
+        set line to self | limit 4, undefined
     
     unless isComment or isBlank
       set heredoc "'''" is (line | limit -3)
@@ -544,7 +568,7 @@ GetSourceFromFilename task given filename
 GetSourceFromPaths task given name
 
   ply config's paths as path
-    ply array '.sai', ''; as extension
+    ply array '.sai', '.md', ''; as extension
       set filename from PATH.join path, name+extension
       exists from GetSourceFromFilename filename
         set .name name

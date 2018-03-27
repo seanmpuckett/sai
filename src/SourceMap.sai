@@ -1,0 +1,86 @@
+
+reference:
+  VLQ_SHIFT               5
+  VLQ_CONTINUATION_BIT    1 << VLQ_SHIFT
+  VLQ_VALUE_MASK          VLQ_CONTINUATION_BIT - 1
+  BASE64_CHARS            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+
+object SourceMap
+
+instance:
+  lines empty
+  
+Add task given sourceLoc, genLoc, options
+  set line, column to genLoc
+  set lineMap to lines\line initialized (create 'LineMap' line)
+  add'd lineMap column, sourceLoc, options
+  
+SourceLocation task given loc
+  set line, column to loc
+  until line < 0
+    exists lines\line
+      return from it.sourceLocation column
+  return undefined
+  
+Generate task given options, code
+  set
+    writingLine       0
+    lastColumn        0
+    lastSourceLine    0
+    lastSourceColumn  0
+    needComma         false
+    buffer            ''
+
+  ply lines as lineMap, lineNumber
+    ply lineMap.columns as mapping
+      while writingLine < mapping.line
+        set
+          lastColumn 0
+          needComma false
+          buffer + ';'
+          writingLine + 1
+          
+      if needComma
+        set buffer + ','
+        set needComma false
+        
+      set
+        buffer + !EncodeVlq mapping.column - lastColumn
+        lastColumn mapping.column
+        buffer + !EncodeVlq 0
+        buffer + !EncodeVlq mapping.sourceLine - lastSourceLine
+        lastSourceLine mapping.sourceLine
+        buffer + !EncodeVlq mapping.sourceColumn - lastSourceColumn
+        lastSourceColumn mapping.sourceColumn
+        needComma true
+          
+      
+    set v3:
+        version         3
+        file            options.generatedFile ? ''
+        sourceRoot      options.sourceRoot ? ''
+        sources         options.sourceFiles ? array options.filename; ? list <anonymous>
+        names           empty
+        mappings        buffer
+    
+    if options.sourceMap or options.inlineMap
+      set v3.sourcesContent   array code;
+
+    return v3
+
+EncodeVlq task given value
+  set
+    answer ''
+    valueToEncode (Math.abs(value) << 1) orb (value<0 ?? 1 :: 0)
+  
+  while valueToEncode or not answer
+    set nextChunk valueToEncode andb VLQ_VALUE_MASK
+    set valueToEncode >> VLQ_SHIFT
+    if valueToEncode
+      set nextChunk orb VLQ_CONTINUATION_BIT
+    set answer + BASE64_CHARS\nextChunk
+  
+  return answer
+  
+  

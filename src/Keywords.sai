@@ -544,19 +544,16 @@ Documentation task
 
 
       '<<':
-        subtitle 'left-shift'
+        subtitle 'bitwise left shift'
         summary '''
-          Performs a binary left shift.
+          Convert the expression to a 32 bit integer, then perform a binary left shift bitcount times.
         synref '''
           .. [expr] << [bitcount]
+          .. [expr] lsh [bitcount]   // synonym
         detail '''
-          Convert the expression into a 32 bit signed integer and perform a binary left shift *bitcount* times.
-
-              debug 4 << 1   // 8
-              debug -8 << 2  // -32
-              debug 2.8 << 0 // 2
+          See its synonym __lsh__.
+          
   
-
       '<=':
         subtitle 'less or equal comparison'
         summary '''
@@ -633,30 +630,22 @@ Documentation task
           Convert the expression to a 32 bit signed integer, then shift it right bitcount times, 
           maintaining the sign of the expression.
         synref '''
-          .. [expr] >> [bitcount]
+          .. [expr] rsh [bitcount]
+          .. [expr] >> [bitcount]   // synonym
         detail '''
-          As in:
-  
-              debug 8 >> 1   // 4
-              debug -32 >> 2 // -8
-
-          There's also an unsigned variant __>>>__.
+          See __rsh__.
 
 
       '>>>':
         subtitle 'unsigned bitwise right shift'
         summary '''
-          Convert the expression to a 32 bit signed integer, then shift it right bitcount times, 
+          Convert the expression to a 32 bit unsigned integer, then shift it right bitcount times, 
           Zero bits are added on the left side (msb), which does not preserve negative sign.
         synref '''
-          .. [expr] >> [bitcount]
+          .. [expr] ursh [bitcount]
+          .. [expr] >>> [bitcount]   // synonym
         detail '''
-          This is the difference:
-          
-              debug 8 >>> 1   // 4
-              debug -32 >>> 2 // 1073741816
-
-          You want this one if you're working with bitmap data, for example.
+          See __ursh__.
 
 
       '?<':
@@ -763,8 +752,8 @@ Documentation task
           
               set buildOk to and:
                 fileExists(fn)
-                fileDate(fn) > lastBuild\fn
-                not alreadyBuilt\fn
+                fileDate(fn) > lastBuild\\fn
+                not alreadyBuilt\\fn
                 extensionhandler[PATH.extension(fn)]
                 
               if buildOk as hdlr
@@ -939,6 +928,27 @@ Documentation task
           calculates the value and assigns it to the cache.
     
 
+      'initialized':
+        subtitle 'default with assignment'
+        summary '''
+          Examines the variable on the left; if it has a value, returns it. Otherwise calculates the value
+          on the right, stores it in the variable on the left, and returns it.
+        synref '''
+          ... [lexpr] initialized [rexpr]
+        detail '''
+          The __initialized__ operator works very much like the __set/default__ combination, but allows
+          you to use it in the middle of an expression. You should only use variables on the left,
+          as trying to assign into a function or calculated expression will not work.
+          
+          The only real use for this is in scenarios where you would like to cache the result of an
+          expression and want the code to reflect this simple idea.
+          
+          Here is a trivial example:
+          
+              GetCachedThing task with identifier
+                return thingCache\identifier initialized from thingComputation identifier
+          
+              
       'is':
         subtitle 'equivalence test'
         summary '''
@@ -1064,6 +1074,23 @@ Documentation task
               set a to create 'Child'
               debug a isof 'Child'   // true
               debug a isof 'Parent'  // true
+
+
+      'lsh':
+        subtitle 'unsigned bitwise left shift'
+        summary '''
+          Convert the expression to a 32 bit integer, then shift it left bitcount times.
+        synref '''
+          .. [expr] lsh [bitcount]
+          .. [expr] << [bitcount]   // synonym
+        detail '''
+          For example:
+
+              debug 4 lsh 1   // 8
+              debug -8 lsh 2  // -32
+              debug 2.8 lsh 0 // 2
+  
+          The synonym __<<__ does exactly the same thing.
 
 
       'nand':
@@ -1253,6 +1280,23 @@ Documentation task
               15 in binary: 00000000000000000000000000001111
 
 
+      'rsh':
+        subtitle 'signed bitwise right shift'
+        summary '''
+          Convert the expression to a 32 bit signed integer, then shift it right bitcount times, 
+          maintaining the sign of the expression.
+        synref '''
+          .. [expr] rsh [bitcount]
+          .. [expr] >> [bitcount]  (synonym)
+        detail '''
+          As in:
+  
+              debug 8 >> 1   // 4
+              debug -32 rsh 2 // -8
+
+          There's also an unsigned variant __>>>__/__ursh__.
+
+
       'singleton':
         subtitle 'singleton object access'
         summary '''
@@ -1296,6 +1340,27 @@ Documentation task
           .. typeof [expr]
         detail '''
           See e.g. [https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof][2] for details.
+
+
+      'ursh':
+        subtitle 'unsigned bitwise right shift'
+        summary '''
+          Convert the expression to a 32 bit unsigned integer, then shift it right bitcount times, 
+          Zero bits are added on the left side (msb), which does not preserve negative sign.
+        synref '''
+          .. [expr] ursh [bitcount]
+          .. [expr] >>> [bitcount]   (synonym)
+        detail '''
+          This is the difference:
+          
+              debug -32 rsh 2 // -8
+              debug -32 ursh 2 // 1073741816
+
+          You want this one if you're working with bitmap data, for example.
+          
+          Compare with __rsh__.
+          
+          The synonym __>>>__ does the same thing as __ursh__.
 
 
       'xor':
@@ -3696,7 +3761,8 @@ Documentation task
       'unbound':
         subtitle 'mark a method as context-free'
         summary '''
-          An __unbound__ function does no runtime checks to ensure it has not become unmoored from context.
+          An __unbound__ function is not 'attached' in any way (other than by name) to any instance of its 
+          object.
         synref '''
           object ObjectName
     
@@ -3706,16 +3772,41 @@ Documentation task
         detail '''
           When you declare an object function as __unbound__ the function no longer checks to see if it 
           has become orphaned in execution -- that is, if it's _this_ object is no longer 
-          what it is supposed to be -- on a call to that function.
+          what it is supposed to be -- on a call to that function. Indeed, the _this_ context is specifically
+          undefined in an __unbound__ function.
 
-          It is very easy to lose binding on object methods when you are using them as callbacks 
-          or promises. Use the __bind__ keyword when referencing object methods to ensure they 
-          stay in the context you expect. 
+          __Unbound__ functions  cannot reference bareword (unqualified) instance or given variables, 
+          or normal (bound) object functions. (They can access them with direct context, see the example 
+          below.) They can also call other unbound functions.
 
-          Sometimes you do want methods to be unbound, for example, utility functions that don't need 
-          to reference their own object. In that case, you can mark the function as __unbound__ to get 
-          around the error message.
+              object Thing
+              instance: name 'Fred'
+              
+              Bound task
+                debug name    // Fred
+                Unbound 
+                Unbound2 @
+                Unbound3 @
+                
+              Unbound task
+                debug name    // COMPILE ERROR, cannot use bareword instance variable within unbound task 
+                
+              Unbound2 task given o
+                debug o.name  // This is an access with direct context: the variable o. This prints 'Fred'
+              
+              Unbound3 task given o
+                Unbound2 o    // This is okay, calling an unbound task within an unbound task
+                Bound         // COMPILE ERROR, cannot call bareword bound function from an unbound task
+                o.Bound       // But this is okay, because it's got a direct context.
 
+          So the question is why the heck would you ever mark a function __unbound__ and the answer is
+          sometimes when you're using callbacks, you might not be able to pass in a bound function.
+          Also, depending on your JS compiler, there may be a slight performance gain in marking small,
+          often used utility functions as __unbound__ so there is no need to perform binding checks.
+          
+          It is reasonably safe to just declare things __unbound__ if you think you might want the
+          benefits; the compiler will holler if it thinks you're making a mistake.
+            
 
       'undefined':
         subtitle 'the absence of a place'

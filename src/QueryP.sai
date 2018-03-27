@@ -318,10 +318,12 @@ LimitPiper task expects $clauses, $tools
     set pattern '$AI.slice_op(${SPLIT},${st},${ct})'
 
   case 'first.none'
-    set pattern '($AI.element_op($AI.slice_op(${SPLIT},0,1),0))'
+    $tools.addlocal '$_b'
+    set pattern '(Array.isArray($_b=${SPLIT}) ? $_b[0] : $AI.element_op($AI.slice_op($_b,0,1),0))'
 
   case 'last.none'
-    set pattern '($AI.element_op($AI.slice_op(${SPLIT},undefined,-1),0))'
+    $tools.addlocal '$_b'
+    set pattern '(Array.isArray($_b=${SPLIT}) ? $_b[$_b.length-1] : $AI.element_op($AI.slice_op($_b,undefined,-1),0))'
 
   case 'count.none'
     set pattern '$AI.count_op(${SPLIT})'

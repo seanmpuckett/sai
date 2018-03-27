@@ -143,8 +143,9 @@ Write task expects $filename, $pages, $category, $header
         
         
     else
+      set aux  .category is 'pipers' ?? '| ' :: ''
       push'd content from LineTrim 4, '''
-        ### ${.title ? .name} _${.subtitle} (${.category} - ^${.title ? .name})_ 
+        ### ${aux}${.title ? .name.toUpperCase()} - _${.subtitle}_ - ${.category} - ^${.title ? .name} 
 
         ${from LineTrim 1, .summary}      
         ${from LineTrim 1, from Indent 4, .synref ? 'synref'}

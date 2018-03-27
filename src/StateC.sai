@@ -11,7 +11,7 @@ manifest get
       state:
         repeats true
         clauses:
-          state: #exproutblock
+          state: #exproutblock, #rvalue
         handler bind StateConstruct
 
 
@@ -28,6 +28,28 @@ StateConstruct task expects $clauses, $tools
       var $state$getfn=function(states,state) {
         return $AI.assert(states[state],"SAI runtime: STATE "+state+" does not exist; available states are "+$AI.keys_op(states).join(','));
       }
+      var $state$goto=function(states,state){
+        var $=this;
+        var fn=$state$getfn(states,state);
+        var l=arguments.length, args=new Array(l-2);
+        for (var li=2; li<l; li++) args[li-2]=arguments[li];
+        setImmediate(function(){fn.apply($,args)});
+      };
+      var $state$then=function(states,state){
+        var $=this;
+        var fn=$state$getfn(states,state);
+        var l=arguments.length, args=new Array(l-2);
+        for (var li=2; li<l; li++) args[li-2]=arguments[li];
+        return function(){
+          var l=arguments.length;
+          if (l) { 
+            var o=args.length;
+            args.length=l+o;
+            for (var li=0; li<l; li++) args[o+li]=arguments[li];
+          }
+          fn.apply($,args);
+        };
+      };
 
     header to '''
       var ${from $tools.addlocal}=function(){
@@ -36,26 +58,8 @@ StateConstruct task expects $clauses, $tools
 
     trailer '''
       }
-        _goto=function(state){
-          var fn=$state$getfn($states,state);
-          var l=arguments.length, args=new Array(l-1);
-          for (var li=1; li<l; li++) args[li-1]=arguments[li];
-          setImmediate(function(){fn.apply($,args)});
-        };
-        _then=function(state){
-          var fn=$state$getfn($states,state);
-          var l=arguments.length, args=new Array(l-1);
-          for (var li=1; li<l; li++) args[li-1]=arguments[li];
-          return function(){
-            var l=arguments.length;
-            if (l) { 
-              var o=args.length;
-              args.length=l+o;
-              for (var li=0; li<l; li++) args[o+li]=arguments[li];
-            }
-            fn.apply($,args);
-          };
-        };
+        _goto=$state$goto.bind($,$states);
+        _then=$state$then.bind($,$states);
         _goto(${$clauses.0's args.expr});
       }();    
 
@@ -66,7 +70,7 @@ StateConstruct task expects $clauses, $tools
 
     switch .type
     case 'state.exproutblock'
-      set name .args.expr
+      set name .args.expr 
       
       if names\name
         return: error 'SAI compile: duplicate state ${name} in STATE construct'

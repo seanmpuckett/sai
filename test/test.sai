@@ -38,11 +38,12 @@ Instantiate task
     CompOrderOps
     Inheritance
     Environment
+    Literate
 
   set startTime new ~Date
 
   set pending tests | thru !promise
-    promising (create it @).Execute
+    promising !(create it @).Execute
     then
       debug "Test ${it} complete."
     catch

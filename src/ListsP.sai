@@ -134,6 +134,7 @@ IntoPiper task expects $work, $tools
   case 'into.valoutblock'
     set 
       vars:
+        _prefix 'into'
         'this' outs.0
         'key' outs.1
         'sum' outs.2
@@ -185,7 +186,7 @@ TotalPiper task expects $work, $tools
       pattern '$AI.reduce_op_fast(${SPLIT},${fn},undefined)'
 
   case 'total.use'
-    set pattern '$AI.reduce_op_fast(${SPLIT},${$work.args.use},undefined)'
+    set pattern '$AI.reduce_op_fast(${SPLIT},function(s,v,k){ var t=(${$work.args.use}).call($,v,k); return (s===undefined)?t:s+t; },undefined)'
 
   case 'total.none'
     set pattern '''
@@ -632,6 +633,19 @@ Documents task
               
           The length of the three strings in the fruit array.
           
+          #### total using
+
+          The addition of **using** lets you call an external function.  The function must 
+          always `return` the value you wish to be added. You get two parameters, the value, and
+          the key.
+
+              set ageTotal to task given row, id
+                return row.age
+      
+              debug friends | total using ageTotal 
+  
+              > 185
+
 
       'keys':
         subtitle 'return a list of trait names'

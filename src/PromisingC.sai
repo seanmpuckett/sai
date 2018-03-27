@@ -11,13 +11,13 @@ manifest get
       'promising':
         repeats false
         clauses: 
-          promising: #verb, #outblock, #none
-          then: #verb, #outblock
-          catch: #verb, #outblock
-          finally: #verb, #outblock
+          promising: #exprs, #outblock, #none
+          then: #exprs, #outblock
+          catch: #exprs, #outblock
+          finally: #exprs, #outblock
           all: #exprs, #none
           any: #exprs, #none
-          adopt: #exprs
+//          adopt: #exprs
           resolved: #exprs, #none
           rejected: #exprs, #none
           finalized: #none
@@ -32,11 +32,13 @@ docs get
 
 PromisingConstruct task as work
 
+  set KeysToText task given a
+    return (a | keys).join('/').toUpperCase()
+
   set finals: #finally, #catch, #rejected, #finalized
   with ( work's clauses | last ).clause
     unless finals\it
-      set finalText (finals | keys).join('/').toUpperCase()
-      return: error "SAI compiler: final clause in PROMISING must be ${finalText}, not ${toUpperCase'd it}."
+      return: error "SAI compiler: final clause in PROMISING must be ${from KeysToText finals}, not ${toUpperCase'd it}."
 
   set terminal false
   set finishers: #resolved, #rejected, #finalized
@@ -44,10 +46,9 @@ PromisingConstruct task as work
     if finishers\.clause
       set terminal true
     elsif terminal
-      set finisherText (finishers | keys).join('/').toUpperCase()
-      return: error "SAI compiler: ${finisherText} should not have any other clauses, such as ${toUpperCase'd .clause}, following."
+      return: error "SAI compiler: ${from KeysToText finishers} should not have any other clauses, such as ${toUpperCase'd .clause}, following."
 
-  set tasker to task  
+  set Tasker to task  
     set options:
       'as' $args.out
       block $args.block
@@ -71,35 +72,35 @@ PromisingConstruct task as work
   
     switch .type
 
-    case 'promising.verb'
-      set body + "$promising$then(${.args.verb},'promising')"
+    case 'promising.exprs'
+      set body + "$promising$then(${.args.exprs.1},'promising')"
 
     case 'promising.outblock'
-      set block from tasker: args .args, #ispromise, #execute
+      set block from Tasker: args .args, #ispromise, #execute
       set body + "(${block?''})"
 
     case 'promising.none'
       set body + "Promise.resolve()"
 
-    case 'then.verb'
-      set body + ".then(function(p){return $promising$then(${.args.verb},'then');})"
+    case 'then.exprs'
+      set body + ".then(function(p){return $promising$then(${.args.exprs.1},'then');})"
 
     case 'then.outblock'
-      set block from tasker: args .args, #ispromise
+      set block from Tasker: args .args, #ispromise
       set body + ".then(${block})"
 
-    case 'catch.verb'
-      set body + ".catch(function(p){return $promising$then(${.args.verb},'catch');})"
+    case 'catch.exprs'
+      set body + ".catch(function(p){return $promising$then(${.args.exprs.1},'catch');})"
 
     case 'catch.outblock'
-      set block from tasker: args .args, #ispromise
+      set block from Tasker: args .args, #ispromise
       set body + ".catch(${block})"
 
-    case 'finally.verb'
-      set body + ".finally(function(p){return $promising$then(${.args.verb},'finally');})"
+    case 'finally.exprs'
+      set body + ".finally(function(p){return $promising$then(${.args.exprs.1},'finally');})"
 
     case 'finally.outblock'
-      set block from tasker: args .args
+      set block from Tasker: args .args
       set body + ".finally(${block})"
 
     case 'resolved.exprs'
@@ -118,9 +119,9 @@ PromisingConstruct task as work
       set body + ".then(function(){return $_resolve.apply(null,arguments);})"
       set body + ".catch(function(){return $_reject.apply(null,arguments);})"
 
-    case 'adopt.exprs'
-      set body + '''
-        .then(function(p){return $promising$then(${.args.exprs.1},'adopt')})
+//    case 'adopt.exprs'
+//      set body + '''
+//        .then(function(p){return $promising$then(${.args.exprs.1},'adopt')})
 
     case 'all.exprs'
       set body + ".then(function(p){return Promise.all(${.args.exprs.1});})"
@@ -147,7 +148,7 @@ Documents task
         summary '''
           The __promising__ construct lends clarity to asynchronous operations using `promise`-based functions. 
         synref '''
-          promising [promise generator]
+          promising [promise]
             resolve/reject [parameters]
            - or -
           promising
@@ -158,29 +159,27 @@ Documents task
           
           ... followed by one or more of ...
 
-          then [promise generator]
+          then [promise]
            - or -
           then (promise parameters)
             [code that is turned into a promise]
             resolve/reject (parameters)
 
-          catch [promise generator]
+          catch [promise]
            - or -
           catch (promise parameters)
             [code that is turned into a promise]
             resolve/reject (parameters)
 
-          finally [promise generator]
+          finally [promise]
            - or -
           finally (promise parameters)
             [code that is turned into a promise]
             resolve/reject (parameters)
 
-          adopt [active promise]
+          any [array of promises]
 
-          any [array of active promises]
-
-          all [array of active promises]
+          all [array of promises]
 
           rejected (expression)
 
@@ -199,8 +198,9 @@ Documents task
           requires, not only syntactically, but from a code point of view.  
           We'll take each clause one by one. 
 
-          Most clauses in __promising__ are either a single line with a verb (with 
-          optional parameters) that returns a Promise (a.k.a a _thenable_), or 
+          Most clauses in __promising__ are either a single line, which accept either
+          a value that will be passed on to the next clause immediately, or an active 
+          promise (a _thenable_) that will be resolved before the next clause; or are
           multi-line, accepting a block of code that it will wrap in a Promise, 
           as if it were the body of a function.
 
@@ -216,26 +216,23 @@ Documents task
 
           #### promising 
 
-              promising [verb expression returning an active Promise]
+              promising [a value or a promise]
                - or -
               promising 
                 [code block that will be wrapped as a Promise]
 
           __Promising__ starts the clause. It expects an active Promise -- an object 
-          with `.then` and `.catch` ready for use. 
+          with `.then` and `.catch` ready for use. If it isn't a promise, it's just a
+          value that will be passed forward.
 
-          In single line form, use it with a verb expression -- the same syntax you'd 
-          use on a bare line to invoke a function. (You do not use `from` or `!` to 
-          invoke the verb, that happens automatically.) 
+          In this example, `db.listDatabases` is a function, and we invoke it with __from__ 
+          so it will return an active promise.
 
-              promising db.listDatabases
+              promising from db.listDatabases
 
           In this form, the function you are promising must have been declared as a __promise__, or 
           been created in or wrapped in a _Promise_ wrapper by a library or helper.  
 
-          If you need to use asynchronous functions that use callbacks or other methodologies, 
-          ideally you'd wrap them for easier use, but 
-    
           In multi-line form, you're crafting the body of a __promise__ function, and you'll 
           use __reject__ and __resolve__ to pass along asynchronous results to the next 
           clause of the construct.
@@ -256,20 +253,19 @@ Documents task
           a package on npm that offers promisified fetchers ai Because you're smart.
 
           ##### promising with no block or parameter
-          
-          If you have an already-active promise or array of promises that you'd like to 
-          use with __adopt__, __all__, or __any__ then just start the structure with
+
+          If you have an array of promises that you'd like to 
+          use with __all__ or __any__ then just start the structure with
           __promising__ with no parameter or block:
-          
+
               promising
-              adopt promiseYouGotFromElsewhere
+              all promiseArray
               catch
                 debug "uh oh"
-
-
+      
           #### then 
 
-              then [verb expression returning an active Promise]
+              then [value or promise]
                - or -
               then (optional [GIVEN parameter list])
                 [code block that will be wrapped as a Promise]
@@ -279,17 +275,13 @@ Documents task
           one (or more) parameters. (You can use the pronoun __$__ to refer to the first 
           parameter passed without giving it a name.)
 
-              then db.dropDatabase dbName
+              then from db.dropDatabase dbName
     
           Which, by the way, does the exact same thing as this:
 
               then
                 resolve from db.dropDatabase dbName
       
-          Notice how the second form uses `from` to invoke the function before resolved 
-          the value, while the first form just assumes you'll be wanting to execute a 
-          function so makes the invokation syntax implicit.
-
           The block takes the same form and acts the same way as the one in __promising__.
 
           Here's a fun note: when coding these _block form_ clauses, there is an automatic 
@@ -321,30 +313,9 @@ Documents task
       
               catch debug $
 
-          #### adopt
-          
-              adopt [active promise]
-              
-          Use __adopt__ when you have been given a Promise object (rather than a Promise-generating
-          function) and would like to wait on it. 
-          
-          In this example, the test suite doesn't know if it's going to get a promise or not:
-
-              set maybePromise from suite.Execute
-              unless ?maybePromise.then            // a `.then` attribute is a good sign of a Promise
-                debug "Tested \${it} normally"      // in this case we didn't get one, so don't wait for it
-              else
-                promising                          // but if we did, we'll adopt and wait for resolution
-                adopt maybePromise
-                then  
-                  debug "Tested \${it} promise"
-                catch
-                  nop
-          
-          
           #### catch 
 
-              catch [verb expression returning an active Promise]
+              catch [value or promise]
                - or -
               catch (optional [GIVEN parameter list])
                 [code block that will be wrapped as a Promise]
@@ -358,7 +329,7 @@ Documents task
 
           #### finally 
 
-              finally [verb expression returning an active Promise]
+              finally [value or promise]
                - or -
               finally (optional [GIVEN parameter list])
                 [code block that will be wrapped as a Promise]

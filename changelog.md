@@ -1,11 +1,39 @@
 ## Change log
 
+
+### 0.2.4
+
+#### Literate Source
+
+Exciting new support for _literate_ source code.  The compiler now supports SAI source in Markdown format. Basically what you have to do is within the first 10 lines of source, use a markdown header, e.g. `# Exciting Object` or `## The Larch` and then the file will be treated _literate_.  
+
+Literate files are treated as comments, _except_ that all of the code blocks are strung together and then given to the compiler.  Remember that in Markdown, code blocks must be indented by four spaces.
+
+This is completely optional, but makes editing and creating maintainable code much, much nicer.
+
+Also the compiler will look for files with the `.md` extension as well as the `.sai` extension when trying to find source by name.
+
+#### Additional enhancements
+
+ - performance improvement: smarter handling of __unbound__ functions; they can now call other unbound functions, and this happens without indirection.
+ - added __initialized__ back as an operator because I'm a big lazy suck.
+ - added __lsh__, __rsh__ and __ursh__ as synonyms for __<<__  __>>__ and __>>>__ 
+ - removed a few more binary operators from the reserved words list. anything that's also a unary operator (including __and__, __or__, __nand__ and __nor__), has to stay reserved.
+ - more efficient __| first__ and __| last__ in the typical array case.
+ - when the code generator needs a temporary variable, now it gets a somewhat more descriptive name. This, along with the line number cues, should help with low level debugging.  (Source maps are still a work in progress.)
+
+#### Breaking changes
+
+ - Fixed __total using__ to send two parameters (value, key), not three (sum, value, key). Total adds, it doesn't need to pass the sum, it can figure things out on its own.
+ - The __promising__ construct no longer accepts verb clauses, instead it wants values, with __promising__, __then__, __catch__ and __finally__.  Any code written that assumes verb invocation will need a `from` inserted to explicitly invoke the function.  This allows us to get rid of the `adopt` clause, as well as trivially pass forward arbitrary values with __then__ and __catch__.
+
+
 ### 0.2.3
 
 #### Enhancements
 
  - picking up the `$` parameter in `promising/adopt` now works
- - added __or__ and __and__ logical pipe operators.
+ - added __| or__ and __| and__ logical pipe operators.
  - added a unary list-based and multi-line capable version of __and__, __or__, __nor__ and __nand__ to help simplify complicated logical expressions. These compile down into standard JS logical expressions for speed & expected behaviour.
  - updated `sai-library` requirement to `1.0.17` for comprehensible logical operator support.
 

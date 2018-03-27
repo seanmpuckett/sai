@@ -1,0 +1,25 @@
+
+object LineMap
+
+instance:
+  line undefined
+  columns empty
+
+Instantiate task given pLine
+  set line to pLine
+  
+Add task given column, source, options
+  if options.noReplace and columns\column
+    return
+  set columns\column:
+    line line
+    column column
+    sourceLine source.0
+    sourceColumn source.1
+    
+SourceLocation task given column
+  while column>=0 
+    exists columns\column
+      return: .sourceLine, .sourceColumn
+    dec column
+  return undefined

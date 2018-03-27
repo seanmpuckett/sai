@@ -4,6 +4,10 @@ reference:
 
 object Builder main
 
+given:
+  extensions: '.sai', '.md'
+
+
 // Instantiate
 //
 // Called when the object is created.
@@ -12,6 +16,7 @@ object Builder main
 //
 Instantiate task given SAI
 
+ 
   unless SAI
     debug 'Cannot use Builder as a pre-compiled module.'
     ~process.exit 1
@@ -57,7 +62,7 @@ Instantiate task given SAI
     DestPath task given path, branch
       if dest .. set path PATH.join(dest, branch, PATH.basename(path))
       with PATH.parse(path) | delete 'base'
-        if  .ext is '.sai'
+        if  extensions.indexOf(.ext) > -1
           set .ext '.js'
         else
           set .ext (self default '') + '.js'
@@ -97,7 +102,7 @@ Instantiate task given SAI
       if IsDirectory(path)
         every FS.readdirSync(path) as leaf,k
           local candidate PATH.join(path, leaf)
-          if '.sai' is PATH.extname(leaf)
+          if extensions.indexOf(PATH.extname(leaf)) > -1
             ProcessArg candidate, branch
           elsif leaf isnt '.' and leaf isnt '..' and IsDirectory(candidate)
             ProcessArg candidate, PATH.join(branch, leaf)

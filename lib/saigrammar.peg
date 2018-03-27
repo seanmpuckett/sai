@@ -12,11 +12,47 @@
   var readOnlyReference=true;
   var usedMemberVar=false;
   var DynamicTaskClauseFormatter=undefined;
-
+  var _db=false;
+  var lp='_'; // prefix for bareword variables
+  var LeakedMagic=/\^\{([a-z0-9]+)\}/;
   var failures=[];
-  function fail(msg,loc) { failures.push(msg+" at:"+(loc?loc:location().start.offset)); }
-
   var filetools={};
+  var ResWords={},ResWordsA=(
+    "and,array,as,"+
+    "bind,blank,"+
+    "chain,create,copy,"+
+    "default,"+
+    "empty,enum,exists,expects,"+
+    "false,fields,from,"+
+    "get,"+
+    ""+
+    "initialized,is,isnt,isNaN,"+
+    ""+
+    "list,"+
+    ""+
+    "NaN,nand,new,nor,notb,not,number,null,"+
+    "or,"+
+    "promise,process,"+
+    ""+
+    "self,set,singleton,swap,"+
+    "task,trial,to,traits,true,typeof,"+
+    "undefined,using,"+
+    "via,"+
+    "").split(/,/);
+
+
+
+  // preprocessing
+
+  if (undefined===options.constructs) options.constructs={};
+  for (var i=0; i<ResWordsA.length; i++) ResWords[ResWordsA[i]]=1;
+
+  // error handling
+  
+  function fail(msg,loc) { failures.push(msg+" at:"+(loc?loc:location().start.offset)); }
+  
+  // runtime tools
+  
   function AddTool(text) {
     filetools[text]=true;
   }
@@ -28,34 +64,6 @@
     return tools;
   }
 
-  var ResWords={},ResWordsA=(
-    "andb,and,array,as,"+
-    "bind,blank,"+
-    "chain,create,copy,"+
-    "default,"+
-    "empty,enum,exists,expects,"+
-    "false,fields,from,"+
-    "get,"+
-    ""+
-    "is,isnt,isNaN,"+
-    ""+
-    "list,"+
-    ""+
-    "NaN,nand,new,nor,notb,not,number,null,"+
-    "orb,or,"+
-    "promise,process,"+
-    "self,set,singleton,swap,"+
-    "task,trial,to,traits,true,typeof,"+
-    "undefined,using,"+
-    "via,"+
-    "xorb,xor").split(/,/);
-  for (var i=0; i<ResWordsA.length; i++) ResWords[ResWordsA[i]]=1;
-  
-  var _db=false;
-  var lp='_'; // prefix for bareword variables
-  var LeakedMagic=/\^\{([a-z0-9]+)\}/;
-  
-  if (undefined===options.constructs) options.constructs={};
   
   function addInstanceVar(v) {
     if (!InstanceVars[v]) {
@@ -135,8 +143,6 @@
         return '$.'+name;
       }
       if (final) {
-        //console.log(JSON.stringify(InstanceVars));
-        //console.log('SAI Compiler: local variable "'+name+'" used without initialization at:'+loc);
         fail('SAI Compiler: local variable "'+name+'" used without initialization',loc);
       } 
       return x; // unchanged
@@ -177,6 +183,7 @@
 //      }
 //    }
     //console.log(finalk);
+    finalk=finalk.sort(String.compare);
     var r='var '+finalk.join(',')+';\n'; 
     _locals={};
     UnresolvedLocals={};
@@ -191,31 +198,30 @@
   }
  
   function RV(code,varnames) {
+    
     if (!varnames) varnames={};
-    if (!code) fail("SAI compiler: RV has undefined code; likely a syntax error; perhaps you need to use 'self'");
+    var prefix=varnames._prefix || '';
+    if (!code) {
+      fail("SAI compiler: RV has undefined code; likely a syntax error; perhaps you need to use 'self'");
+      return;
+    }
     if (!code.replace) {
       code=code.toString();
     }
     var repl=function(key) {
       var val=varnames[key];
       if (undefined===val || null===val || false===val) {
-        val=tempvar();
+        val=tempvar(prefix+key);
         addLocal(val);
       }
       var re=reCache[key]; if (!re) re=reCache[i]=new RegExp('\\^\\{'+key+'\\}','g');
-      //console.log(" -- replace "+key+" with "+val)
       code=code.replace(re,val);
     };
-    //console.log("###############################")
-    //console.log(code);
-    //console.log("........................");
-    //console.log(varnames);
     var completed={};
     var precedence=['block','this','key','list','counter'];
     for (var j in precedence) {
       var i=precedence[j];
       if (varnames.hasOwnProperty(i)) {
-        //console.log("intercept "+i+" with "+varnames[i]);
         repl(i);
         completed[i]=true;
       }
@@ -225,14 +231,13 @@
         repl(i);
       }
     }
-    //console.log(code)
-    //console.log("---------------------------------")
     return code;
   }
   
   var varnum=0;
-  function tempvar() {
-    var v="$"+(varnum++);
+  function tempvar(prefix) {
+    prefix=prefix ? '_'+prefix : '';
+    var v="$"+(varnum++)+prefix;
     return v;
   }
   
@@ -329,6 +334,9 @@
     '<<': '^{1} <<= ^{2}' , // 
     '>>': '^{1} >>= ^{2}' , // 
     '>>>': '^{1} >>>= ^{2}' , // 
+    'lsh': '^{1} <<= ^{2}' , // 
+    'rsh': '^{1} >>= ^{2}' , // 
+    'ursh': '^{1} >>>= ^{2}' , // 
     '**': '^{1} = Math.pow(^{1},^{2})' , // test 'self **'
 
     xorb: '^{1} ^= ^{2}' , // test 'self xorb'
@@ -461,17 +469,24 @@
     if (SafetyFetch) { addLocal('$_b'); SafetyFetch=false; }
     if (FunctionChain) { addLocal('$_c'); addLocal('$_d'); FunctionChain=false; }
     if (!o.nothis) {
-      if (o.unbound || o.property) {
+      if (o.unbound) {
+        addLocal('$','=undefined');
+      } else if (o.property) {
         addLocal('$','=this');
       } else {
         addLocal('$','=this['+fn+']?this:$bindfail('+fn+')');
       }
     }
+    
+    var rawFunctionName=fn.substring(1,fn.length-1);
     var head='', tail='';
     var sup=GlobVar();
     if (o.prefix!='get' && o.prefix!='set') {
-      addToList('lock',fn.substring(1,fn.length-1));
+      addToList('lock',rawFunctionName);
       head='var '+sup+'=prototype['+fn+'] || function(){};\n';
+      if (o.unbound) {
+        head+='var _'+rawFunctionName+'=';
+      }
       head+='prototype['+fn+']=';
       tail=';\n';
     }
@@ -483,6 +498,7 @@
     if (o.unbound) {
       checkUsedMemberVar(fn+'(t)');
     } usedMemberVar=false;
+  
     if (!o.preface) o.preface='';
     if (!o.postface) o.postface='';
     var fun=o.kind+'('+params+') {\n'+o.preface+getLocals();
@@ -493,7 +509,7 @@
     fun+='}';
   
     if (o.name) {
-      if (fun.indexOf('^{this}')>-1) fail("SAI Compiler: Cannot use unrooted . accessor without a context\n\n"+fun);
+      if (fun.indexOf('^{this}')>-1) fail("SAI Compiler: Cannot use unrooted attribute (e.g. 'it') without a context, though the context may have been lost by a syntax error somewhere.\n\n"+fun);
     }
     var r=RV(head+fun+tail,{this:false,super:sup});
 
@@ -502,16 +518,8 @@
   }
 
   function VerbCat(v) {
-//       console.log("VerbCat");
-//       console.log(v);
      if (v.left) {
        return v.left+v.base+v.right;
-//     } else if (v.call) {
-//       if (test) {
-//         return RV('((undefined===($_c=^{verb}(($_d=^{base}),^{param})))?$_d:$_c)',v);
-//       } else {
-//         return v.verb+'('+v.base+(v.param?(','+v.param):'')+')';
-//       }
      } else {
        if (v.test) {
          return RV('((undefined===($_c=(($_d=^{base})^{verb}(^{param}))))?$_d:$_c)',v);
@@ -524,8 +532,6 @@
   function AssembleVerb(v) {
      FunctionChain=true;
      if (v.length==1) {
-//       console.log("AV 1");
-//       console.log(v[0]);
        return VerbCat(v[0]);
      }
      var base=v[0].base;
@@ -690,15 +696,30 @@ Task
 
 TaskEvent
  = v:Identifier _ TO? _ unbound:UNBOUND? _ TASK _ x:Expects? _ w:MultiOutput? _ { 
-   addInstanceVar(v);
+   if (unbound) {
+     if (References[lp+v]) fail("SAI Compiler: "+v+" redefinition");
+     References[lp+v]=v;
+   } else {
+     addInstanceVar(v);
+   }
    return  {name:"'"+v+"'",unbound:unbound,expects:x,as:w,kind:'function'};
  } 
  / v:ProcessName _ TO? _ unbound:UNBOUND? _ PROCESS _ x:Expects? _ w:MultiOutput? _ { 
-   addInstanceVar(v);
+   if (unbound) {
+     if (References[lp+v]) fail("SAI Compiler: "+v+" redefinition");
+     References[lp+v]=v;
+   } else {
+     addInstanceVar(v);
+   }
    return  {name:v,expects:x,unbound:unbound,as:w,kind:'function*'};
  } 
  / v:Identifier _ TO? _ unbound:UNBOUND? _ PROMISE _ x:Expects? _ o:MultiOutput? _ { 
-   addInstanceVar(v);
+   if (unbound) {
+     if (References[lp+v]) fail("SAI Compiler: "+v+" redefinition");
+     References[lp+v]=v;
+   } else {
+     addInstanceVar(v);
+   }
    var vn="'"+v+"'";
    var isthis='this['+vn+']?this:$bindfail('+vn+')';
    if (unbound) {
@@ -1147,7 +1168,7 @@ UnOp // test 'self*'
 
 Itselfop // test 'self*'
  = '+' / '-' 
- / '**' / '*' / '/' / '%' / '<<' / '>>' / '>>>'
+ / '**' / '*' / '/' / '%' / '<<' / '>>' / '>>>' / RSH / LSH / URSH
  / ANDB / ORB / XORB
  / AND / OR / XOR / NAND / NOR
  / '?>' / '?<'
@@ -1660,6 +1681,10 @@ Multiplication
          SafetyFetch=true; 
          return RV('((undefined!==($_b=^{l}))?$_b:^{v})',{l:l,v:v}); 
        } 
+     / INITIALIZED _ v:Multiplication  { // test 'initialized*'
+         SafetyFetch=true; 
+         return RV('((undefined!==($_b=^{l}))?$_b:(^{l}=^{v}))',{l:l,v:v}); 
+       } 
      / o:MultiplicationOp _ r:Multiplication { return '('+l+o+r+')' }
      / '**' _ r:Multiplication { // test '**'
        return 'Math.pow('+l+','+r+')' 
@@ -1685,6 +1710,9 @@ MultiplicationOp
  / '>>>' // test 'rshz'
  / '>>' // test 'rsh'
  / '<<' // test 'lsh'
+ / RSH { return '>>' } 
+ / LSH { return '<<' } 
+ / URSH { return '>>>' } 
 
 
 Value
@@ -1870,32 +1898,8 @@ Octal
  }
 
 Hexadecimal
- = '0x' v:HexString { return v; }
- 
-HexString
- = v:(HexDigit)+ {
-   var r=0;
-   for (var i=0; i<v.length; r=r*16+v[i++]);
-   return r;
- }
+ = '0x' v:[0-9a-fA-F]+ { return '0x'+v.join('');}
 
-HexDigit
- = '0' { return 0; }
- / '1' { return 1; }
- / '2' { return 2; }
- / '3' { return 3; }
- / '4' { return 4; }
- / '5' { return 5; }
- / '6' { return 6; }
- / '7' { return 7; }
- / '8' { return 8; }
- / '9' { return 9; }
- / ('a'/'A') { return 10; }
- / ('b'/'B') { return 11; }
- / ('c'/'C') { return 12; }
- / ('d'/'D') { return 13; }
- / ('e'/'E') { return 14; }
- / ('f'/'F') { return 15; }
 
 Scientific
  = r:(Real/Integer) 'e' x:Integer { return r+'e'+x }
@@ -2019,6 +2023,7 @@ GIVEN = 'given'
 INFINITY = 'Infinity'
 INSTANCE = 'instance'
 INHERIT = 'inherit'
+INITIALIZED = 'initialized'
 ISNT = 'isnt'
 ISNAN = 'isNaN'
 IS = 'is'
@@ -2028,6 +2033,7 @@ IT = 'it'
 KEY = 'key'
 LIST = 'list'
 LOCAL = 'local'
+LSH = 'lsh'
 MAIN = 'main'
 NaN = 'NaN'
 NAND = 'nand'
@@ -2046,6 +2052,7 @@ FALSE = 'false'
 PROMISE = 'promise'
 PROCESS = 'process'
 REFERENCE = 'reference'
+RSH = 'rsh'
 SELF = 'self'
 SET = 'set'
 SINGLETON = 'singleton'
@@ -2059,6 +2066,7 @@ TO = 'to'
 TYPEOF = 'typeof'
 UNBOUND = 'unbound'
 UNDEFINED = 'undefined'
+URSH = 'ursh'
 USING = 'using'
 VIA = 'via'
 XOR  = 'xor'
