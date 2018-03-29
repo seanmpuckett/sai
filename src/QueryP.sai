@@ -139,7 +139,7 @@ LowestPiper task expects $clauses, $tools
 
       fn '''
         function(a,b){ 
-          if (undefined===a) return b;
+//          if (undefined===a) return b;
           var aa=${afetch};
           var bb=${bfetch};
           return (${whichway}) ? b : a;
@@ -162,7 +162,7 @@ LowestPiper task expects $clauses, $tools
       fn from $tools.replacer fn, vars  
       pattern '''
         $AI.reduce_op(${SPLIT},function(a,b){
-          if (undefined===a) return b;
+//          if (undefined===a) return b;
           return (${fn}(a,b)${whichway}) ? b : a;
         })
 
@@ -171,7 +171,7 @@ LowestPiper task expects $clauses, $tools
       whichway to ascending>0 ?? '>0' :: '<=0'
       pattern '''
         $AI.reduce_op(${SPLIT},function(a,b){
-          if (undefined===a) return b;
+//          if (undefined===a) return b;
           return (${work.args.use}(a,b)${whichway}) ? b : a;
         })
 
@@ -180,7 +180,7 @@ LowestPiper task expects $clauses, $tools
       whichway to ascending>0 ?? 'a>b' :: 'a<b'
       pattern '''
         $AI.reduce_op(${SPLIT},function(a,b){
-          if (undefined===a) return b;
+//          if (undefined===a) return b;
           return (${whichway}) ? b : a;
         })
 

@@ -21,6 +21,55 @@ Execute promise
     :name 'Harry', age 31, province 'QC'
     :name 'Jenna', age 28, #dog, province 'ON'  
 
+
+
+  @Match 'reduce array add ', 3, task
+    set b: 1, 2; | reduce sum+it
+    return b 
+    
+  @Match 'reduce array one element', 1, task
+    set b: 1; | reduce sum+it
+    return b 
+    
+  @Test 'reduce array no elements', task
+    set b empty | reduce sum+it
+    return b is undefined
+    
+  @Match 'reduce object add', 3, task
+    set b: a 1, b 2; | reduce sum+it
+    return b 
+    
+  @Match 'reduce object add using', 3, task
+    set Adder to task given a,b
+      return a+b
+    set b: a 1, b 2; | reduce using Adder
+    return b 
+    
+  @Match 'reduce object one element', 1, task
+    set b: a 1; | reduce sum+it
+    return b 
+    
+  @Test 'reduce object no elements', task
+    set b blank | reduce sum+it
+    return b is undefined
+    
+  @Match 'reduce gen add ', 3, task
+    set b: 1, 2; | iterate | reduce sum+it
+    return b | first
+    
+  @Match 'reduce gen one element', 1, task
+    set b: 1; | iterate | reduce sum+it
+    return b | first
+    
+  @Test 'reduce gen no elements', task
+    set b empty | iterate | reduce sum+it
+    return ( b | first ) is undefined
+    
+  @Match 'reduce array concats', 'SaraJohnEllieMarshalDougAnnHarryJenna', task
+    set b friends | reduce 
+      set sum.name + it.name
+    return b.name
+
   set f2 friends | into blank 
     set sum[.name] it
 

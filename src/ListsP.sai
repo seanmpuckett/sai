@@ -43,6 +43,11 @@ manifest get
           'total': #expr, #use, #none
         handler bind TotalPiper
 
+      'reduce':
+        clauses:
+          'reduce': #expr, #use, #outblock
+        handler bind ReducePiper
+
       'keys':
         clauses:
           'keys': #none
@@ -129,7 +134,7 @@ IntoPiper task expects $work, $tools
         }
         
       fn from $tools.replacer fn, vars
-      pattern '$AI.reduce_op_fast(${SPLIT},${fn},${startvalue})'
+      pattern '$AI.sum_op(${SPLIT},${fn},${startvalue})'
 
   case 'into.valoutblock'
     set 
@@ -147,10 +152,10 @@ IntoPiper task expects $work, $tools
         }
         
       fn from $tools.replacer fn, vars
-      pattern '$AI.reduce_op_fast(${SPLIT},${fn},${startvalue})'
+      pattern '$AI.sum_op(${SPLIT},${fn},${startvalue})'
 
   case 'into.valuse'
-    set pattern '$AI.reduce_op_fast(${SPLIT},${$work.args.use},${startvalue})'
+    set pattern '$AI.sum_op(${SPLIT},${$work.args.use},${startvalue})'
 
   else
     return: error "Unhandled piper type ${trial} in IntoPiper"
@@ -183,16 +188,69 @@ TotalPiper task expects $work, $tools
         }
         
       fn from $tools.replacer fn, vars
-      pattern '$AI.reduce_op_fast(${SPLIT},${fn},undefined)'
+      pattern '$AI.sum_op(${SPLIT},${fn},undefined)'
 
   case 'total.use'
-    set pattern '$AI.reduce_op_fast(${SPLIT},function(s,v,k){ var t=(${$work.args.use}).call($,v,k); return (s===undefined)?t:s+t; },undefined)'
+    set pattern '$AI.sum_op(${SPLIT},function(s,v,k){ var t=(${$work.args.use}).call($,v,k); return (s===undefined)?t:s+t; },undefined)'
 
   case 'total.none'
     set pattern '''
-      $AI.reduce_op_fast(${SPLIT},function(s,i){
+      $AI.sum_op(${SPLIT},function(s,i){
         return (undefined===s) ? i : s+i;
       },undefined)
+
+  else
+    return: error "Unhandled piper type ${trial} in IntoPiper"
+      
+  return: leftright pattern.split('${SPLIT}'), tools tools
+
+
+//// REDUCE PIPER
+
+ReducePiper task expects $work, $tools
+
+  set 
+    pattern '(${SPLIT})'
+    outs from @OutVarHelper $work.args.out
+    tools empty
+    
+  switch $work.type
+  case 'reduce.expr'
+    set 
+      vars:
+        'this' false
+        'key' false
+        'sum' false
+        'block' $work.args.expr
+
+      fn '''
+        function(^{sum},^{this},^{key}) {
+          return ^{block};
+        }
+        
+      fn from $tools.replacer fn, vars
+      pattern '$AI.reduce_op(${SPLIT},${fn})'
+
+  case 'reduce.outblock'
+    set 
+      vars:
+        _prefix 'reduce_'
+        'this' outs.0
+        'key' outs.1
+        'sum' outs.2
+        'block' $work.args.block
+
+      fn '''
+        function(^{sum},^{this},^{key}) { 
+          ^{block};
+          return ^{sum};
+        }
+        
+      fn from $tools.replacer fn, vars
+      pattern '$AI.reduce_op(${SPLIT},${fn})'
+
+  case 'reduce.use'
+    set pattern '$AI.reduce_op(${SPLIT},${$work.args.use})'
 
   else
     return: error "Unhandled piper type ${trial} in IntoPiper"
@@ -326,7 +384,7 @@ ArraysPiper task expects $work, $tools
     set pattern '$AI.entrait_op(${SPLIT})'
 
   case 'enkey.none'
-    set pattern '$AI.reduce_op(${SPLIT},function(s,a){s[a]=true;return s;},{})'
+    set pattern '$AI.sum_op(${SPLIT},function(s,a){s[a]=true;return s;},{})'
 
   case 'enkey.expr'
     set 
@@ -337,7 +395,7 @@ ArraysPiper task expects $work, $tools
       fn '''
         ^{block}
       fn from $tools.replacer fn, vars
-      pattern '$AI.reduce_op(${SPLIT},function(s,v,k){s[v]=${fn};return s;},{})'
+      pattern '$AI.sum_op(${SPLIT},function(s,v,k){s[v]=${fn};return s;},{})'
 
 
   else
@@ -548,8 +606,71 @@ Documents task
 
         
 
+      'reduce':
+        subtitle 'collection reduction'
+        summary '''
+          __Reduce__ transforms a collection of items into a single item by giving a function two items and 
+          asking it to produce a single item in response. This is repeated over the entire collection.
+        detail '''
+          Let's say you have an array with four numbers:
+          
+              set b to: 4, 7, 12, 34
+              
+              set result to b | reduce as a, b
+                debug "a:$\{a} b:$\{b}"
+                return a+b
+                
+              debug "result: $\{result}"
+              
+          The __reduce__ operator is given a block of code that accepts two items, a and b. It prints them 
+          both out, then returns their sum. This prints:
+          
+              > a:4 b:7
+              > a:11 b:12
+              > a:23 b:34
+              > result: 57
+
+          Since there were four items in the list, the code block was called three times. The first time
+          with the first two elements in the array. Subsequently, it was called with the previous result
+          and the next element in the array.  
+          
+          If the collection given to __reduce__ only has one element, that element is returned without
+          calling your code; since there was only one item, there is no way to combine it with another.
+          If you give __reduce__ an empty collection, the result is __undefined__.           
+          
+          __Reduce__ is a classic operator for transforming sets of data, and there are far better 
+          explanations of how it works and what it is good for to be found elsewhere. The rest of this
+          documentation will just show examples.
+
+          *Note that if you are looking for a reduce-like operator where you provide a starting value for
+          the accumulator and are given each item in the collection in turn, then look at __into__ which 
+          does exactly what you want. __Reduce__ is kind of a different animal.*
+
+          #### reduce inline
+
+          The inline form of reduce gets two pronouns, __sum__ and __it__. 
+          
+              set result to b | reduce sum+it
+
+          #### reduce block
+
+          A __reduce__ code block has the two available pronounts __sum__ and __it__, which you can 
+          rename with an __as__ clause, as shown in the above example.
+          
+          #### reduce using
+
+          The __using__ clause is available with __reduce__. You're passed two parameters, the sum
+          and the next element to consider.
+          
+              set Adder to task given a, b
+                return a+b
+                
+              set result to b | reduce using Adder
+          
+          
+
       'into':
-        subtitle 'reduce-like collection transformation'
+        subtitle 'collection integration'
         summary '''
           Javascript features the array method `Array.prototype.reduce` which performs the reduction function, 
           and SAI extends its applicability with the **into** compherension keyword.

@@ -1,5 +1,11 @@
 ## Change log
 
+### 0.2.5
+
+#### Enhacements
+
+ - new __reduce__ piper; a true reduce operator.
+ 
 
 ### 0.2.4
 
