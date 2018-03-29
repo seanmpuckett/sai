@@ -76,7 +76,7 @@ Instantiate task
   // Banner
   // Backtick specifies a string that runs to EOL.
   
-  debug `Mathemetician's "Impossible" puzzle solver.
+  debug 'Mathemetician\'s "Impossible" puzzle solver.'
 
 
   // Print calculated result
@@ -165,7 +165,7 @@ Instantiate task
     // an expression to be evaluated; in this case a string literal 
     // that uses the ${} string composition tool.
      
-    | thru `Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}
+    | thru 'Solution ${key+1}: X=${.x}, Y=${.y}; sum=${.sum}, product=${.product}'
     
     
     // JOIN is not a keyword, it's a member method of Array. CHAIN knows how to

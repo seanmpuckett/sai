@@ -13,7 +13,7 @@ given:
     '^'
     
   goodlist:
-    'assert', 'debug', 'isa'
+    'assert', 'debug', 'isa', 'environment'
 
 instance:
   SAI undefined

@@ -46,6 +46,7 @@ reference:
       'debug' '$AI.debug_op'
       'require' 'require'
       'assert' '$AI.assert'
+      'environment' '$AI.environment'
       'Error' 'Error'
       'Math' 'Math'
 
@@ -79,7 +80,7 @@ reference:
 
 /////////////// Compiler / Manager object
 
-object SAI singleton
+object SAI singleton 0.2.6
 
 // instance variables
 
@@ -173,6 +174,7 @@ Clean task
     config.Loader bind GetSourceFromPaths
     SAILIB.import bind Require
     SAILIB.create_op bind Create
+    SAILIB.environment bind Environment
 
   IntegrateConstructs
 
@@ -568,7 +570,7 @@ GetSourceFromFilename task given filename
 GetSourceFromPaths task given name
 
   ply config's paths as path
-    ply array '.sai', '.md', ''; as extension
+    ply array '.sai.md', '.sai', '.md', ''; as extension
       set filename from PATH.join path, name+extension
       exists from GetSourceFromFilename filename
         set .name name
@@ -810,5 +812,20 @@ RegisterWithNode task
     throw new Error "SAI Runtime: Could not find require.extensions to register .sai files with node"
     
   
-  
+// Environment
+//
+// Get some information about the runtime environment of SAI modules
+// Including 'approved' functions to call.
+
+Environment task
+  return:
+    dynamic true
+    static false
+
+    Clean bind Clean
+    Configure bind Configure
+    GetSource bind GetSource
+    RegisterWithNode bind RegisterWithNode
+    Require bind Require
+    
 

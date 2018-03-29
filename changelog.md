@@ -1,5 +1,12 @@
 ## Change log
 
+### 0.2.6
+
+ - added supported extension of `.sai.md` while deprecating `.md` by itself. `saibuild` will not automatically build `.md` files unless they're `.sai.md`. More clarity is good.
+ - new `environment` global function returns an object with information about your module's SAI context. Most especially important is whether or not you're running in static or dynamic mode, and if dynamic, what additional functionality you have.
+ - Requires `sai-library 1.0.20`.
+ 
+
 ### 0.2.5
 
 #### Enhacements
