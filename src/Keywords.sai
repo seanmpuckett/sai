@@ -2166,6 +2166,16 @@ Documentation task
   
               // prints 'Sara' five times.
 
+      'call':
+        subtitle 'function invocation'
+        summary '''
+          **Call** invokes the identifier as a function call that returns a value, passing in any parameters that follow.  
+  
+        synref '''
+          .. call [identifier] ([parameters]) (;)
+        detail '''
+          This is a synonym for __from__ and will likely be what replaces it.
+          
 
       'from':
         subtitle 'function invocation'
