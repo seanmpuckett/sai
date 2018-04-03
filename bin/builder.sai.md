@@ -15,7 +15,6 @@ Defined as `main` so it will auto-instantiate when run from the command line
 
     object Builder main
 
-
 Extensions we'll automatically assume are SAI source code
 
     given:
@@ -37,17 +36,17 @@ Check the environment, make sure we're running in dynamic mode.
         ~process.exit 1
 
 Big section of `set`s for variables and utitily functions.
-    
+
       set
         flags blank     // option flags
         dest undefined  // output folder
         exitflag 0      // exit value
 
 
-#### Banner
+#### Banner subtask
 
 Display usage information (still in the `set` indentation).
-    
+
         Banner task
           debug '''
             sai-build -- command-line compiler for .sai scripts
@@ -65,15 +64,15 @@ Display usage information (still in the `set` indentation).
               sai-build -o bin src/bin -o lib src/lib
 
 
-#### Exists
+#### Exists subtask
 
 Does a file exist?
-        
+
         Exists task given path
           return FS.existsSync(path)
 
 
-#### IsDirectory      
+#### IsDirectory  subtask   
 
 Is the given path a directory?
 
@@ -83,21 +82,34 @@ Is the given path a directory?
           return false
     
         
-#### DestPath
+#### IsSai
+
+Check a filename to see if it has one of the extensions we care about, if so, return the basename. Otherwise return blank. We use this because of `.sai.md` which is not an extension according to `PATH.parse`.
+
+        IsSai task given fn
+          ply extensions
+            if it is ( fn | limit -it.length )
+              return fn | limit 0, -it.length
+          return ''
+
+
+#### DestPath subtask
 
 Return destination path, updating extension and handling overrides
 
         DestPath task given path, branch
           if dest .. set path PATH.join(dest, branch, PATH.basename(path))
-          with PATH.parse(path) | delete 'base'
-            if  extensions.indexOf(.ext) > -1
+          with PATH.parse(path) 
+            if IsSai(.base) as name
+              set .name name
               set .ext '.js'
             else
               set .ext (self default '') + '.js'
+            delete .base
             return !PATH.format .
 
    
-#### MkPath
+#### MkPath subtask
 
 Recursively create directories
 
@@ -107,7 +119,7 @@ Recursively create directories
             FS.mkdirSync path
 
 
-#### Build
+#### Build subtask
 
 Build a single file at src path, saving javascript output to dest path
 
@@ -131,20 +143,21 @@ Build a single file at src path, saving javascript output to dest path
               debug '${src} -> Either a virtual class OR does not fulfill its contracts.'
           
 
-#### ProcessArg
+#### ProcessArg subtask
 
-Given a file or folder, recursively build .sai files within
+Given a file or folder, recursively build .sai files within it.
 
         ProcessArg task given path, branch
           if IsDirectory(path)
             every FS.readdirSync(path) as leaf,k
               local candidate PATH.join(path, leaf)
-              if extensions.indexOf(PATH.extname(leaf)) > -1
+              if IsSai(PATH.basename(leaf)) 
                 ProcessArg candidate, branch
               elsif leaf isnt '.' and leaf isnt '..' and IsDirectory(candidate)
                 ProcessArg candidate, PATH.join(branch, leaf)
           else 
             Build path, DestPath(path, branch)
+
         
 #### All definitions done, now deal with arguments.
 

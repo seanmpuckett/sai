@@ -20,7 +20,7 @@
   var ResWords={},ResWordsA=(
     "and,array,as,"+
     "bind,blank,"+
-    "chain,create,copy,"+
+    "call,chain,create,copy,"+
     "default,"+
     "empty,enum,exists,expects,"+
     "false,fields,from,"+
@@ -808,7 +808,7 @@ Pipers
  }
 
 Piper 
- = '|' _ i:JSIdentifier &{ return options.pipers[i];} _ a:(
+ = '|' _ i:BaseIdentifier &{ return options.pipers[i];} _ a:(
  
      &{ return options.pipers[i].clauses[i].expr        }  o:PiperExpr       { return o }
    / &{ return options.pipers[i].clauses[i].exprs       }  o:PiperExprs       { return o }
@@ -819,7 +819,7 @@ Piper
    / &{ return options.pipers[i].clauses[i].use         }  o:PiperUse       { return o }
    / &{ return options.pipers[i].clauses[i].none        }  o:PiperNone  { return o }
    
- ) _ cl:(cli:JSIdentifier &{ return options.pipers[i].clauses[cli]; } _ cla:
+ ) _ cl:(cli:BaseIdentifier &{ return options.pipers[i].clauses[cli]; } _ cla:
       ( 
      &{ return options.pipers[i].clauses[cli].expr        }  o:PiperExpr       { return o }
    / &{ return options.pipers[i].clauses[cli].exprs       }  o:PiperExprs       { return o }
@@ -930,7 +930,7 @@ PiperNone
 
 
 ConstructStatement
-  = i:JSIdentifier &{ return options.constructs[i]; } _ 
+  = i:BaseIdentifier &{ return options.constructs[i]; } _ 
     a:(
          &{return options.constructs[i].clauses[i].exproutblock}   ca:CAExproutblock  {return ca}
        / &{return options.constructs[i].clauses[i].exprout}        ca:CAExprout     {return ca}
@@ -1102,7 +1102,7 @@ SetTerm
    }
    return code;
  }
- / l:LValues _ ((TO &[^a-zA-Z0-9_])?/&FROM/&BANG/&CHAIN) _ e:Expression {
+ / l:LValues _ ((TO &[^a-zA-Z0-9_])?/&FROM/&CALL/&BANG/&CHAIN) _ e:Expression {
    if (readOnlyReference) for (var i in l) if (References[l[i]]) fail("SAI Compiler: Cannot assign to reference variable "+l[i].substr(1)+"."); 
    if (l.length==1) return l[0]+'='+RV(e,{self:l[0]})+';\n';
    var code='var $_='+e+';\n';
@@ -1140,7 +1140,7 @@ LocalTerm
  = l:RValues _ o:Itselfop _ e:Expression {
    fail("SAI compiler: 'local' should only be used when declaring variables, not when modifying them.");
  }
- / l:LValues _ (TO?/&FROM/&BANG/&CHAIN) _ e:Expression {
+ / l:LValues _ (TO?/&FROM/&CALL/&BANG/&CHAIN) _ e:Expression {
    for (var i in l) {
      //console.log("local scope check "+l[i]);
      if ('$.'==l[i].substring(0,2)) CheckScope(l[i].substring(2),"local-1");
@@ -1341,8 +1341,8 @@ It
  / ERROR Sep { return [['error','']]}
 
 Attribute
- = DOT v:IdentifierProto { return [[ 'attribute', v ]] }
- / '\'s' Sep v:IdentifierProto { return [[ 'attribute', v ]] }
+ = DOT v:BaseIdentifier { return [[ 'attribute', v ]] }
+ / '\'s' Sep v:BaseIdentifier { return [[ 'attribute', v ]] }
  
 Call
  = LPAREN _ p:ParameterList? _ RPAREN _ { 
@@ -1350,7 +1350,7 @@ Call
 }
  
 Root
- = DOT !DOT v:IdentifierProto { return [[ 'it', ''],[ 'attribute', v ]] }
+ = DOT !DOT v:BaseIdentifier { return [[ 'it', ''],[ 'attribute', v ]] }
  / DOT v:PositiveInteger { return [[ 'it', ''],[ 'index', v ]] }
  / DOT !DOT { return [[ 'it', '']] }
 
@@ -1390,7 +1390,7 @@ RLocal
 
 Parameter
  = '$$' { return [['arguments','']]}
- / '$' v:IdentifierProto { return [[ 'parameters','' ],['attribute',v]] }
+ / '$' v:BaseIdentifier { return [[ 'parameters','' ],['attribute',v]] }
  / '$' v:Number { return [[ 'parameters','' ],['index',v]] }
  / '$' { return [[ 'parameters','' ]]}
 
@@ -1398,11 +1398,11 @@ LiteralElm
  = v:Literal { return [['literal',v]]}
 
 Global
- = '~' v:JSIdentifier { return [['global',v]] }
+ = '~' v:BaseIdentifier { return [['global',v]] }
 
 Property
- = '@' v:IdentifierProto { return [['this',''],[ 'attribute',v ]] }
- / '@@' v:IdentifierProto { return [['currentthis',''],[ 'attribute',v ]] }
+ = '@' v:BaseIdentifier { return [['this',''],[ 'attribute',v ]] }
+ / '@@' v:BaseIdentifier { return [['currentthis',''],[ 'attribute',v ]] }
  / '@@' { return [['currentthis','']] }
  / '@' { return [['this','']] }
 
@@ -1727,7 +1727,7 @@ Value
  / TASK Sep v:TaskClause _ { return v }
  / PROCESS Sep v:IteratorClause _ { return v }
  / PROMISE Sep v:PromiseClause _ { return v }
- / (BANG Sep? / FROM Sep) v:VerbSentence _ { return v }
+ / (BANG Sep? / FROM Sep / CALL Sep) v:VerbSentence _ { return v }
  / BIND Sep v:Value _ { return  'function(){return ('+v+').apply($,arguments);}'; }
  / Verbd
  / '?' v:RValueSafe _ { return v }
@@ -1775,17 +1775,14 @@ RegexChar
 Keyword
  = v:Identifier ![.(\[|] { return v } 
  / StringLiteral 
- // n:Number { return quoted(n.toString()); }
+
  
 Identifier
- = v:IdentifierProto !{var hop=ResWords.hasOwnProperty(v);return hop;} { return v; }  
+ = v:BaseIdentifier !{var hop=ResWords.hasOwnProperty(v);return hop;} { return v; }  
 
-JSIdentifier
+BaseIdentifier
  = v1:[a-zA-Z_] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
 
-IdentifierProto
- = JSIdentifier
-// = v1:[a-zA-Z] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
 
 Literal
  = Number 
@@ -1863,9 +1860,6 @@ NewObject
 
 VerbTerminal
  = &EOLs / &CBRACE / &')' 
-
-ClassName
- = n:[a-zA-Z0-9_/]+ { return n.join('') }
 
 
 /////////////////////////////////////////////
@@ -2005,6 +1999,7 @@ ARRAY = 'array'
 AS = 'as'
 BIND = 'bind'
 BLANK = 'blank'
+CALL = 'call'
 CHAIN = 'chain'
 COPY = 'copy'
 CONTRACT = 'contract'

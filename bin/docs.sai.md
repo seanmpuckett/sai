@@ -2,7 +2,7 @@
 
 # DOCS.sai.md
 
-Generates the `20.references.md` file from compiler introspection.
+Generates documentation from compiler introspection.
 
 _Note: the resulting file is put in the current working directory._
 
@@ -10,9 +10,9 @@ _Note: the resulting file is put in the current working directory._
 ### Globals
 
     reference:
-      SAI from require 'sai-language'
-      FS from require 'fs'
-      PATH from require 'path'
+      SAI require('sai-language')
+      FS require('fs')
+      PATH require('path')
 
 
 ## Docs object
@@ -25,7 +25,46 @@ Declared as `main` for automatic instantiation on compilation.
 
     given:
 
-#### .categories 
+Extract documentation
+
+      excerpts:
+        structure:
+          filename '05.FileStructure.new.md'
+          include: 
+            'reference', 'object', 'main', 'singleton'
+            'contract', 'given', 'instance', 'get', 'set'
+            'task', 'process', 'promise'
+        
+        keywords:
+          filename '21.Keywords.md'
+          include task given master
+            return master | has .category is 'keywords' | keys | by it
+
+        operators:
+          filename '22.Operators.md'
+          include task given master
+            return master | has .category is 'operators' | keys | by it
+
+        constructs:
+          filename '23.Constructs.md'
+          include task given master
+            return master | has .category is 'constructs' | keys | by it
+
+        pronouns:
+          filename '24.Pronouns.md'
+          include task given master
+            return master | has .category is 'pronouns' | keys | by it
+
+        pipers:
+          filename '25.Pipers.md'
+          include task given master
+            return master | has .category is 'pipers' | keys | by it
+
+        globals:
+          filename '26.Globals.md'
+          include task given master
+            return master | has .category is 'globals' | keys | by it
+
 
 Descriptions of the different categories.
 
@@ -49,7 +88,7 @@ Descriptions of the different categories.
           Functions and values avalilable, unscoped, in the global namespace.
           
   
-### Instantiate task
+### Instantiate 
   
     Instantiate task
     
@@ -91,28 +130,71 @@ Descriptions of the different categories.
 
         | total
     
-    
+#### Master / Reference document
+
+This section produces the `20.Reference.md` document.
+
       set header to '''
-         ## Index by category
-     
-         ${header}
-     
-         ## Encyclopedia
+          ### How to use this documentation
+
+          The categorized index at the top provides a quick overview of each language element. To learn
+          more about a particular entry, search the full reference document for `^name`, where _name_ is the 
+          symbol or word of interest.
+
+          ## Index by category
+
+          ${header}
+
+          ## Encyclopedia
+
+Write it out:
     
       Write:
          filename "20.Reference.md"
-         pages master
+         pages master | enlist | by IndexSort(.0) | thru .1 
          category 'reference'
          header header
   
-      debug "Wrote docs"
+#### Additional "excerpt" documents
 
+      every excerpts
+
+        set include to .include
+        if 'function' is typeof include
+          set include to include(master)
+
+        set pages to include | into empty
+          push'd sum master\it
+
+        Write:
+          filename .filename
+          pages pages
+          category .category or ''
+          header .header or ''
+        
+
+
+### Indent
+
+ - __spaces__ - number of spaces to indent every line in the provided block
+ - __text__ - single text block
+ 
+Indents a block of text by a number of spaces.
 
     Indent task as spaces, text
+      set spaces to repeat'd ' ' spaces
       return chain text
         split /[\r\n]/g
-        |thru ' '.repeat(spaces) + it
+        |thru spaces + it
         join '\n'
+
+
+### LineTrim
+
+ - __trailing__ - number of blank lines to leave
+ - __text__ - single text block, newline delimited
+ 
+Trims leading and trailing blank lines, then adds the requested number of lines.
 
     LineTrim task as trailing, text
       set lines split'd text /[\r\n]/g
@@ -124,6 +206,11 @@ Descriptions of the different categories.
         push'd lines ''
       return join'd lines '\n'
 
+
+### IndexSort
+
+Utility function to sort strings with symbols first, case insensitive
+
     IndexSort unbound task as a
       set a toUpperCase'd self
       set ch from a.charCodeAt 0
@@ -134,29 +221,31 @@ Descriptions of the different categories.
       return ch+a
     
 
+### Write task
+
+- __.filename__ - name of file to create
+- __.pages__ - array of pages to produce
+- __.category__ - category of the file
+- __.header__ - text to place before the pages
+
+Implementation:
 
     Write task expects $filename, $pages, $category, $header
 
+      debug "Writing ${$filename}..."
+    
       set output from LineTrim 3, '''
         # ${toUpperCase'd $category}
     
+        This file is automatically generated. _Do not edit._
+
         ${from LineTrim 0, categories\$category ? 'Unknown Heading'}
 
-        ### How to use this documentation
-    
-        The categorized index at the top provides a quick overview of each language element. To learn
-        more about a particular entry, search the full reference document for `^name`, where _name_ is the 
-        symbol or word of interest.
-
-        This file is automatically generated. _Do not edit._
-    
-    
         ${from LineTrim 0, $header}
     
       set content to empty
   
-  
-      index $pages, ( $pages | keys | by IndexSort(it) )
+      ply $pages
         if .reference
           push'd content from LineTrim 4, '''
             ### ${.title}

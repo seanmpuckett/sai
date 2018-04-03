@@ -1,7 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////////
 //
-// SAI.JS
-//
 // Framework for SAI language.
 //
 // Designed by Sean M Puckett
@@ -11,9 +9,9 @@
 //
 
 reference:
-  FS from require 'fs'
-  PATH from require 'path'
-  SAILIB from require 'sai-library'
+  FS require('fs')
+  PATH require('path')
+  SAILIB require('sai-library')
   DIRNAME ~__dirname
   INDENT '%%INDENT%%'
   DEDENT '%%DEDENT%%'
@@ -59,6 +57,8 @@ reference:
       beautify true
     Loader undefined
 
+
+  ////////////////////////////////
   //// Built-in constructs
 
   CONSTRUCTS list 
@@ -75,33 +75,9 @@ reference:
     CrudP
     Keywords
 
+  // Construct syntax rules
 
-
-
-/////////////// Compiler / Manager object
-
-object SAI singleton 0.2.6
-
-// instance variables
-
-instance:
-  prototypes blank
-  sources blank
-  protogens blank
-  isas blank
-  config undefined
-  persist: globalcount 1
-  mainParser undefined
-
-  protoConstructor undefined
-  Parse undefined
-  Beautify undefined
-
-// static variables
-
-given:
-
-  validSyntax: 
+  VALIDSYNTAX: 
     
     constructs:
       'block'         '[indent code block]'
@@ -133,6 +109,29 @@ given:
     pronouns blank
     syntax blank
 
+
+
+
+/////////////// Compiler / Manager object
+
+object SAI singleton 0.2.6
+
+// instance variables
+
+instance:
+  prototypes blank
+  sources blank
+  protogens blank
+  isas blank
+  config undefined
+  persist: globalcount 1
+  mainParser undefined
+
+  protoConstructor undefined
+  Parse undefined
+  Beautify undefined
+
+// static variables
 
 
 // Instantiate Method
@@ -168,7 +167,7 @@ Clean task
         @@__unverified true
         @@isof blank
       return @@
-    Parse from GetParser
+    Parse GetParser()
 
     // bound callback functions 
     config.Loader bind GetSourceFromPaths
@@ -201,13 +200,13 @@ IntegrateConstructs task
   ply CONSTRUCTS as file
     try
       set fn to "./"+file
-      set implementation from require fn
+      set implementation require(fn)
       set implementation.SAI @ // this is for introspection in Keywords.sai
       set manifest to implementation's manifest
       
       // a little validation
       each manifest as library, category
-        unless validSyntax\category
+        unless VALIDSYNTAX\category
           fail ' unsupported category type'
         
         each library as construct, constructName
@@ -219,7 +218,7 @@ IntegrateConstructs task
           if ?requiredElements\category.clauses
             each construct.clauses as requestedSyntax, clauseName
               each requestedSyntax as val, type
-                unless validSyntax\category\type
+                unless VALIDSYNTAX\category\type
                   fail '/${clauseName} asks for illegal syntax "${type}"'
             else
               fail ' has no clauses defined'
@@ -247,7 +246,7 @@ Document task
   ply CONSTRUCTS as file
     set 
       fn to "./"+file
-      implementation from require fn 
+      implementation require(fn) 
       implementation.SAI @ // this is for introspection in Keywords.sai
       manifest to implementation's manifest
       docs to implementation's docs 
@@ -257,7 +256,7 @@ Document task
         
       each library as construct, constructName
 
-        set doc to ?docs\category\constructName or blank
+        set doc to docs\category\constructName or blank
         set synref empty
         
         each construct.clauses as requestedSyntax, clauseName
@@ -265,7 +264,7 @@ Document task
           push'd seealso\clauseName array (doc.category ? category), constructName, doc.title ? clauseName
           each requestedSyntax as val, type
             set sub to clauseName is constructName ?? 'main' :: 'aux'
-            push'd synref '${?prefix\category\sub ? ''}${clauseName} ${validSyntax\category\type}'
+            push'd synref '${?prefix\category\sub ? ''}${clauseName} ${VALIDSYNTAX\category\type}'
           push'd synref ''
           
         set page:
@@ -291,7 +290,7 @@ Document task
 Dedenter task given src
 
   set 
-    rawlines from src.split /\r\n|[\r\n\u0085\u2028\u2029]/
+    rawlines src.split(/\r\n|[\r\n\u0085\u2028\u2029]/)
     heredocstate 0
     heredepth 0
     indent: 0
@@ -318,7 +317,7 @@ Dedenter task given src
   ply rawlines as line, lineno
   
     if line.indexOf('\t') >= 0
-      throw new Error "SAI Compiler: tab characters are not supported in source files ${from Context lineno}"
+      throw new Error "SAI Compiler: tab characters are not supported in source files ${!Context lineno}"
 
     set trail line.length
     while ' ' is line[trail-1] .. dec trail
@@ -331,16 +330,17 @@ Dedenter task given src
     set isComment '//' is (trimmed | limit 0, 2)
     set isBlank 0 is trimmed's length
 
-    if literate
-      if depth<2 
+    if literate                                
+      if depth<2                               
         unless isBlank
           set isExample false
-        continue
+        unless isBlank and heredocstate is 2
+          continue
       elsif depth <4
         throw new Error '''
           SAI Compiler: file looks 'literate' with a # header up top, but has lines with an indent of 2 or 3 spaces. 
           Literate SAI files should have left justified markdown (one space indent allowed for lists) 
-          and all code should be indented four spaces or more.  This looks wrong: ${from Context lineno}
+          and all code should be indented four spaces or more.  So, basically, this looks wrong: ${!Context lineno}
       elsif isExample
         continue
       elsif '// example' is (line | limit -10)
@@ -359,7 +359,7 @@ Dedenter task given src
 
       if heredocstate is 1
         if depth <= heredepth
-          throw new Error "SAI: multi-line quotes must be indented ${from Context lineno}"
+          throw new Error "SAI: multi-line quotes must be indented ${!Context lineno}"
         push'd lines INDENT
         unshift'd indent depth
         set heredepth depth
@@ -378,7 +378,7 @@ Dedenter task given src
           push'd lines DEDENT
           shift'd indent 
         if depth isnt indent.0
-          throw new Error "SAI: incorrect indentation ${from Context lineno}"
+          throw new Error "SAI: incorrect indentation ${!Context lineno}"
 
     unless isComment and heredocstate and depth<heredepth
       if heredocstate and depth > heredepth
@@ -413,8 +413,8 @@ Contextualize task given source, offset
   set linenorex /^\@([0-9]+):(.*)/
 
   set
-    context from WrapExtract source, offset
-    lines from context.split '\n'
+    context WrapExtract(source, offset)
+    lines context.split('\n')
     ind 0
     minind 0
     newcontext ''
@@ -430,7 +430,7 @@ Contextualize task given source, offset
     if line is INDENT .. inc ind
     elsif line is DEDENT .. dec ind
     else 
-      set ln from linenorex.exec line
+      set ln linenorex.exec(line)
       if ln
         set newcontext + ln.1 + ': ' + (repeat'd '  ' ind) + ln.2 + '\n'
       else
@@ -452,9 +452,9 @@ GetParser task
 
   try
   
-    set grammarFile from PATH.resolve from PATH.join DIRNAME, 'saigrammar.peg'
-    set parserFile from PATH.resolve from PATH.join DIRNAME, 'saigrammar.js'
-
+    set grammarFile PATH.resolve( PATH.join(DIRNAME, 'saigrammar.peg') )
+    set parserFile PATH.resolve( PATH.join(DIRNAME, 'saigrammar.js') )
+    
     if (not FS.existsSync(parserFile))
     ... or (FS.statSync(grammarFile).mtime > FS.statSync(parserFile).mtime) 
 
@@ -462,7 +462,7 @@ GetParser task
         PEG require('pegjs')
         grammar FS.readFileSync(grammarFile).toString()
         
-        mainParser from PEG.generate grammar, fields
+        mainParser !PEG.generate grammar, fields
           allowedStartRules list startFile, startExpression
           output 'source'
           optimize 'size'
@@ -483,17 +483,17 @@ GetParser task
       ${error}
     
     if grammar
-      set msg from WrapExtract grammar, error.location.start.offset
+      set msg WrapExtract(grammar, error.location.start.offset)
         
     throw new Error msg
     
-  set mainParser from ~eval mainParser
+  set mainParser ~eval(mainParser)
   
   return task given rawsource, bound, fn
   
     set
       rawsource + '\n\n'
-      source from Dedenter rawsource
+      source Dedenter(rawsource)
   
     try
       set opts fields
@@ -506,7 +506,7 @@ GetParser task
         filename fn
         failures undefined
         
-      set js from mainParser.parse source, opts
+      set js mainParser.parse(source, opts)
 
       if opts.failures
         throw new Error opts.failures
@@ -533,11 +533,11 @@ GetParser task
           SAI: Error creating prototype in\n${meta}
           
           ${error.message}
-          
+      
       throw error
       
     if config.options.beautify
-      set js from Beautify js, fields
+      set js !Beautify js, fields
         indent_size 2
         preserve_newlines false
         brace_style 'collapse'
@@ -571,8 +571,8 @@ GetSourceFromPaths task given name
 
   ply config's paths as path
     ply array '.sai.md', '.sai', '.md', ''; as extension
-      set filename from PATH.join path, name+extension
-      exists from GetSourceFromFilename filename
+      set filename PATH.join(path, name+extension)
+      exists GetSourceFromFilename(filename)
         set .name name
         set .loader + '/GetSourceFromPaths'
         return it
@@ -606,14 +606,14 @@ Compile task given source
 
 GetProtogen task given name
   
-  set protogens\name default from task
+  set protogens\name default call task
     set s1 new ~Date
-    set load from config.Loader name
+    set load config.Loader(name)
     unless load.success
       throw new Error 'SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
-    set source from Parse load.source, undefined, load.context
+    set source Parse(load.source, undefined, load.context)
     set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
-    set protogen from Compile source
+    set protogen Compile(source)
     //debug source 
     unless protogen
       throw new Error 'SAI.GetProtogen: Error in generated code ${name}'
@@ -651,7 +651,7 @@ GetAncestors task given name
     unless nodupes\leaf
       set nodupes\leaf to true
       set obj to new protoConstructor name
-      set protogen from GetProtogen leaf
+      set protogen GetProtogen(leaf)
       set opts: name leaf
       protogen obj, opts, ~require, SAILIB, DIRNAME
       obj.Constructor
@@ -673,13 +673,13 @@ GetAncestors task given name
 //
 
 GetPrototype task given name, bindings
-  set prototypes\name default from task
-    set ancestors from GetAncestors name
+  set prototypes\name default call task
+    set ancestors GetAncestors(name)
     set prototype to new protoConstructor name
     set adopt to task given name
       ply ancestors\name
         adopt it
-      set protogen from GetProtogen name
+      set protogen GetProtogen(name)
       protogen prototype, fields name name;, require, SAILIB, DIRNAME
     
     adopt name
@@ -701,7 +701,7 @@ GetPrototype task given name, bindings
 //
 
 GetSource task as name
-  set ancestors from GetAncestors name
+  set ancestors GetAncestors(name)
   set islib to 0 <= name.indexOf('sailib')
 
   if islib
@@ -752,7 +752,7 @@ GetSource task as name
 //
 
 Require task given name
-  exists from GetPrototype name
+  exists GetPrototype(name)
     exists .constructor
       return it
   throw new Error 'SAI.Require: do not know how to create object ${name}'
@@ -765,8 +765,8 @@ Require task given name
 //
 
 Create task given name, parameters
-  exists from GetPrototype name
-    set obj from ~Object.create it
+  exists GetPrototype(name)
+    set obj ~Object.create(it)
     if obj.Constructor .. obj.Constructor
     if obj.Instantiate .. obj.Instantiate.apply obj, parameters
     return obj
@@ -821,7 +821,8 @@ Environment task
   return:
     dynamic true
     static false
-
+    paths config.paths
+    
     Clean bind Clean
     Configure bind Configure
     GetSource bind GetSource

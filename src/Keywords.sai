@@ -39,7 +39,7 @@ introspect get
   set simple to /^[0-9a-zA-Z]$|\&\#/  
   set matches | has not ( simple.exec(it) or boringkeywords\it ) | enkey blank
 
-  set missing copy matches
+  set missing (copy matches) | update (goodlist | enkey)
   set covered blank
   
   each from Documentation as category
@@ -113,6 +113,37 @@ Documentation task
               
               > this is a test
 
+
+      'environment':
+        subtitle 'return SAI runtime environment information'
+        summary '''
+          Call the __environment__ function to gain information about the runtime state of your SAI module.
+        synref '''
+          .. set env to environment()
+        detail '''
+          The __environment__ function returns different things based on whether your module is running
+          in static or dynamic mode.
+          
+          In static mode (when you're running from a pre-compiled `.js` script), you get this:
+          
+              fields
+                dynamic (false)
+                static (true)
+
+          In dynamic mode (when you're using the `sai-language` package to compile on the fly), you get this:
+          
+              fields
+                dynamic (true)
+                static (false)
+                paths (array)                             // array of paths searched dring CREATE
+    
+                Clean (function)                          // reset the compiler environment
+                Configure (function)                      // e.g. change paths, etc
+                GetSource (function)                      // return full JS source for a SAI object by name
+                RegisterWithNode (function)               // theoretically register .sai with node's require
+                Require (function)                        // a version of require that uses SAI's paths, not node's
+
+          
 
 
 

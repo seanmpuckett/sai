@@ -2,9 +2,12 @@
 
 ### 0.2.6
 
+ - fixed the omission of blank lines in heredocuments while in literate mode (shave the yak)
  - added supported extension of `.sai.md` while deprecating `.md` by itself. `saibuild` will not automatically build `.md` files unless they're `.sai.md`. More clarity is good.
  - new `environment` global function returns an object with information about your module's SAI context. Most especially important is whether or not you're running in static or dynamic mode, and if dynamic, what additional functionality you have.
  - Requires `sai-library 1.0.20`.
+ - Added `call` as a synonym to `from` which MAYBE will finally be retired?  Finding the right invocation thingy has been terrible.
+ - Added several documentation extracts, including 05.filestructure, 21.keywords, etc.  All derived from the big reference list.
  
 
 ### 0.2.5

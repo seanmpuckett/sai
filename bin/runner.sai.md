@@ -47,7 +47,7 @@ Reconfigure set loader path to path of file to compile
       try
         set object create objectName
       catch as e
-        debug e
+        debug e.message
         debug 'Could not create ${objectName} at ${objectPath}'
         ~process.exit 1
   
