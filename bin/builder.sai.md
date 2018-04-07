@@ -29,7 +29,7 @@ All of `builder` runs inside this task.
 
 Check the environment, make sure we're running in dynamic mode.
 
-      set env from environment 
+      set env !environment 
 
       unless env.dynamic
         debug 'Cannot use Builder as a pre-compiled module.'

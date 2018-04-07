@@ -1,7 +1,7 @@
 
 // base class
 
-object Construct
+object Construct singleton
 
 contract:
   manifest

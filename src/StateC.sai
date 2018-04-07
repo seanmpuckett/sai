@@ -1,5 +1,5 @@
 
-object StateC
+object StateC singleton
 
 inherit: Construct
 

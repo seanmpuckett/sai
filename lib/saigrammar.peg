@@ -574,7 +574,7 @@
   }
   
   function WhereAmI(line) {
-    if (line) {
+    if (line && options.linenos) {
       return '/*@:'+line+'*/';
     }
     return '';
@@ -1652,8 +1652,8 @@ ComparisonOp
   / ISNT Sep { return '!==' } // test 'isnt'
   / IS Sep { return '===' } // test 'is *'
   / '<=' { return '<=' } // test '<='
+  / '<>' { return '!=' } // test '!='
   / '<' !'<' { return '<' } // test '<'
-  / '!=' { return '!=' } // test '!='
 
 MathOp
  = '?>' { return '$AI.max_op' } // test '?>'

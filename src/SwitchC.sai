@@ -1,5 +1,5 @@
 
-object SwitchC
+object SwitchC singleton
 
 inherit: Construct
 

@@ -1,5 +1,5 @@
   
-object Keywords
+object Keywords singleton
 
 
 
@@ -420,10 +420,10 @@ Documentation task
     
     'operators':
     
-      '!=':
+      '<>':
         subtitle 'inequality comparison'
         synref '''
-          .. [expr] != [expr]
+          .. [expr] <> [expr]
         summary '''
           Tests two values for value inequality.
         detail '''
@@ -1033,9 +1033,9 @@ Documentation task
         synref '''
           .. [expr] isnt [expr]
         detail '''
-          More rigorous than **!=** when objects are of differing types.
+          More rigorous than **<>** when objects are of differing types.
 
-              debug 1 != true
+              debug 1 <> true
               debug 1 isnt true
   
               > false

@@ -1,5 +1,5 @@
 
-object MiscC
+object MiscC singleton
 
 inherit: Construct
 

@@ -45,6 +45,7 @@ Reconfigure set loader path to path of file to compile
         paths: objectPath
     
       try
+        //debug "runner wants ${objectName}"
         set object create objectName
       catch as e
         debug e.message

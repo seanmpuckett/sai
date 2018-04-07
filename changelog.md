@@ -1,6 +1,19 @@
 ## Change log
 
+### 0.2.7
+
+#### Breaking changes
+
+ - The arithmatic/string inequality operator is now `<>` as opposed to `!=` which is good because `!` means something entirely different. You still should use __is__ and __isnt__ whenever possible, though.
+ 
+#### Enhancements
+
+ - Fixed(?) some problems with `require` not knowing what its correct working directory should be when using `sai-run` or `sai-build` on projects that are in different folders than the compiler. The current fix has a `__require` patch in generated source that catches exceptions and tries a few additional paths -- local to the SAI source code -- to see if we can catch what the user's looking for.
+ 
+
 ### 0.2.6
+
+#### Enhancements
 
  - fixed the omission of blank lines in heredocuments while in literate mode (shave the yak)
  - added supported extension of `.sai.md` while deprecating `.md` by itself. `saibuild` will not automatically build `.md` files unless they're `.sai.md`. More clarity is good.

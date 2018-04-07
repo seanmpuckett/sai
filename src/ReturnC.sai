@@ -1,5 +1,5 @@
 
-object ReturnC
+object ReturnC singleton
 
 inherit: Construct
 

@@ -42,7 +42,7 @@ reference:
   DEFAULT_config:
     verbs:
       'debug' '$AI.debug_op'
-      'require' 'require'
+      'require' '__require'
       'assert' '$AI.assert'
       'environment' '$AI.environment'
       'Error' 'Error'
@@ -53,8 +53,9 @@ reference:
     paths:
       DIRNAME + '/'
     options:
-      speedometer false
-      beautify true
+      speedometer false  // show time to compile
+      beautify true      // beautify output Javascript
+      linenos false      // include source line numbers as comments in .js
     Loader undefined
 
 
@@ -555,6 +556,7 @@ GetSourceFromFilename task given filename
       context:
         loader 'SAI.GetSourceFromFilename'
         path filename
+        workdir PATH.resolve(PATH.dirname(filename))
         mtime FS.statSync(filename).mtime
         fetched new ~Date
   catch
@@ -575,8 +577,10 @@ GetSourceFromPaths task given name
       exists GetSourceFromFilename(filename)
         set .name name
         set .loader + '/GetSourceFromPaths'
+        //debug "Wanted ${name} and got ${filename}"
         return it
 
+  //debug "Wanted ${name} and did not get it."
   return:
     success false
     context '''
@@ -611,9 +615,34 @@ GetProtogen task given name
     set load config.Loader(name)
     unless load.success
       throw new Error 'SAI.GetProtogen: Could not load object ${name}, reason given: ${load.context}'
-    set source Parse(load.source, undefined, load.context)
-    set source 'var __context=${~JSON.stringify(load.context)};\n${source}'
-    set protogen Compile(source)
+
+    set source '''
+      var __context=${~JSON.stringify(load.context)};
+      var __path=require('path');
+      var __require=function(fn) {
+        try {
+          return require(fn);
+        } catch (e) {
+          try {
+            return require(__path.join(process.cwd(),fn));
+          } catch (e) {
+            return require(__path.join(process.cwd(),'node_modules',fn));
+          }
+        }
+      }
+      ${Parse(load.source, undefined, load.context)}
+
+    set pg !Compile source
+    set protogen to task
+      set cwd to ~process.cwd()
+      //debug "switching to ${load.context.workdir}"
+      ~process.chdir load.context.workdir
+      //debug "invoke compiled source context: ${~process.cwd()}"
+      set ret to pg.apply(null,$$)
+      ~process.chdir cwd
+      //debug "back"
+      return ret
+    
     //debug source 
     unless protogen
       throw new Error 'SAI.GetProtogen: Error in generated code ${name}'
@@ -738,9 +767,20 @@ GetSource task as name
     // End of generated code
     
     $AI.finalizePrototype(prototype);
-    if (prototype.isof[prototype.isa].type === "singleton") { prototype.Constructor(); prototype.Instantiate(); ${'}'}
-    var result=prototype.isof[prototype.isa].type === "main" ? prototype.constructor() : prototype;
-    exports=result; try { module.exports=result; ${'}'} catch(e) ${'{}'};
+    var result=prototype;
+    switch (prototype.isof[prototype.isa].type) {
+    case 'singleton':
+      prototype.Constructor();
+      if (prototype.Instantiate) prototype.Instantiate();
+      break;
+    case 'main':
+      result=prototype.constructor();
+      break;
+    default:
+      result=prototype.constructor;
+      break;
+    }
+    exports=result; try { module.exports=result; } catch(e) {};
     return result;
     
   return source
@@ -752,10 +792,12 @@ GetSource task as name
 //
 
 Require task given name
-  exists GetPrototype(name)
-    exists .constructor
-      return it
-  throw new Error 'SAI.Require: do not know how to create object ${name}'
+  exists GetPrototype(name) as proto
+    exists proto.constructor as ctor
+      return ctor
+    if 'function' is typeof proto
+      return proto
+  throw new Error 'SAI.Require: require could not find a constructor for ${name}'
   
 
 

@@ -1,5 +1,5 @@
 
-object QueryP
+object QueryP singleton
 
 inherit: Construct
 

@@ -1,7 +1,7 @@
 
-object QueryP
+object QueryP singleton
 
-inherit: Construct
+inherit: Construct 
 
 given:
   SPLIT '^&*SP.L.I.' + ~Math.random() + 'T.H.E.RE*&^'

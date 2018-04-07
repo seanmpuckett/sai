@@ -1,5 +1,5 @@
 
-object TryCatchC
+object TryCatchC singleton
 
 inherit: Construct
 

@@ -1,5 +1,5 @@
 
-object PromisingC
+object PromisingC singleton
 
 inherit: Construct
 

@@ -1,5 +1,5 @@
 
-object IterateC
+object IterateC singleton
 
 inherit: Construct
 
@@ -676,6 +676,7 @@ CountConstruct task expects $clauses, $tools
 
  set main $clauses.0
  set none $clauses.1
+ set tools empty
 
  try
   
@@ -699,6 +700,9 @@ CountConstruct task expects $clauses, $tools
       set iStop to iStart
       set iStart to 0
       
+     push'd tools '''
+       var $count$stepup=function(v){throw new Error("SAI Runtime: COUNT STEP value should be positive, not "+v);};
+      
      set 
        vars:
          block main.args.block
@@ -712,7 +716,7 @@ CountConstruct task expects $clauses, $tools
   
        preface '''
          var ^{counter}=^{start},^{stop}=^{kstop},^{step}=^{kstep};
-         if (^{step}<=0) throw new Error("SAI Runtime: COUNT STEP value should be positive.");
+         if (!(^{step}>0)) $count$stepup(^{step});
 
        elseclause from task
          unless none
@@ -733,6 +737,9 @@ CountConstruct task expects $clauses, $tools
      unless main.args.exprs.0 
        return: error 'SAI Compiler: Missing start value in COUNTDOWN'
 
+     push'd tools '''
+       var $count$stepdown=function(v){throw new Error("SAI Runtime: COUNT STEP value should be negative, not "+v);};
+
      set
        iStart main.args.exprs.0        
        iStop main.args.exprs.1 default 0
@@ -751,7 +758,7 @@ CountConstruct task expects $clauses, $tools
   
        preface '''
          var ^{stop}=^{kstop},^{step}=^{kstep},^{counter}=^{start}+^{step};
-         if (^{step}>=0) throw new Error("SAI Runtime: COUNTDOWN STEP value should be negative.");
+         if (!(^{step}<0)) $count$stepdown(^{step});
 
        elseclause from task
          unless none
@@ -773,7 +780,10 @@ CountConstruct task expects $clauses, $tools
  catch
    debug error
   
- return: body text
+ return: 
+   body text
+   tools tools
+   
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////

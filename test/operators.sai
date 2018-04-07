@@ -187,8 +187,8 @@ Execute promise
   @Test '<=', task
     return (0 <= 1) and (1 <= 1)
 
-  @Test '!=', task
-    return (1 != 0) 
+  @Test '<>', task
+    return (1 <> 0) 
 
   @Match '?<', 2, task
     return 2 ?< 3
