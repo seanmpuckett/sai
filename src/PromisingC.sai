@@ -25,7 +25,7 @@ manifest get
 
 
 docs get
-  return from Documents
+  return !Documents
   
 
 // PROMISING HANDLER
@@ -36,17 +36,17 @@ PromisingConstruct task as work
     return (a | keys).join('/').toUpperCase()
 
   set finals: #finally, #catch, #rejected, #finalized
-  with ( work's clauses | last ).clause
+  with ( work.clauses | last ).clause
     unless finals\it
-      return: error "SAI compiler: final clause in PROMISING must be ${from KeysToText finals}, not ${toUpperCase'd it}."
+      return: error "SAI compiler: final clause in PROMISING must be ${from KeysToText finals}, not ${toUpperCase!it}."
 
   set terminal false
   set finishers: #resolved, #rejected, #finalized
-  ply work's clauses
+  ply work.clauses
     if finishers\.clause
       set terminal true
     elsif terminal
-      return: error "SAI compiler: ${from KeysToText finishers} should not have any other clauses, such as ${toUpperCase'd .clause}, following."
+      return: error "SAI compiler: ${from KeysToText finishers} should not have any other clauses, such as ${toUpperCase!.clause}, following."
 
   set Tasker to task  
     set options:
@@ -58,7 +58,7 @@ PromisingConstruct task as work
       set options | update:
         preface 'return new Promise(function($_resolve,$_reject) {'
         postface 'if ($_resolve) return $_resolve();})'
-    return from work's tools.tasker options
+    return !work.tools.tasker options
 
   set tools: '''
     var $promising$then=function(t,name){
@@ -68,7 +68,7 @@ PromisingConstruct task as work
   
   set body ''
   
-  each work's clauses
+  each work.clauses
   
     switch .type
 
@@ -76,7 +76,7 @@ PromisingConstruct task as work
       set body + "$promising$then(${.args.exprs.1},'promising')"
 
     case 'promising.outblock'
-      set block from Tasker: args .args, #ispromise, #execute
+      set block !Tasker: args .args, #ispromise, #execute
       set body + "(${block?''})"
 
     case 'promising.none'
@@ -86,21 +86,21 @@ PromisingConstruct task as work
       set body + ".then(function(p){return $promising$then(${.args.exprs.1},'then');})"
 
     case 'then.outblock'
-      set block from Tasker: args .args, #ispromise
+      set block !Tasker: args .args, #ispromise
       set body + ".then(${block})"
 
     case 'catch.exprs'
       set body + ".catch(function(p){return $promising$then(${.args.exprs.1},'catch');})"
 
     case 'catch.outblock'
-      set block from Tasker: args .args, #ispromise
+      set block !Tasker: args .args, #ispromise
       set body + ".catch(${block})"
 
     case 'finally.exprs'
       set body + ".finally(function(p){return $promising$then(${.args.exprs.1},'finally');})"
 
     case 'finally.outblock'
-      set block from Tasker: args .args
+      set block !Tasker: args .args
       set body + ".finally(${block})"
 
     case 'resolved.exprs'
@@ -228,7 +228,7 @@ Documents task
           In this example, `db.listDatabases` is a function, and we invoke it with __from__ 
           so it will return an active promise.
 
-              promising from db.listDatabases
+              promising !db.listDatabases
 
           In this form, the function you are promising must have been declared as a __promise__, or 
           been created in or wrapped in a _Promise_ wrapper by a library or helper.  
@@ -275,12 +275,12 @@ Documents task
           one (or more) parameters. (You can use the pronoun __$__ to refer to the first 
           parameter passed without giving it a name.)
 
-              then from db.dropDatabase dbName
+              then !db.dropDatabase dbName
     
           Which, by the way, does the exact same thing as this:
 
               then
-                resolve from db.dropDatabase dbName
+                resolve !db.dropDatabase dbName
       
           The block takes the same form and acts the same way as the one in __promising__.
 

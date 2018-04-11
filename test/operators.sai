@@ -510,6 +510,23 @@ Execute promise
       |first
   
   
+  @Match '... comp', 2, task
+    return 2...
+      |by it
+      
+  @Match '... method', 1, task
+    set a to: 2, 1;
+    set b a...
+      sort
+    return b[0]
+      
+  @Match '... persist', 2, task
+    set a to: 1, 2;
+    return a...
+      reverse
+      |first
+  
+  
   
   @Test 'expects 1', task
     set b to: a 1, b 2

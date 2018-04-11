@@ -40,13 +40,13 @@ manifest get
 
 
 docs get
-  return from Documents
+  return !Documents
   
 
 ReturnConstruct task
 
   if $clauses.length > 1
-    return: error 'SAI bug: error parsing RETURN-type constructs with multiple clauses: ${join'd ($clauses | keys) ', '}'
+    return: error 'SAI bug: error parsing RETURN-type constructs with multiple clauses: ${join!($clauses | keys) ', '}'
 
   set body ''
 

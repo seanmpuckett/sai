@@ -40,7 +40,7 @@ manifest get
       
 
 docs get
-  return from Documentation
+  return !Documentation
   
 
 
@@ -58,7 +58,7 @@ IfElseConstruct task expects $clauses, $tools
 
   ply $clauses
 
-    set outs from @OutVarHelper it.args.out
+    set outs !@OutVarHelper it.args.out
       
     switch .type
     case 'if.exproutblock'
@@ -73,7 +73,7 @@ IfElseConstruct task expects $clauses, $tools
           ^{block}
           }
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
         
     case 'unless.exproutblock'
       set
@@ -86,7 +86,7 @@ IfElseConstruct task expects $clauses, $tools
           ^{block}
           }
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
 
     case 'exists.exproutblock'
       set
@@ -100,7 +100,7 @@ IfElseConstruct task expects $clauses, $tools
           ^{block}
           }
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
         
     case 'elsif.exproutblock'
       set
@@ -114,7 +114,7 @@ IfElseConstruct task expects $clauses, $tools
           ^{block}
           }
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
         
     case 'elsexists.exproutblock'
       set
@@ -128,7 +128,7 @@ IfElseConstruct task expects $clauses, $tools
           ^{block}
           }
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
 
     case 'elsunless.exproutblock'
       set
@@ -141,7 +141,7 @@ IfElseConstruct task expects $clauses, $tools
           ^{block}
           }
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
 
     case 'else.block'
       set
@@ -153,7 +153,7 @@ IfElseConstruct task expects $clauses, $tools
           ^{block}
           }
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
     
     else
       return: error "Unhandled construct type ${.type} in IfElseConstruct"

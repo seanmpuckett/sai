@@ -96,7 +96,7 @@ manifest get
 
 
 docs get
-  return from Documents
+  return !Documents
   
   
 
@@ -143,7 +143,7 @@ EveryConstruct task expects $clauses, $tools
     case 'every.exproutblock'
 
       set 
-        outs from @OutVarHelper main.args.out
+        outs !@OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -158,7 +158,7 @@ EveryConstruct task expects $clauses, $tools
           var ^{iter}=$AI.kviterate_op(^{source});
           var ^{elem}=^{iter}.next();
 
-        elseclause from task
+        elseclause !task
           unless none
             return '''
               if (!^{elem}.done)
@@ -174,7 +174,7 @@ EveryConstruct task expects $clauses, $tools
           ^{elem}=^{iter}.next();
           } while (!^{elem}.done);
       
-        text from $tools.replacer preface + elseclause + loop, vars
+        text !$tools.replacer preface + elseclause + loop, vars
 
     case 'every.exprusing'
 
@@ -190,7 +190,7 @@ EveryConstruct task expects $clauses, $tools
           var ^{iter}=$AI.kviterate_op(^{source});
           var ^{elem}=^{iter}.next();
 
-        elseclause from task
+        elseclause !task
           unless none
             return '''
               if (!^{elem}.done)
@@ -204,7 +204,7 @@ EveryConstruct task expects $clauses, $tools
           ^{elem}=^{iter}.next();
           } while (!^{elem}.done);
       
-        text from $tools.replacer preface + elseclause + loop, vars
+        text !$tools.replacer preface + elseclause + loop, vars
     
     else
       return: error "Unhandled construct type ${main.type} in EveryConstruct"
@@ -237,7 +237,7 @@ IndexedConstruct task expects $clauses, $tools
   
     case 'index.exprsoutblock'
       set
-        outs from @OutVarHelper main.args.out
+        outs !@OutVarHelper main.args.out
       
         vars:
           'rawlist' main.args.exprs.0
@@ -262,14 +262,14 @@ IndexedConstruct task expects $clauses, $tools
             ^{next}=^{iterator}.next();
           }
       
-        elseclause from task
+        elseclause !task
           unless none
             return ''
           else
             return '''
               if (^{next}.done) { ^{none} } else 
       
-        text from $tools.replacer preface + elseclause + loop, vars
+        text !$tools.replacer preface + elseclause + loop, vars
 
     case 'index.exprsusing'
       set
@@ -293,14 +293,14 @@ IndexedConstruct task expects $clauses, $tools
             ^{next}=^{iterator}.next();
           }
       
-        elseclause from task
+        elseclause !task
           unless none
             return ''
           else
             return '''
               if (^{next}.done) { ^{none} } else 
       
-        text from $tools.replacer preface + elseclause + loop, vars
+        text !$tools.replacer preface + elseclause + loop, vars
 
     else
       return: error "Unhandled construct type ${main.type} in IndexConstruct"
@@ -331,7 +331,7 @@ IterateConstruct task expects $clauses, $tools
     case 'iterate.exproutblock'
 
       set 
-        outs from @OutVarHelper main.args.out
+        outs !@OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -346,7 +346,7 @@ IterateConstruct task expects $clauses, $tools
           var ^{iter}=$AI.iterator_op(^{source});
           var ^{elem}=^{iter}.next();
 
-        elseclause from task
+        elseclause !task
           unless none
             return '''
               if (!^{elem}.done)
@@ -361,7 +361,7 @@ IterateConstruct task expects $clauses, $tools
           ^{key}++;
           }
       
-        text from $tools.replacer preface + elseclause + loop, vars
+        text !$tools.replacer preface + elseclause + loop, vars
 
     case 'iterate.exprusing'
 
@@ -379,7 +379,7 @@ IterateConstruct task expects $clauses, $tools
           var ^{elem}=^{iter}.next();
           var ^{key}=0;
 
-        elseclause from task
+        elseclause !task
           unless none
             return '''
               if (!^{elem}.done)
@@ -394,7 +394,7 @@ IterateConstruct task expects $clauses, $tools
           ^{elem}=^{iter}.next();
           } while (!^{elem}.done);
       
-        text from $tools.replacer preface + elseclause + loop, vars
+        text !$tools.replacer preface + elseclause + loop, vars
 
     else
       return: error "Unhandled construct type ${main.type} in IterateConstruct"
@@ -425,7 +425,7 @@ EachConstruct task expects $clauses, $tools
     case 'each.exproutblock'
 
       set 
-        outs from @OutVarHelper main.args.out
+        outs !@OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -445,14 +445,14 @@ EachConstruct task expects $clauses, $tools
           ^{block};
           }
       
-        elseclause from task
+        elseclause !task
           unless none
             return ''
           else
             return '''
               if (^{key}===undefined) { ^{none} } 
       
-        text from $tools.replacer preface + loop + elseclause, vars
+        text !$tools.replacer preface + loop + elseclause, vars
 
     case 'each.exprusing'
 
@@ -468,7 +468,7 @@ EachConstruct task expects $clauses, $tools
           var ^{list}=^{source},^{key}=undefined;
           if (undefined===^{list}) ^{list}={};
 
-        elseclause from task
+        elseclause !task
           unless none
             return ''
           else
@@ -480,7 +480,7 @@ EachConstruct task expects $clauses, $tools
           ^{task}(^{list}[^{key}],^{key},^{list});
           }
       
-        text from $tools.replacer preface + loop + elseclause, vars
+        text !$tools.replacer preface + loop + elseclause, vars
 
     else
       return: error "Unhandled construct type ${main.type} in EachConstruct"
@@ -511,7 +511,7 @@ PlyConstruct task expects $clauses, $tools
     case 'ply.exproutblock'
 
       set 
-        outs from @OutVarHelper main.args.out
+        outs !@OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -533,14 +533,14 @@ PlyConstruct task expects $clauses, $tools
           ^{block};
           }
       
-        elseclause from task
+        elseclause !task
           unless none
             return ''
           else
             return '''
               if (^{key}===0) { ^{none} } 
       
-        text from $tools.replacer preface + loop + elseclause, vars
+        text !$tools.replacer preface + loop + elseclause, vars
 
     case 'ply.exprusing'
 
@@ -558,7 +558,7 @@ PlyConstruct task expects $clauses, $tools
           if (undefined===^{list}) ^{list}=[];
           var ^{length}=^{list}.length;
 
-        elseclause from task
+        elseclause !task
           unless none
             return ''
           else
@@ -570,7 +570,7 @@ PlyConstruct task expects $clauses, $tools
           ^{task}(^{list}[^{key}],^{key},^{list});
           }
       
-        text from $tools.replacer preface + loop + elseclause, vars
+        text !$tools.replacer preface + loop + elseclause, vars
 
     else
       return: error "Unhandled construct type ${main.type} in PlyConstruct"
@@ -596,7 +596,7 @@ WhileConstruct task expects $clauses, $tools
     case 'while.exproutblock'
 
       set 
-        outs from @OutVarHelper main.args.out
+        outs !@OutVarHelper main.args.out
       
         vars:
           block main.args.block
@@ -611,7 +611,7 @@ WhileConstruct task expects $clauses, $tools
           ^{block}
           }
       
-        text from $tools.replacer preface + loop, vars
+        text !$tools.replacer preface + loop, vars
 
     case 'until.exproutblock'
 
@@ -625,7 +625,7 @@ WhileConstruct task expects $clauses, $tools
           ^{block}
           }
       
-        text from $tools.replacer loop, vars
+        text !$tools.replacer loop, vars
 
     case 'dowhile.exproutblock'
 
@@ -639,7 +639,7 @@ WhileConstruct task expects $clauses, $tools
           ^{block}
           } while (^{source});
       
-        text from $tools.replacer loop, vars
+        text !$tools.replacer loop, vars
 
     case 'dountil.exproutblock'
 
@@ -653,7 +653,7 @@ WhileConstruct task expects $clauses, $tools
           ^{block}
           } while (!(^{source}));
       
-        text from $tools.replacer loop, vars
+        text !$tools.replacer loop, vars
 
 
     else
@@ -680,7 +680,7 @@ CountConstruct task expects $clauses, $tools
 
  try
   
-   set outs from @OutVarHelper main.args.out
+   set outs !@OutVarHelper main.args.out
 
    switch main.type
 
@@ -700,7 +700,7 @@ CountConstruct task expects $clauses, $tools
       set iStop to iStart
       set iStart to 0
       
-     push'd tools '''
+     push!tools '''
        var $count$stepup=function(v){throw new Error("SAI Runtime: COUNT STEP value should be positive, not "+v);};
       
      set 
@@ -718,7 +718,7 @@ CountConstruct task expects $clauses, $tools
          var ^{counter}=^{start},^{stop}=^{kstop},^{step}=^{kstep};
          if (!(^{step}>0)) $count$stepup(^{step});
 
-       elseclause from task
+       elseclause !task
          unless none
            return ''
          else
@@ -730,14 +730,14 @@ CountConstruct task expects $clauses, $tools
          ^{block};
          }
     
-       text from $tools.replacer preface + elseclause + loop, vars
+       text !$tools.replacer preface + elseclause + loop, vars
 
    case 'countdown.exprsoutblock'
 
      unless main.args.exprs.0 
        return: error 'SAI Compiler: Missing start value in COUNTDOWN'
 
-     push'd tools '''
+     push!tools '''
        var $count$stepdown=function(v){throw new Error("SAI Runtime: COUNT STEP value should be negative, not "+v);};
 
      set
@@ -760,7 +760,7 @@ CountConstruct task expects $clauses, $tools
          var ^{stop}=^{kstop},^{step}=^{kstep},^{counter}=^{start}+^{step};
          if (!(^{step}<0)) $count$stepdown(^{step});
 
-       elseclause from task
+       elseclause !task
          unless none
            return ''
          else
@@ -772,7 +772,7 @@ CountConstruct task expects $clauses, $tools
          ^{block};
          }
     
-       text from $tools.replacer preface + elseclause + loop, vars
+       text !$tools.replacer preface + elseclause + loop, vars
 
    else
      return: error "Unhandled construct type ${main.type} in CountConstruct"

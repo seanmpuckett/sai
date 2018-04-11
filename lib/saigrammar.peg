@@ -570,7 +570,8 @@
 
   function MagicCheck(code) {
     var lm=LeakedMagic.exec(code);
-    if (lm) fail("SAI Compiler: Pronoun '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)");
+    
+    if (lm) fail("SAI Compiler: Pronoun '"+lm[1]+"' used in the wrong place (but I can't tell you where yet, please search for your use of this variable and make sure it is contained within a construct that uses it.)\n\n");
   }
   
   function WhereAmI(line) {
@@ -1689,15 +1690,19 @@ Multiplication
      / '**' _ r:Multiplication { // test '**'
        return 'Math.pow('+l+','+r+')' 
      } 
-     / VIA _ op:Value _ x:ParameterList? {
-       var p=undefined;
-       if (x) {
-         p=x[1];
-       }
-       return '('+op+').call($,('+l+'),'+p+')';
-     }
+//     / VIA _ op:Value _ x:ParameterList? {
+//       var p=undefined;
+//       if (x) {
+//         p=x[1];
+//       }
+//       return '('+op+').call($,('+l+'),'+p+')';
+//     }
      / ISOF Sep r:Multiplication { 
        return '('+l+').isof['+r+']'; 
+     }
+     /  '...' c:VerbChainBlock {
+       c[0].base=l;
+       return AssembleVerb(c);
      }
      / _ { return l }
   ) { return result; }
@@ -1778,7 +1783,7 @@ Keyword
 
  
 Identifier
- = v:BaseIdentifier !{var hop=ResWords.hasOwnProperty(v);return hop;} { return v; }  
+ = v:BaseIdentifier !{var hop=ResWords.hasOwnProperty(v); return hop;} { return v; }  
 
 BaseIdentifier
  = v1:[a-zA-Z_] v2:[a-zA-Z_0-9]* { return v1+v2.join('') }
@@ -1810,7 +1815,7 @@ VerbSentence
  }
 
 Verbd
-= v:Identifier '\'d' _ b:Value _ o:ParameterList? {
+= v:Identifier ('\'d' / '!') _ b:Value _ o:ParameterList? {
   return AssembleVerb([{ base:b, verb:'.'+v, param:(o?o[1]:'')}]);
 }
 
@@ -2063,7 +2068,7 @@ UNBOUND = 'unbound'
 UNDEFINED = 'undefined'
 URSH = 'ursh'
 USING = 'using'
-VIA = 'via'
+//VIA = 'via'
 XOR  = 'xor'
 XORB  = 'xorb'
 

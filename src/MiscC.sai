@@ -149,7 +149,7 @@ docs get
               with category\\document\\page as p
                 set precis:
                   title p.title
-                  authors join'd p.authors ', '
+                  authors join!p.authors ', '
                   summary p.abstract ? p.summary
                   
           Though that is much the same as this:
@@ -157,7 +157,7 @@ docs get
               local p category\\document\\page
               set precis:
                 title p.title
-                authors join'd p.authors ', '
+                authors join!p.authors ', '
                 summary p.abstract ? p.summary
                 
           __WITH__ can make things tidier, but mind what your pronouns are.
@@ -167,7 +167,7 @@ docs get
 MiscConstruct task
 
   if $clauses.length > 1
-    return: error 'SAI bug: error parsing construct with multiple clauses: ${join'd ($clauses | keys) ', '}'
+    return: error 'SAI bug: error parsing construct with multiple clauses: ${join!($clauses | keys) ', '}'
 
   set body ''
 
@@ -192,7 +192,7 @@ MiscConstruct task
 
     case 'with.exproutblock'
       set
-        outs from @OutVarHelper .args.out      
+        outs !@OutVarHelper .args.out      
         vars:
           'this' outs.0
           'block' .args.block
@@ -200,7 +200,7 @@ MiscConstruct task
         body '''
           var ^{this}=^{expr};
           ^{block}; 
-        body from $tools.replacer body, vars  
+        body !$tools.replacer body, vars  
 
     else
       return: error "Unhandled construct type ${.type} in ReturnConstruct"

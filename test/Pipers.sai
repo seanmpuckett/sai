@@ -23,6 +23,125 @@ Execute promise
 
 
 
+
+
+
+
+
+
+  set Sara to friends.0
+  set John to friends.1
+  set Nobody to null
+  
+  set inla to: 1, 2, 3
+  set inlo to: '1' 'a', '2' 'b', '3' 'c'
+
+
+
+  @Match 'first u 1', undefined, task ..            return undefined | first it>1
+  @Match 'first s 1', 2, task ..                    return 2 | first it>1
+  @Match 'first s 2', undefined, task ..            return undefined | first it>4
+  @Match 'first a 1', 2, task ..                    return inla | first it>1
+  @Match 'first a 2', undefined, task ..            return inla | first it>4
+  @Match 'first o 1', true, task ..                 return ((inlo | first it>'a') | any list b, c) isnt undefined
+  @Match 'first o 2', undefined, task ..            return inlo | first it>'d'
+  @Match 'first i 1', 2, task ..                    return ((inla | iterate) | first it>1) 
+  @Match 'first i 2', undefined, task ..            return ((inla | iterate) | first it>4) 
+
+  @Match 'last u 1', undefined, task ..            return undefined | last it>1
+  @Match 'last s 1', 2, task ..                    return 2 | last it>1
+  @Match 'last s 2', undefined, task ..            return undefined | last it>4
+  @Match 'last a 1', 3, task ..                    return inla | last it>1
+  @Match 'last a 2', undefined, task ..            return inla | last it>4
+  @Match 'last o 1', true, task ..                 return ((inlo | last it>'a') | any list b, c) isnt undefined
+  @Match 'last o 2', undefined, task ..            return inlo | last it>'d'
+  @Match 'last i 1', 3, task ..                    return ((inla | iterate) | last it>1) 
+  @Match 'last i 2', undefined, task ..            return ((inla | iterate) | last it>4) 
+
+  set Greater1 to task given v
+    return v > 1
+
+  @Match 'first block', 2, task
+    return inla | first
+      return it > 1
+
+  @Match 'first using', 2, task
+    return inla | first using Greater1
+
+  @Match 'last block', 3, task
+    return inla | last
+      return it > 1
+
+  @Match 'last using', 3, task
+    return inla | last using Greater1
+
+  set inra1 to: 2, 3
+  set inra2 to: 0, 3
+  set inra3 to: 4, 5 
+
+  set inro1 to: '2', '3'
+  set inro2 to: '0', '3'
+  set inro3 to: '4', '5' 
+
+  @Match 'any ua 1', undefined, task ..             return undefined | any inra1
+  @Match 'all ua 1', undefined, task ..             return undefined | all inra1
+  @Match 'any au 1', undefined, task ..             return inla | any undefined
+  @Match 'all au 1', undefined, task ..             return inla | all undefined
+  @Match 'any uu 1', undefined, task ..             return undefined | any undefined
+  @Match 'all uu 1', undefined, task ..             return undefined | all undefined
+  
+  @Match 'any oa 1', '2', task ..             return inlo | any inro1
+  @Match 'any oa 2', '3', task ..             return inlo | any inro2
+  @Match 'any oa 3', undefined, task ..       return inlo | any inro3
+  @Match 'all oa 1', true, task ..            return inlo | all inro1
+  @Match 'all oa 2', undefined, task ..       return inlo | all inro2
+  @Match 'all oa 3', undefined, task ..       return inlo | all inro3
+  @Match 'any os 1', '2', task ..             return inlo | any '2'
+  @Match 'any os 2', undefined, task ..       return inlo | any '4'
+  @Match 'all os 1', true, task ..            return inlo | all '2'
+  @Match 'all os 2', undefined, task ..       return inlo | all '4'
+  @Match 'any oi 1', '2', task ..             return inlo | any (inro1 | iterate)
+  @Match 'any oi 2', '3', task ..             return inlo | any (inro2 | iterate)
+  @Match 'any oi 3', undefined, task ..       return inlo | any (inro3 | iterate)
+  @Match 'all oi 1', true, task ..            return inlo | all (inro1 | iterate)
+  @Match 'all oi 2', undefined, task ..       return inlo | all (inro2 | iterate)
+  @Match 'all oi 3', undefined, task ..       return inlo | all (inro3 | iterate)
+
+  @Match 'any aa 1', 2, task ..             return inla | any inra1
+  @Match 'any aa 2', 3, task ..             return inla | any inra2
+  @Match 'any aa 3', undefined, task ..     return inla | any inra3
+  @Match 'all aa 1', true, task ..          return inla | all inra1
+  @Match 'all aa 2', undefined, task ..     return inla | all inra2
+  @Match 'all aa 3', undefined, task ..     return inla | all inra3
+  @Match 'any as 1', 2, task ..             return inla | any 2
+  @Match 'any as 2', undefined, task ..     return inla | any 4
+  @Match 'all as 1', true, task ..          return inla | all 2
+  @Match 'all as 2', undefined, task ..     return inla | all 4
+  @Match 'any ai 1', 2, task ..             return inla | any (inra1 | iterate)
+  @Match 'any ai 2', 3, task ..             return inla | any (inra2 | iterate)
+  @Match 'any ai 3', undefined, task ..     return inla | any (inra3 | iterate)
+  @Match 'all ai 1', true, task ..          return inla | all (inra1 | iterate)
+  @Match 'all ai 2', undefined, task ..     return inla | all (inra2 | iterate)
+  @Match 'all ai 3', undefined, task ..     return inla | all (inra3 | iterate)
+
+  @Match 'any ia 1', 2, task ..             return (inla | iterate) | any inra1
+  @Match 'any ia 2', 3, task ..             return (inla | iterate) | any inra2
+  @Match 'any ia 3', undefined, task ..     return (inla | iterate) | any inra3
+  @Match 'all ia 1', true, task ..          return (inla | iterate) | all inra1
+  @Match 'all ia 2', undefined, task ..     return (inla | iterate) | all inra2
+  @Match 'all ia 3', undefined, task ..     return (inla | iterate) | all inra3
+  @Match 'any is 1', 2, task ..             return (inla | iterate) | any 2
+  @Match 'any is 2', undefined, task ..     return (inla | iterate) | any 4
+  @Match 'all is 1', true, task ..          return (inla | iterate) | all 2
+  @Match 'all is 2', undefined, task ..     return (inla | iterate) | all 4
+  @Match 'any ii 1', 2, task ..             return (inla | iterate) | any (inra1 | iterate)
+  @Match 'any ii 2', 3, task ..             return (inla | iterate) | any (inra2 | iterate)
+  @Match 'any ii 3', undefined, task ..     return (inla | iterate) | any (inra3 | iterate)
+  @Match 'all ii 1', true, task ..          return (inla | iterate) | all (inra1 | iterate)
+  @Match 'all ii 2', undefined, task ..     return (inla | iterate) | all (inra2 | iterate)
+  @Match 'all ii 3', undefined, task ..     return (inla | iterate) | all (inra3 | iterate)
+
+
   @Match 'reduce array add ', 3, task
     set b: 1, 2; | reduce sum+it
     return b 

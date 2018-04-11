@@ -20,13 +20,13 @@ manifest get
 
       'first':
         clauses:
-          'first': #none
-        handler bind LimitPiper
+          'first': #none, #expr, #outblock, #use
+        handler bind FilterPiper
 
       'last':
         clauses:
-          'last': #none
-        handler bind LimitPiper
+          'last': #none, #expr, #outblock, #use
+        handler bind FilterPiper
 
       'count':
         clauses:
@@ -39,6 +39,16 @@ manifest get
           'asc': #none
           'desc': #none
         handler bind SortPiper
+
+      'any':
+        clauses:
+          'any': #expr
+        handler bind InPiper
+
+      'all':
+        clauses:
+          'all': #expr
+        handler bind InPiper
 
       'has':
         clauses:
@@ -57,7 +67,7 @@ manifest get
         
 
 docs get
-  return from Documents
+  return !Documents
 
 //// FILTER PIPER 
 
@@ -67,12 +77,19 @@ FilterPiper task expects $clauses, $tools
     pattern '(${SPLIT})'
     tools empty
     work $clauses.0
+    operator 'filter_op'
+    last false
     
-  if $clauses's length > 1
+  if $clauses.length > 1
      return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
 
+  if work.clause is 'first' or work.clause is 'last'
+    set operator 'find_op'
+  if work.clause is 'last'
+    set last true
+
   switch work.type
-  case 'has.expr'
+  case 'has.expr', 'first.expr', 'last.expr'
     set 
       vars:
         'this' false
@@ -82,12 +99,12 @@ FilterPiper task expects $clauses, $tools
         function(^{this},^{key}){ 
           return ^{block}; 
         }
-      fn from $tools.replacer fn, vars
-      pattern '$AI.filter_op(${SPLIT},${fn})'
+      fn !$tools.replacer fn, vars
+      pattern '$AI.${operator}(${SPLIT},${fn},${last})'
 
-  case 'has.outblock'
+  case 'has.outblock', 'first.outblock', 'last.outblock'
     set
-      outs from @OutVarHelper work.args.out      
+      outs !@OutVarHelper work.args.out      
       vars:
         'this' outs.0
         'key' outs.1
@@ -97,17 +114,55 @@ FilterPiper task expects $clauses, $tools
           ^{block}; 
           return ^{this}; 
         }
-      fn from $tools.replacer fn, vars  
-      pattern '$AI.filter_op(${SPLIT},${fn})'
+      fn !$tools.replacer fn, vars  
+      pattern '$AI.${operator}(${SPLIT},${fn},${last})'
 
-  case 'has.use'
-    set pattern '$AI.filter_op(${SPLIT},${work.args.use})'
+  case 'has.use', 'first.use', 'last.use'
+    set pattern '$AI.${operator}(${SPLIT},${work.args.use},${last})'
+
+  case 'first.none'
+    $tools.addlocal '$_b'
+    set pattern '(Array.isArray($_b=${SPLIT}) ? $_b[0] : $AI.element_op($AI.slice_op($_b,0,1),0))'
+
+  case 'last.none'
+    $tools.addlocal '$_b'
+    set pattern '(Array.isArray($_b=${SPLIT}) ? $_b[$_b.length-1] : $AI.element_op($AI.slice_op($_b,undefined,-1),0))'
 
   else
     return: error "Unhandled piper type ${trial} in FilterPiper"
       
   return: leftright pattern.split('${SPLIT}'), tools tools
 
+
+
+
+//// ANY/ALL (IN) PIPER 
+
+InPiper task expects $clauses, $tools
+
+  set
+    pattern '(${SPLIT})'
+    tools empty
+    Repl $tools.replacer
+    operator 'or'
+    work $clauses.0
+    
+  if $clauses.length > 1
+     return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
+
+  if work.clause is 'all'
+    set operator to 'and'
+
+  switch work.type
+
+  case 'any.expr', 'all.expr'
+    set 
+      pattern '$AI.in_op(${SPLIT},${work.args.expr},"${operator}")'
+
+  else
+    return: error "Unhandled piper type ${trial} in InPiper"
+
+  return: leftright pattern.split('${SPLIT}'), tools tools
 
 
 
@@ -123,7 +178,7 @@ LowestPiper task expects $clauses, $tools
     ascending 1
     work $clauses.0
     
-  if $clauses's length > 1
+  if $clauses.length > 1
      return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
 
   if work.clause is 'highest'
@@ -133,13 +188,12 @@ LowestPiper task expects $clauses, $tools
 
   case 'lowest.expr', 'highest.expr'
     set 
-      afetch from Repl work.args.expr, fields 'this' 'a'
-      bfetch from Repl work.args.expr, fields 'this' 'b'
+      afetch !Repl work.args.expr, fields 'this' 'a'
+      bfetch !Repl work.args.expr, fields 'this' 'b'
       whichway to ascending>0 ?? 'aa>bb' :: 'aa<bb'
 
       fn '''
         function(a,b){ 
-//          if (undefined===a) return b;
           var aa=${afetch};
           var bb=${bfetch};
           return (${whichway}) ? b : a;
@@ -149,7 +203,7 @@ LowestPiper task expects $clauses, $tools
 
   case 'lowest.outblock', 'highest.outblock'
     set
-      outs from @OutVarHelper work.args.out      
+      outs !@OutVarHelper work.args.out      
       whichway to ascending>0 ?? '>0' :: '<=0'
       vars:
         'a' outs.0 ? '_a'
@@ -159,10 +213,9 @@ LowestPiper task expects $clauses, $tools
         function(^{a},^{b}){ 
           ^{block}; 
         }
-      fn from $tools.replacer fn, vars  
+      fn !$tools.replacer fn, vars  
       pattern '''
         $AI.reduce_op(${SPLIT},function(a,b){
-//          if (undefined===a) return b;
           return (${fn}(a,b)${whichway}) ? b : a;
         })
 
@@ -171,7 +224,6 @@ LowestPiper task expects $clauses, $tools
       whichway to ascending>0 ?? '>0' :: '<=0'
       pattern '''
         $AI.reduce_op(${SPLIT},function(a,b){
-//          if (undefined===a) return b;
           return (${work.args.use}(a,b)${whichway}) ? b : a;
         })
 
@@ -180,7 +232,6 @@ LowestPiper task expects $clauses, $tools
       whichway to ascending>0 ?? 'a>b' :: 'a<b'
       pattern '''
         $AI.reduce_op(${SPLIT},function(a,b){
-//          if (undefined===a) return b;
           return (${whichway}) ? b : a;
         })
 
@@ -215,7 +266,7 @@ SortPiper task expects $clauses, $tools
             case 'by'
               unless keyed 
                 set keyed ( .args.expr.indexOf('^{key}') >= 0 ) 
-              push'd sum: 
+              push!sum: 
                 expr ( .args.expr ? '^{this}' )
                 order 1
             case 'asc'
@@ -246,7 +297,7 @@ SortPiper task expects $clauses, $tools
       return: error msg
 
     if keyed
-      push'd tools '''
+      push!tools '''
         var $by$enlistcheck=function(o) {
           if ($AI.isArray(o) || $AI.mustIterate(o)) {
             throw new Error("SAI Runtime: call to BY using the key pronoun applied to something that isn't a true object.");
@@ -259,7 +310,7 @@ SortPiper task expects $clauses, $tools
       return: error "SAI Compiler: BY.outblock should not have any extra clauses"
       
     set
-      outs from @OutVarHelper work.args.out      
+      outs !@OutVarHelper work.args.out      
       vars:
         'a' outs.0 ? '_a'
         'b' outs.1 ? '_b'
@@ -268,7 +319,7 @@ SortPiper task expects $clauses, $tools
         function(^{a},^{b}){ 
           ^{block}; 
         }
-      fn from $tools.replacer fn, vars  
+      fn !$tools.replacer fn, vars  
       pattern '$AI.sort_op(${SPLIT},${fn})'
 
   case 'by.use'
@@ -301,12 +352,12 @@ LimitPiper task expects $clauses, $tools
     tools empty
     work $clauses.0
     
-  if $clauses's length > 1
+  if $clauses.length > 1
      return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
     
   switch work.type
   case 'limit.exprs'
-    if work.args.exprs's length is 1
+    if work.args.exprs.length is 1
       set
         st undefined
         ct work.args.exprs.0
@@ -316,14 +367,6 @@ LimitPiper task expects $clauses, $tools
         ct work.args.exprs.1
       
     set pattern '$AI.slice_op(${SPLIT},${st},${ct})'
-
-  case 'first.none'
-    $tools.addlocal '$_b'
-    set pattern '(Array.isArray($_b=${SPLIT}) ? $_b[0] : $AI.element_op($AI.slice_op($_b,0,1),0))'
-
-  case 'last.none'
-    $tools.addlocal '$_b'
-    set pattern '(Array.isArray($_b=${SPLIT}) ? $_b[$_b.length-1] : $AI.element_op($AI.slice_op($_b,undefined,-1),0))'
 
   case 'count.none'
     set pattern '$AI.count_op(${SPLIT})'
@@ -417,10 +460,91 @@ Documents task
           could become negative, __limit__ may return things you don't expect. 
 
 
+      'all':
+        subtitle 'query a collection for all values'
+        summary '''
+          Checks a collection to see if it has _all_ of multiple values. If so, returns true.
+        detail '''
+          The expression to the left is the _haystack_, it is where we are looking. The expression on the right is the
+          (set of) _needles_ that we are looking for.
+          
+          The __all__ piper examines the haystack to see if it has _all_ of the needles. If so, it returns __true__.
+          Otherwise, it returns __undefined__.
+          
+          Example:
+          
+              set menu list tortilla, bean, lettuce, rice, meat, sauce
+
+              debug menu | any list tofu, avocado       // undefined
+              debug menu | any list fish, meat          // undefined
+              debug menu | any list rice, bean          // true
+              
+          You can also test against a single value:
+          
+              debug menu | any 'bean'                   // 'bean'
+              debug menu | any 'gelato'                 // undefined
+
+          #### Quirks
+
+          You can use iterators on either side. Iterators on the needle side are collected, so don't try to
+          needle with an infinite generator. 
+          
+          When the haystack is an object, its keys are examined, not values. 
+          
+          Using an object (or any scalar value) as the needle creates a test for _that object/value_.
+          as if you had placed the object/value in an array by itself.
+          
+          No optimizations are made that require assumptions about the sortability of either haystack or
+          needles, so this function is slower at the expense of being robust. If none of the needles are
+          found in the haystack, every needle has been compared with every item in the haystack. It might
+          be faster in some cases to sort and search, but this function does not do that.
+
+          
+      'any':
+        subtitle 'query a collection for any of one-or-more values'
+        summary '''
+          Checks a collection to see if it has _any_ of multiple values. If so, returns the value it found first.
+        detail '''
+          The expression to the left is the _haystack_, it is where we are looking. The expression on the right is the
+          (set of) _needles_ that we are looking for.
+          
+          The __any__ piper examines the haystack to see if it has _any_ of the needles. If so, it returns the first
+          one it finds. Otherwise, it returns __undefined__.
+          
+          Example:
+          
+              set menu list tortilla, bean, lettuce, rice, meat, sauce
+
+              debug menu | any list tofu, avocado       // undefined
+              debug menu | any list fish, meat          // 'meat'
+              debug menu | any list rice, bean          // 'rice'
+              
+          You can also test against a single value:
+          
+              debug menu | any 'bean'                   // 'bean'
+              debug menu | any 'gelato'                 // undefined
+
+          #### Quirks
+
+          You can use iterators on either side. Iterators on the haystack side are collected, so don't try to
+          query with an infinite generator. 
+          
+          When the haystack is an object, its keys are examined, not values. 
+          
+          Using an object (or any scalar value) as the needle creates a test for _that object_ 
+          as if you had placed the object/value in an array by itself.
+
+          No optimizations are made that require assumptions about the sortability of either haystack or
+          needles, so this function is slower at the expense of being robust. If none of the needles are
+          found in the haystack, every needle has been compared with every item in the haystack. It might
+          be faster in some cases to sort and search, but this function does not do that.
+
+
       'first':
         subtitle 'first value'
         summary '''
-          Returns the first value in a list or iterator.
+          Returns the first value in a list or iterator. With an expression, block or function, returns the
+          first value where the expression is true.
         detail '''
           Example:
           
@@ -428,13 +552,29 @@ Documents task
               > Apple
 
           __First__ doesn't just crop the array, it unwraps whatever value is there, as 
-          if you'd coded `array.[0]`.
+          if you'd coded `array.[0]`. __First__ unwraps iterators, returning a single
+          value (or undefined). If you need the iteration chain preserved, use __limit__ (in combination with
+          __has__ if necessary).
+          
+          #### First with a comparison
+          
+          If you provide a comparison expression, block, or function, __first__ will evaluate the comparison
+          against each element in the collection, and return the first value that the comparison returns true.
+          If you use __first__ on an object, the order of comparisons is undefined.
 
+          Example:
+          
+              set fruit list Apple, Banana, Cherry, Durian
+          
+              debug fruit | first .length is 6      // Banana
+          
+          
 
       'last':
         subtitle 'last value'
         summary '''
-          Returns the last value in a list or iterator.
+          Returns the last value in a list or iterator. With an expression, block or function, returns the
+          first value where the expression is true.
         detail '''
           If the collection is an iterator, it will be exhausted. If it's an infinite iterator, the machine will stop
           responding.
@@ -444,7 +584,34 @@ Documents task
               > Citron
 
           __Last__ doesn't just crop the array, it unwraps whatever value is there, as 
-          if you'd coded `array.[array.length-1]`.
+          if you'd coded `array.[array.length-1]`.  __Last__ unwraps iterators, returning a single
+          value (or undefined). If you need the iteration chain preserved, use __limit__ (in combination with
+          __has__ if necessary).
+
+          #### Last with a comparison
+          
+          If you provide a comparison expression, block, or function, __last__ will evaluate the comparison
+          against each element in the collection, and return the falst value that the comparison returns true.
+          If you use __last__ on an object, the order of comparisons is undefined.
+
+          Example:
+          
+              set fruit list Apple, Banana, Cherry, Durian
+          
+              debug fruit | last .length is 6      // Durian
+              
+          #### Quirks
+          
+          Arrays: __last__ starts looking at the tail of the array. 
+          
+          Objects: since the keys of an object are presented with no defined order, __last__ and __first__ 
+          examine elements in an object the same way.
+
+          Iterators: __last__ starts at the beginning, compares every item, and returns the last one found
+          when the iterator ends. If the iterator doesn't end, __last__ will hang. If no match is found,
+          __last__ does not yield a value, it simply terminates. If your comparison is expensive, you may
+          wish to __collect__ the iterator (turning it into an array) before applying __last__; this exchanges 
+          memory use for processing speed.
 
 
       'count':

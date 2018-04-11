@@ -24,7 +24,7 @@ manifest get
       
 
 docs get
-  return from Documents
+  return !Documents
   
 
 
@@ -49,7 +49,7 @@ TryConstruct task expects $clauses, $tools
       set body + 'try { ${.args.block} }\n'
 
     case 'catch.outblock'
-      set outs from @OutVarHelper .args.out
+      set outs !@OutVarHelper .args.out
       set vars:
         'error' outs.0
         'block' .args.block
@@ -57,7 +57,7 @@ TryConstruct task expects $clauses, $tools
       set text '''
         catch(^{error}) { ^{block} }
         
-      set body + from $tools.replacer text, vars
+      set body + !$tools.replacer text, vars
       
     case 'finally.block'
       set body + 'finally { ${.args.block} }\n'

@@ -1,5 +1,21 @@
 ## Change log
 
+### 0.2.8
+
+#### Breaking Changes
+
+ - Removed __via__ again.  Gone for good.  
+ - The __first__ and __last__ pipers no longer return iterators in any case; they drain iterators if they exist and either return a value or __undefined__.  If you need to limit an iterator without converting it to a value, use the __limit__ piper.
+ 
+ 
+#### Enhancements
+
+ - extended operation of __first__ and __last__ pipers to   accept a comparison function
+ - new __any__ and __all__ pipers for testing a haystack for multiple needles.
+ - Reformatted main source into literate form, refactored a few things.
+ - Extended the __!__ function invokation operator to work in binary form, not just unary.  This will probably eventually take the place of `'d`, like I am probably going to retire `from` and `call` and those guys because I am arguing with myself all the time. But now that `!=` isn't used as an inequivalency operator (and it was never used as a boolean _not_), it's easier to spy its use on its own. Might even retire `'s` but that's just crazy.
+ 
+
 ### 0.2.7
 
 #### Breaking changes

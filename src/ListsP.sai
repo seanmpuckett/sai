@@ -106,7 +106,7 @@ manifest get
 
 
 docs get
-  return from Documents
+  return !Documents
 
 
 //// INTO PIPER 
@@ -116,7 +116,7 @@ IntoPiper task expects $work, $tools
   set 
     pattern '(${SPLIT})'
     tools empty
-    outs from @OutVarHelper $work.args.out
+    outs !@OutVarHelper $work.args.out
     startvalue $work.args.val 
     
   switch $work.type
@@ -133,7 +133,7 @@ IntoPiper task expects $work, $tools
           return ^{block};
         }
         
-      fn from $tools.replacer fn, vars
+      fn !$tools.replacer fn, vars
       pattern '$AI.sum_op(${SPLIT},${fn},${startvalue})'
 
   case 'into.valoutblock'
@@ -151,7 +151,7 @@ IntoPiper task expects $work, $tools
           return ^{sum};
         }
         
-      fn from $tools.replacer fn, vars
+      fn !$tools.replacer fn, vars
       pattern '$AI.sum_op(${SPLIT},${fn},${startvalue})'
 
   case 'into.valuse'
@@ -187,7 +187,7 @@ TotalPiper task expects $work, $tools
           return (undefined===^{sum}) ? $t : (^{sum}+$t);
         }
         
-      fn from $tools.replacer fn, vars
+      fn !$tools.replacer fn, vars
       pattern '$AI.sum_op(${SPLIT},${fn},undefined)'
 
   case 'total.use'
@@ -211,7 +211,7 @@ ReducePiper task expects $work, $tools
 
   set 
     pattern '(${SPLIT})'
-    outs from @OutVarHelper $work.args.out
+    outs !@OutVarHelper $work.args.out
     tools empty
     
   switch $work.type
@@ -228,7 +228,7 @@ ReducePiper task expects $work, $tools
           return ^{block};
         }
         
-      fn from $tools.replacer fn, vars
+      fn !$tools.replacer fn, vars
       pattern '$AI.reduce_op(${SPLIT},${fn})'
 
   case 'reduce.outblock'
@@ -246,7 +246,7 @@ ReducePiper task expects $work, $tools
           return ^{sum};
         }
         
-      fn from $tools.replacer fn, vars
+      fn !$tools.replacer fn, vars
       pattern '$AI.reduce_op(${SPLIT},${fn})'
 
   case 'reduce.use'
@@ -279,12 +279,12 @@ AuditPiper task expects $work, $tools
         function(^{this},^{key}){ 
           ^{block}; 
         }
-      fn from $tools.replacer fn, vars
+      fn !$tools.replacer fn, vars
       pattern '$AI.${op}(${SPLIT},${fn})'
 
   case 'audit.outblock', 'observe.outblock'
     set
-      outs from @OutVarHelper $work.args.out      
+      outs !@OutVarHelper $work.args.out      
       vars:
         'this' outs.0
         'key' outs.1
@@ -293,7 +293,7 @@ AuditPiper task expects $work, $tools
         function(^{this},^{key}){ 
           ^{block}; 
         }
-      fn from $tools.replacer fn, vars  
+      fn !$tools.replacer fn, vars  
       pattern '$AI.${op}(${SPLIT},${fn})'
 
   case 'audit.use', 'observe.use'
@@ -326,12 +326,12 @@ ThruPiper task expects $work, $tools
         function(^{this},^{key}){ 
           return ^{block}; 
         }
-      fn from $tools.replacer fn, vars
+      fn !$tools.replacer fn, vars
       pattern '$AI.${op}(${SPLIT},${fn})'
 
   case 'thru.outblock', 'set.outblock'
     set
-      outs from @OutVarHelper $work.args.out      
+      outs !@OutVarHelper $work.args.out      
       vars:
         'this' outs.0
         'key' outs.1
@@ -341,7 +341,7 @@ ThruPiper task expects $work, $tools
           ^{block}; 
           return ^{this}; 
         }
-      fn from $tools.replacer fn, vars  
+      fn !$tools.replacer fn, vars  
       pattern '$AI.${op}(${SPLIT},${fn})'
 
   case 'thru.use', 'set.use'
@@ -394,7 +394,7 @@ ArraysPiper task expects $work, $tools
         'block' $work.args.expr
       fn '''
         ^{block}
-      fn from $tools.replacer fn, vars
+      fn !$tools.replacer fn, vars
       pattern '$AI.sum_op(${SPLIT},function(s,v,k){s[v]=${fn};return s;},{})'
 
 
@@ -437,7 +437,7 @@ ReplicatePiper task expects $work, $tools
   case 'replicate.expr'
 
     set pattern '$piper$replicate((${SPLIT}),(${$work.args.expr}))'
-    push'd tools '''
+    push!tools '''
           var $piper$replicate=function(a,c){
             var r=new Array(c);
             while (c>0) r[--c]=a;

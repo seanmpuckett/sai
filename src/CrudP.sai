@@ -34,7 +34,7 @@ manifest get
 
 
 docs get
-  return from Documentation
+  return !Documentation
 
 // DOCS BELOW
   
@@ -48,7 +48,7 @@ CrudPiper task expects $clauses, $tools
     tools empty
     work $clauses.0
     
-  if $clauses's length > 1
+  if $clauses.length > 1
      return: error "SAI Compiler: ${work.clause} should not have multiple clauses."
 
   switch work.type

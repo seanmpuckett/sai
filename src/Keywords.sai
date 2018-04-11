@@ -29,12 +29,12 @@ docs get
 introspect get
   
   set boringkeywords to boringlist | enkey
-  set parsefun from SAI.mainParser.parse.toString
+  set parsefun !SAI.mainParser.parse.toString
 
   set matcher to /peg\$literalExpectation.\"([^"]+)\"./g
   set matches to empty  
-  while from matcher.exec parsefun
-    push'd matches it.1
+  while !matcher.exec parsefun
+    push!matches it.1
 
   set simple to /^[0-9a-zA-Z]$|\&\#/  
   set matches | has not ( simple.exec(it) or boringkeywords\it ) | enkey blank
@@ -42,7 +42,7 @@ introspect get
   set missing (copy matches) | update (goodlist | enkey)
   set covered blank
   
-  each from Documentation as category
+  each !Documentation as category
     set missing | delete category
     set covered | update category 
   
@@ -61,7 +61,7 @@ introspect get
     debug 'excess documentation for ${key}'
 
     
-  return from Documentation
+  return !Documentation
 
 
 Documentation task
@@ -81,7 +81,7 @@ Documentation task
         synref '''
           assert [test value], [error message]
           
-          .. from assert [test value], [error message]
+          .. !assert [test value], [error message]
         detail '''
           For example:
 
@@ -91,7 +91,7 @@ Documentation task
 
           You can use __assert__ in an expression, because it returns the value passed.
           
-              set sock from assert GetSocket, "Could not obtain socket resource"
+              set sock !assert GetSocket, "Could not obtain socket resource"
           
           __Assert__, like __debug__, is functionality that can be redefined by passing a new handler 
           to SAI's configuration facility.
@@ -856,7 +856,7 @@ Documentation task
           function on some other object, you'd write code something like this, making use of the Function 
           object's bind ability:
 
-              ... from anObject.anyFunction.bind anObject 
+              ... !anObject.anyFunction.bind anObject 
 
           SAI compiled objects do a runtime check on any member method invocation to verify that the
           current execution context is, if not correct, at least not totally absent.
@@ -1011,7 +1011,7 @@ Documentation task
           
           Note also that capitalization matters.
 
-              set a from ~parseInt 'This is not a number.'
+              set a !parseInt 'This is not a number.'
               debug a           // NaN
               debug a = 0       // false
               debug a = false   // false
@@ -1176,7 +1176,7 @@ Documentation task
                 @app.get '/', task given req, res
                   res.send 'Hello HTTP!'
   
-                set @server from @app.listen 3000, 'localhost', task
+                set @server !@app.listen 3000, 'localhost', task
                   with @server.address()
                     debug 'Example app listening at http://\${.address}:\${.port}'
 
@@ -1448,35 +1448,44 @@ Documentation task
         title '!'
         subtitle 'function invocation operator'
         summary '''
-          **!** (bang) invokes the following identifier as a function call that returns a value, 
-          passing in any parameters that follow.  
+          In unary form **!** (bang) invokes the following identifier as a function call that returns a value, 
+          passing in any parameters that follow. In binary form, invokes the method on the left as a method
+          of the object on the right.
         synref '''
           ... ! [identifier] ([parameters]) (;)
+          ... [method] ! [object] ([parameters]) (;)
         detail '''
           The following are synonymous:
 
+              set record FetchRow!cursor
               set record !cursor.FetchRow
-              set record from cursor.FetchRow
-              set record to cursor.FetchRow()
+              set record cursor.FetchRow()
   
               set cursor !db.Query 'select * from names'
               set cursor to db.Query('select * from names')
+            
+          If you like the `()` style of invoking functions, that's fine. But when you get into function 
+          invokations that span multiple lines, you'll need to use the __!__ or do some really ugly
+          patchup work with __...__.
 
-          Neither **!** nor parenthesis are needed when the verb begins the line as in 
+          Neither the leading **!** nor parenthesis are needed when the verb begins the line as in 
           the `cursor.Close` statement below. 
 
-              set cursor from db.Query 'select * from names'
-              set records from cursor.FetchAll
+              set cursor !db.Query 'select * from names'
+              set records !cursor.FetchAll
               cursor.Close
+              
+          If you want to invert the verb/object in verb statements, you can do this:
+          
+              Close!cursor
 
           If you wish to use **!** in a continuing expression, close the parameter 
           clause with a semicolon (like you'd close a structural literal). 
           
           The following examples are equivalent.
 
-              set @x ~Math.sin($angle) * $magnitude
-              set @x !~Math.sin $angle; * $magnitude    
-              set @x from ~Math.sin $angle; * $magnitude    
+              set @x Math.sin($angle) * $magnitude
+              set @x !Math.sin $angle; * $magnitude    
 
 
       '#':
@@ -1637,7 +1646,7 @@ Documentation task
               push'd biglist item
               
               debug name.toUpperCase()
-              debug from name.toUpperCase
+              debug !name.toUpperCase
               debug toUpperCase'd name
 
           The thing I find displeasing about the subject-first syntax is that it obscures the action taken. 
@@ -1649,7 +1658,7 @@ Documentation task
 
           I find this much clearer than:
           
-              set index from library\\reference\\category.titles.join '\\n'
+              set index !library\\reference\\category.titles.join '\\n'
           
           Because as you're reading the code, you see WHAT action will take place first, then you learn
           the subject and object and how they relate to each other.  Hey if you don't like it,
@@ -1673,8 +1682,8 @@ Documentation task
               set mixer.colour to 'red'
               set mixer['colour'] to 'red'
               
-              set index from library\\reference\\category.titles
-              set index from library\\reference\\category's titles
+              set index !library\\reference\\category.titles
+              set index !library\\reference\\category's titles
 
               if config.options.speedometer
               if config.options's speedometer
@@ -1690,7 +1699,7 @@ Documentation task
         title '( )'
         subtitle 'parentheticals'
         summary '''
-          Parenthesis are used for a couple of things, one of them actually quite confusing.
+          Parenthesis wrap expressions that should be evaluated together, and also invokes functions.
         synref '''
           .. verb(parameters)
           .. ( expression )
@@ -1698,30 +1707,39 @@ Documentation task
         detail '''
           
           #### invoking functions with parenthesis
+
+          Use parenthesis after a value to invoke that value as a function, passing in the values within
+          the parenthesis as parameters to the function. 
           
-          Haver you ever stopped to think about how odd it is that most major computer languages
-          use parenthesis after a value as a way of using that value as a function reference that 
-          would accept the parameters within the parenthesis?
+              set fs to require('fs')
+              set angle to Math.atan2(y, x)
           
-          Okay, it comes from math, where _f(x)_ is super classical notation. But still, it doesn't have
-          to be that way, and it behooves us to think about it.
+          You don't use parenthesis when the verb is the first thing on the line:
           
-          In SAI you can use parens this way, but in my opinion it should be reserved for situations
-          where other, more conversational styles, are just too clunky -- essentially when you feel a deep,
-          desperate need to chain a whole bunch of functionality together into one run-on sentence, like this one.
+              db.query(key)       // incorrect
+              db.query key        // correct
+
+          You also don't use parenthesis when you're in the middle of a function chain:
           
-          These are all different ways of writing the same functionally:
+              set lines to chain fs.readFileSync(fn,'utf8')
+                split /[\r\n]+/       // no parens
+                | has .length > 0     // pipe operator
+
+          You can't easily use parenthesis when your function call spans multiple lines, in this case you'd
+          use the exclamation mark before the function name, instead of parenthesis after 
+          (see the documentation for __!__ for more): 
           
-              set angle Math.atan2( y, x )      // 1
-              set angle atan2'd Math y, x       // 2
-              set angle from Math.atan2 y, x    // 3
-              set angle from Math's atan2 y, x  // 4
-              
-          My personal preference would be 3, unless there were more math operations needed in one statement, in which
-          case 1 would be clearer. Option 2 doesn't make much sense because the Math object is here 
-          a static entity that is meaningless except as a scoping prefix. This also lets form 4 out as
-          calling too much attention to Math.  
+              return !textReplacer text, fields
+                name db.name
+                address db.address
+                phone db.phone
+
+          Note these are all valid ways of writing the same functionally:
           
+              set angle Math.atan2(y, x)      // invokes Math.atan2 with parameters y, x
+              set angle atan2!Math y, x       // ditto
+              set angle !Math.atan2 y, x      // ditto
+
           #### controlling precedence with parenthesis 
           
           The much more useful way that parens are used is to control the precedence of operations.  
@@ -1998,7 +2016,7 @@ Documentation task
           The semicolon can also close parameter lists if using the **from** form of function invocation. The following examples are identical:
 
               set x to ~Math.sin(angle) * magnitude
-              set x from ~Math.sin angle; * magnitude
+              set x !Math.sin angle; * magnitude
 
 
       '<-':
@@ -2062,12 +2080,12 @@ Documentation task
               angle set given radians 
                 SetPolar radians, magnitude  // SetPolar is an instance method. No need for "@"
               get 
-                return from Math.atan2 y, x
+                return !Math.atan2 y, x
   
               magnitude set given units
                 SetPolar angle, units
               get
-                return from Math.sqrt x*x + y*y
+                return !Math.sqrt x*x + y*y
   
               Instantiate task given x, y
                 // OH NO THIS IS A COMPILER ERROR because x and y are instance variables
@@ -2808,7 +2826,7 @@ Documentation task
               ..
               set apple to create 'Apple'
               set apple.varietal to 'Macintosh'
-              debug from apple.Describe
+              debug !apple.Describe
               > M. domestica var Macintosh
   
           **Given** traits can only be changed/overridden through inheritance.
@@ -2818,7 +2836,7 @@ Documentation task
               given: species 'M. coronaria'
               ..
               set specimen to create 'Crabapple'
-              debug from specimen.Describe
+              debug !specimen.Describe
               > 'M. coronaria var unknown'
 
 
@@ -2936,7 +2954,6 @@ Documentation task
     
               set x 34
               set @x 34          // this is not necessary
-              set @'s x 34       // sweet jesus don't do this
     
           When referring to another object's instance variables, you will need to properly scope them:
 
@@ -3869,56 +3886,5 @@ Documentation task
           Many pipe operators and loops provide a __using__ variant.  
           
           Have a look on the specific constructs to see how it's used.
-
-
-      'via':
-        subtitle 'pseudo-operator'
-        summary '''
-          Calls the given function with `lexpr` as the first parameter. The expression on the right is sent in as the second parameter, if supplied, otherwise `undefined` is passed. 
-        synref '''
-          ... [lexpr] via [function] ([expr]) (; ...)
-        detail '''
-          You can use __via__ to create your own comprehensions or operators, as in the following, which 
-          returns as many copies of the left expression as you tell it to:
-
-              set Replicate task given l, repeat
-                local result empty
-                count repeat
-                  set result[counter] l
-                return result.join('')
-  
-              set a "Hip"
-              debug a via Replicate 2; + "Hurrah"
-    
-              > HipHipHurrah
-
-          If continuing the expression after the parameters, use a semicolon as a delimiter.
-
-              set MySort task given subject, rules
-                if rules.order is 1
-                  set result subject by asc
-                else
-                  set result subject by desc
-                exists rules.count 
-                  set result self limit it
-                return result
-    
-              debug fruit via MySort: order 1
-              debug fruit via MySort: order -1, count 2
-
-              > [ 'apple', 'banana', 'citron', 'durian' ]
-              > [ 'durian', 'citron' ]
-
-          All of the following do the same thing.
-
-              debug from MySort fruit, fields order -1, count 2
-              debug !MySort fruit, fields order -1, count 2
-              debug MySort(fruit, fields order -1, count 2)
-              debug fruit via MySort: order -1, count 2
-    
-          Sometimes I wonder why I'm doing this. But then I think, you know, I want it to be 
-          clear what's going on. Languages can have multiple ways of saying things, and each 
-          different way emphasises different things. Use the code construct that 
-          makes your intention clear.
 
 

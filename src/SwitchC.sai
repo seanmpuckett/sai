@@ -18,7 +18,7 @@ manifest get
       
       
 docs get
-  return from Documents
+  return !Documents
   
   
 
@@ -37,8 +37,8 @@ SwitchConstruct task expects $clauses, $tools
       
   set 
     body ''
-    outs from @OutVarHelper $clauses.0.args.out
-    trialvar fields 'trial' outs.0 or from $tools.addlocal 
+    outs !@OutVarHelper $clauses.0.args.out
+    trialvar fields 'trial' outs.0 or !$tools.addlocal 
 
   ply $clauses
   
@@ -51,7 +51,7 @@ SwitchConstruct task expects $clauses, $tools
         text '''
           switch (^{trial}=(^{condition})) {
           
-        body + from $tools.replacer text, vars 
+        body + !$tools.replacer text, vars 
       
     case 'case.exprsblock'
       set
@@ -66,7 +66,7 @@ SwitchConstruct task expects $clauses, $tools
           ^{block}
           break;
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
         
     case 'else.block'
       set
@@ -78,7 +78,7 @@ SwitchConstruct task expects $clauses, $tools
           ^{block}
           break;
           
-        body + from $tools.replacer text, vars
+        body + !$tools.replacer text, vars
               
     else
       return: error "Unhandled construct type ${.type} in SwitchConstruct"

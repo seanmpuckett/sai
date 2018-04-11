@@ -16,7 +16,7 @@ manifest get
 
 
 docs get
-  return from Documents
+  return !Documents
 
 
 // STATE HANDLER
@@ -60,7 +60,7 @@ StateConstruct task expects $clauses, $tools
       }
         _goto=$state$goto.bind($,$states);
         _then=$state$then.bind($,$states);
-        _goto(${$clauses.0's args.expr});
+        _goto(${$clauses.0.args.expr});
       }();    
 
     names blank
@@ -76,11 +76,11 @@ StateConstruct task expects $clauses, $tools
         return: error 'SAI compile: duplicate state ${name} in STATE construct'
       inc names\name
       
-      set block from $tools.tasker:
+      set block !$tools.tasker:
         'as' .args.out
         block .args.block
         kind 'function'
-      push'd states "${name}:${block}"
+      push!states "${name}:${block}"
 
     else
       return: error "Unhandled construct type ${.type} in StateConstruct"
@@ -88,7 +88,7 @@ StateConstruct task expects $clauses, $tools
   $tools.addlocal '_goto'
   $tools.addlocal '_then'
   
-  set body to "${header}${join'd states ','}${trailer}"
+  set body to "${header}${join!states ','}${trailer}"
   return: body body, tools tools
 
 
@@ -237,12 +237,12 @@ Documents task
               state 'start' 
                 debug "You're lost in a cave!"
                 dountil maze\\pos is 'empty'
-                  set pos from Rand size
+                  set pos !Rand size
                 goto 'move', pos            // we're passing the new position here as POS
   
               state 'move' given newpos        // and it is recevied here as NEWPOS
                 inc moves
-                set position from Valid newpos
+                set position !Valid newpos
                 debug " move \${moves} ... now in room \${position}"
                 goto maze\\position
 
