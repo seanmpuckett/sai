@@ -1,5 +1,12 @@
 ## Change log
 
+### 0.2.9
+
+#### Enhancements
+
+ - Strings started with `'` and `"` are now automatically terminated by the end of line, so you don't have to close a quote if there is nothing else on that line. 
+
+
 ### 0.2.8
 
 #### Breaking Changes

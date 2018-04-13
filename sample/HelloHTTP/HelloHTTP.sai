@@ -1,18 +1,18 @@
 #!/usr/bin/env sai-run
 
 reference:
-  express from require 'express'
+  express !require 'express'
 
 object HelloHTTP main 1.0.0
 
 Instantiate task
-  set app from express
+  set app !express
   
   app.get '/', task given req, res
     res.send 'Hello HTTP!'
 
-  set server from app.listen 3000, 'localhost', task
-    with from server.address
+  set server !app.listen 3000, 'localhost', task
+    with !server.address
       debug 'Example app listening at http://${.address}:${.port}'       
       
    

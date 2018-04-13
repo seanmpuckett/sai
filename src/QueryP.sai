@@ -484,6 +484,12 @@ Documents task
               debug menu | any 'bean'                   // 'bean'
               debug menu | any 'gelato'                 // undefined
 
+          If there are duplicate _needles_, e.g. you query for `1, 2, 2, 3`; there must be at least that many
+          duplicates in the haystack. The example below returns `undefined` because `bean` does not
+          appear twice in the menu.
+          
+              debug menu | any list rice, bean, bean    // undefined
+
           #### Quirks
 
           You can use iterators on either side. Iterators on the needle side are collected, so don't try to
@@ -574,7 +580,7 @@ Documents task
         subtitle 'last value'
         summary '''
           Returns the last value in a list or iterator. With an expression, block or function, returns the
-          first value where the expression is true.
+          last value where the expression is true.
         detail '''
           If the collection is an iterator, it will be exhausted. If it's an infinite iterator, the machine will stop
           responding.
@@ -591,8 +597,7 @@ Documents task
           #### Last with a comparison
           
           If you provide a comparison expression, block, or function, __last__ will evaluate the comparison
-          against each element in the collection, and return the falst value that the comparison returns true.
-          If you use __last__ on an object, the order of comparisons is undefined.
+          against each element in the collection, and return the last value that the comparison returns true.
 
           Example:
           
@@ -602,10 +607,10 @@ Documents task
               
           #### Quirks
           
-          Arrays: __last__ starts looking at the tail of the array. 
+          Arrays: __last__ with comparison starts at the tail of the array, for performance reasons.
           
-          Objects: since the keys of an object are presented with no defined order, __last__ and __first__ 
-          examine elements in an object the same way.
+          Objects: since the keys of an object have no defined order, both __last__ and __first__ 
+          examine objects the same way -- unpredictably.
 
           Iterators: __last__ starts at the beginning, compares every item, and returns the last one found
           when the iterator ends. If the iterator doesn't end, __last__ will hang. If no match is found,
@@ -622,13 +627,15 @@ Documents task
           If the collection is an iterator, it will be drained.
 
               debug undefined count  
-              debug 1 count 
+              debug 'apples' count 
               debug fruit count
    
               > 0
               > 1
               > 3
 
+          Count will count arrays, enumerable keys in objects, iterators, values (count: 1), 
+          and `undefined` (count: 0).
 
       'by':
         subtitle 'collection sorting'
@@ -685,7 +692,7 @@ Documents task
                 rejections 34
                 acceptances 23
                 pending 4
-              debug folder | by key
+              debug folder |by key
 
               > [ 4, 23, 34 ]
               
@@ -707,7 +714,7 @@ Documents task
               set result to friends | by
                 return a.province <=> b.province or a.age <=> b.age
   
-              debug (result | thru '$\{.name}: $\{.province}, $\{.age}').join('\n')
+              debug (result |thru '$\{.name}: $\{.province}, $\{.age}').join('\n')
   
               > Doug: ON, 18
               > John: ON, 19

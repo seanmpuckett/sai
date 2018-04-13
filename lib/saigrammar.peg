@@ -1923,8 +1923,8 @@ SimpleStringLiteral
 StringLiteral
  = MultiString
  // '\x60' v:Bareline { return v }
- / '\x27' v:(EscapedChar/StringTemplate/StringTickChar)* '\x27' { return assembleLiteral(v) }
- / '\x22' v:(EscapedChar/StringTemplate/StringQuoteChar)* '\x22' { return assembleLiteral(v) }
+ / '\x27' v:(EscapedChar/StringTemplate/StringTickChar)* ('\x27'/&EOL) { return assembleLiteral(v) }
+ / '\x22' v:(EscapedChar/StringTemplate/StringQuoteChar)* ('\x22'/&EOL) { return assembleLiteral(v) }
  
 StringTickChar
  = v:[^\'\n] { return [true,v] }

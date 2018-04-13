@@ -33,7 +33,7 @@ Check the environment, make sure we're running in dynamic mode.
 
       unless env.dynamic
         debug 'Cannot use Builder as a pre-compiled module.'
-        ~process.exit 1
+        jsprocess.exit 1
 
 Big section of `set`s for variables and utitily functions.
 
@@ -135,7 +135,7 @@ Build a single file at src path, saving javascript output to dest path
               FS.writeFileSync dest, env.GetSource(objectName)
             if flags.verbose .. debug '${src} -> ${dest}'
           catch
-            unless error.message.indexOf('Contractually required') >-1
+            unless indexOf! error.message 'Contractually required'; >-1
               debug '${src} -> ERROR'
               debug error
               set exitflag 1
@@ -186,5 +186,5 @@ Get rid of the first two arguments which we don't care about, then loop over the
 
 Done, exit with status flag previously set by the builder.
 
-      ~process.exit exitflag
+      jsprocess.exit exitflag
   
